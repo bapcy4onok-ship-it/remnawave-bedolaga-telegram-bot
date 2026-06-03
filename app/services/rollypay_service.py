@@ -116,6 +116,9 @@ class RollyPayService:
                 headers=self._build_headers(),
             ) as response:
                 data = await response.json(content_type=None)
+                
+                # Логируем полный ответ от RollyPay
+                logger.info(f'RollyPay FULL RESPONSE status={response.status}, data={data}')
 
                 if response.status == 200:
                     logger.info(

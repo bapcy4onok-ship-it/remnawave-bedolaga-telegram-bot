@@ -27,6 +27,16 @@ def get_available_payment_methods() -> list[dict[str, str]]:
                 'callback': 'topup_stars',
             }
         )
+        
+    if settings.is_rollypay_enabled():
+        methods.append({
+                'id': 'rollypay',
+                'name': 'RollyPay',
+                'icon': '💳',
+                'description': 'СБП, CryptoBot, криптовалюта, xRocket',
+                'callback': 'topup_rollypay',
+            }
+        )
 
     if settings.is_yookassa_enabled():
         if getattr(settings, 'YOOKASSA_SBP_ENABLED', False):
@@ -444,7 +454,7 @@ def get_payment_methods_text(language: str) -> str:
             name = name.format(platega_name=platega_name_html)
             description = description.format(platega_name=platega_name)
 
-        text += f'{name} - {description}\n'
+        text += f'{name} — {description}\n'
 
     text += '\n' + texts.t(
         'PAYMENT_METHODS_FOOTER',
@@ -460,6 +470,8 @@ def is_payment_method_available(method_id: str) -> bool:
     """
     if method_id == 'stars':
         return settings.TELEGRAM_STARS_ENABLED
+    if method_id == 'rollypay':
+        return settings.is_rollypay_enabled()
     if method_id == 'yookassa':
         return settings.is_yookassa_enabled()
     if method_id == 'tribute':
@@ -531,6 +543,7 @@ def get_payment_method_status() -> dict[str, bool]:
     """
     return {
         'stars': settings.TELEGRAM_STARS_ENABLED,
+        'rollypay': settings.is_rollypay_enabled(),
         'yookassa': settings.is_yookassa_enabled(),
         'tribute': settings.TRIBUTE_ENABLED,
         'mulenpay': settings.is_mulenpay_enabled(),
@@ -567,6 +580,8 @@ def get_enabled_payment_methods_count() -> int:
     """
     count = 0
     if settings.TELEGRAM_STARS_ENABLED:
+        count += 1
+    if settings.is_rollypay_enabled():
         count += 1
     if settings.is_yookassa_enabled():
         count += 1

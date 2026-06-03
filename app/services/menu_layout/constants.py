@@ -145,7 +145,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'trial': {
             'type': 'builtin',
             'builtin_id': 'trial',
-            'text': {'ru': '🎁 Пробный период', 'en': '🎁 Free trial'},
+            'text': {'ru': '🎁 Забрать FREE', 'en': '🎁 Free trial'},
             'action': 'menu_trial',
             'enabled': True,
             'visibility': 'all',
@@ -195,7 +195,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'referrals': {
             'type': 'builtin',
             'builtin_id': 'referrals',
-            'text': {'ru': '👥 Рефералы', 'en': '👥 Referrals'},
+            'text': {'ru': '👥 Рефералка', 'en': '👥 Referrals'},
             'action': 'menu_referrals',
             'enabled': True,
             'visibility': 'all',
@@ -225,7 +225,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'info': {
             'type': 'builtin',
             'builtin_id': 'info',
-            'text': {'ru': 'ℹ️ Инфо', 'en': 'ℹ️ Info'},
+            'text': {'ru': '📢️ Канал LEDOKOL', 'en': 'ℹ️ Info'},
             'action': 'menu_info',
             'enabled': True,
             'visibility': 'all',
@@ -245,7 +245,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'admin_panel': {
             'type': 'builtin',
             'builtin_id': 'admin_panel',
-            'text': {'ru': '⚙️ Админ панель', 'en': '⚙️ Admin panel'},
+            'text': {'ru': '⚙️ Админка', 'en': '⚙️ Admin panel'},
             'action': 'admin_panel',
             'enabled': True,
             'visibility': 'admins',
@@ -306,7 +306,7 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
     },
     {
         'id': 'trial',
-        'default_text': {'ru': '🎁 Пробный период', 'en': '🎁 Free trial'},
+        'default_text': {'ru': '🎁 Забрать FREE', 'en': '🎁 Free trial'},
         'callback_data': 'menu_trial',
         'default_conditions': {'show_trial': True},
         'supports_dynamic_text': False,

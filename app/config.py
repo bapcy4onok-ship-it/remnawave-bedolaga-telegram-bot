@@ -176,7 +176,7 @@ class Settings(BaseSettings):
     TRIAL_DURATION_DAYS: int = 3
     TRIAL_TRAFFIC_LIMIT_GB: int = 10
     TRIAL_DEVICE_LIMIT: int = 2
-    TRIAL_ADD_REMAINING_DAYS_TO_PAID: bool = False
+    TRIAL_ADD_REMAINING_DAYS_TO_PAID: bool = True
     TRIAL_PAYMENT_ENABLED: bool = False
     TRIAL_ACTIVATION_PRICE: int = 0
     TRIAL_USER_TAG: str | None = None
@@ -274,10 +274,10 @@ class Settings(BaseSettings):
     # Базовая цена сброса в копейках (используется если режим "period" или как минимальная цена)
     TRAFFIC_RESET_BASE_PRICE: int = 0  # 0 = использовать PERIOD_PRICES[30]
 
-    REFERRAL_MINIMUM_TOPUP_KOPEKS: int = 10000
-    REFERRAL_FIRST_TOPUP_BONUS_KOPEKS: int = 10000
-    REFERRAL_INVITER_BONUS_KOPEKS: int = 10000
-    REFERRAL_COMMISSION_PERCENT: int = 25
+    REFERRAL_MINIMUM_TOPUP_KOPEKS: int = 5000
+    REFERRAL_FIRST_TOPUP_BONUS_KOPEKS: int = 9000
+    REFERRAL_INVITER_BONUS_KOPEKS: int = 9000
+    REFERRAL_COMMISSION_PERCENT: int = 33
     REFERRAL_FIRST_PAYMENT_COMMISSION_PERCENT: int | None = None
     REFERRAL_RECURRING_COMMISSION_TIERS: str = ''  # Формат: "0:10,10:15,50:20,100:25"
     REFERRAL_MAX_COMMISSION_PAYMENTS: int = 0  # Макс. кол-во платежей реферала с комиссией (0 = без лимита)
