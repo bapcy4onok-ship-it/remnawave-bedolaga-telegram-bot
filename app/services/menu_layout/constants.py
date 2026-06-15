@@ -115,7 +115,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'subscription': {
             'type': 'builtin',
             'builtin_id': 'subscription',
-            'text': {'ru': '📊 Подписка', 'en': '📊 Subscription'},
+            'text': {'ru': '🔑 Подписка', 'en': '🔑 Subscription'},
             'action': 'menu_subscription',
             'enabled': True,
             'visibility': 'subscribers',
@@ -285,7 +285,7 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
     },
     {
         'id': 'subscription',
-        'default_text': {'ru': '📊 Подписка', 'en': '📊 Subscription'},
+        'default_text': {'ru': '🔑 Подписка', 'en': '🔑 Subscription'},
         'callback_data': 'menu_subscription',
         'default_conditions': {'has_active_subscription': True},
         'supports_dynamic_text': False,

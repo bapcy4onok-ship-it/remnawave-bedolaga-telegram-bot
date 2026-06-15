@@ -589,6 +589,10 @@ class PricingEngine:
         extra_devices = max(0, (device_limit or 0) - tariff_device_limit)
         if is_daily and period_days <= 1:
             devices_price = extra_devices * device_price_per_unit
+        elif period_days < 30:
+            # Период короче месяца: round(14/30)=0→1 завышал доплату до целого месяца.
+            # Считаем пропорционально дням (на периодах кратных 30 это совпадает с × months).
+            devices_price = extra_devices * device_price_per_unit * period_days // 30
         else:
             devices_price = extra_devices * device_price_per_unit * months
 

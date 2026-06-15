@@ -126,12 +126,14 @@ def get_available_payment_methods() -> list[dict[str, str]]:
         if settings.PLATEGA_INLINE_METHODS:
             for method_code in settings.get_platega_active_methods():
                 info = settings.get_platega_method_definitions().get(method_code, {})
+                method_name = info.get('name', f'Метод {method_code}')
+                method_icon = info.get('title', '💳').split(' ', 1)[0] if info.get('title') else '💳'
                 methods.append(
                     {
                         'id': f'platega_m{method_code}',
-                        'name': info.get('name', f'Метод {method_code}'),
-                        'icon': info.get('title', '💳').split(' ', 1)[0] if info.get('title') else '💳',
-                        'description': f'через {platega_name}',
+                        'name': platega_name,
+                        'icon': method_icon,
+                        'description': method_name,
                         'callback': f'topup_platega_m{method_code}',
                     }
                 )
@@ -215,18 +217,6 @@ def get_available_payment_methods() -> list[dict[str, str]]:
                 'icon': '💳',
                 'description': f'через {paypear_name}',
                 'callback': 'topup_paypear',
-            }
-        )
-
-    if settings.is_rollypay_enabled():
-        rollypay_name = settings.get_rollypay_display_name()
-        methods.append(
-            {
-                'id': 'rollypay',
-                'name': rollypay_name,
-                'icon': '💳',
-                'description': f'через {rollypay_name}',
-                'callback': 'topup_rollypay',
             }
         )
 

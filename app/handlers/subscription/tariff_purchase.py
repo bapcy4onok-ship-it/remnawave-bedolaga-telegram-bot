@@ -2076,6 +2076,9 @@ def _calc_extra_devices_cost(tariff: Tariff, subscription_device_limit: int, per
     device_price = getattr(tariff, 'device_price_kopeks', None) or 0
     if device_price <= 0:
         return 0
+    if period_days < 30:
+        # Период короче месяца: round(14/30)=0→1 завышал доплату до целого месяца.
+        return additional * device_price * period_days // 30
     months = max(1, round(period_days / 30))
     return additional * device_price * months
 

@@ -120,8 +120,12 @@ async def _build_tariff_response(
             # Базовая цена тарифа
             base_tariff_price = int(price_kopeks)
 
-            # Стоимость доп. устройств за этот период
-            extra_devices_cost = extra_devices_count * extra_device_price_per_month * months
+            # Стоимость доп. устройств за этот период.
+            # Период короче месяца считаем пропорционально дням (иначе 14 дней = целый месяц).
+            if period_days < 30:
+                extra_devices_cost = extra_devices_count * extra_device_price_per_month * period_days // 30
+            else:
+                extra_devices_cost = extra_devices_count * extra_device_price_per_month * months
 
             # Apply per-category promo group discounts
             original_price = base_tariff_price + extra_devices_cost

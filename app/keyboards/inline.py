@@ -1587,6 +1587,18 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
         )
         has_direct_payment_methods = True
 
+    if settings.is_rollypay_enabled():
+        rollypay_name = settings.get_rollypay_display_name()
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=texts.t('PAYMENT_ROLLYPAY', f'💳 {rollypay_name} — СБП и криптовалюта'),
+                    callback_data=_build_callback('rollypay'),
+                )
+            ]
+        )
+        has_direct_payment_methods = True
+
     if settings.is_yookassa_enabled():
         if settings.YOOKASSA_SBP_ENABLED:
             keyboard.append(
@@ -1661,10 +1673,12 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
         if settings.PLATEGA_INLINE_METHODS:
             for method_code in settings.get_platega_active_methods():
                 title = settings.get_platega_method_display_title(method_code)
+                method_name = settings.get_platega_method_display_name(method_code)
+                method_icon = title.split(' ', 1)[0]
                 keyboard.append(
                     [
                         InlineKeyboardButton(
-                            text=f'{title} ({platega_name})',
+                            text=f'{method_icon} {platega_name} — {method_name}',
                             callback_data=_build_callback(f'platega_m{method_code}'),
                         )
                     ]
@@ -1836,18 +1850,6 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
                 InlineKeyboardButton(
                     text=texts.t('PAYMENT_PAYPEAR', f'💳 Оплата ({paypear_name})'),
                     callback_data=_build_callback('paypear'),
-                )
-            ]
-        )
-        has_direct_payment_methods = True
-
-    if settings.is_rollypay_enabled():
-        rollypay_name = settings.get_rollypay_display_name()
-        keyboard.append(
-            [
-                InlineKeyboardButton(
-                    text=texts.t('PAYMENT_ROLLYPAY', f'💳 {rollypay_name}'),
-                    callback_data=_build_callback('rollypay'),
                 )
             ]
         )
