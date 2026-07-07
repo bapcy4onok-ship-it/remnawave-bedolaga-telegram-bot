@@ -1080,6 +1080,14 @@ class MenuLayoutService:
             # Проверяем, что это действительно URL
             if url and (url.startswith('http://') or url.startswith('https://')):
                 logger.info('🔗 Кнопка connect: open_mode=direct, используем URL: ...', url=url[:50])
+                # В режиме CONNECT_BUTTON_MODE=link ссылка подписки должна открываться
+                # как обычный URL (в браузере), а не внутри Mini App
+                if is_connect_button and settings.CONNECT_BUTTON_MODE == 'link':
+                    return InlineKeyboardButton(
+                        text=text,
+                        url=url,
+                        icon_custom_emoji_id=custom_emoji_id,
+                    )
                 return InlineKeyboardButton(
                     text=text,
                     web_app=types.WebAppInfo(url=url),

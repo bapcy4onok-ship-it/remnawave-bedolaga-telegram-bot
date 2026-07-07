@@ -211,6 +211,26 @@ class ReferralWithdrawalService:
                 },
             )
 
+        # Вывод только для одобренных партнёров
+        if settings.REFERRAL_WITHDRAWAL_PARTNERS_ONLY:
+            user = await db.get(User, user_id)
+            if not user or not user.is_partner:
+                return (
+                    False,
+                    'Вывод средств доступен только партнёрам',
+                    {
+                        'total_earned': 0,
+                        'own_deposits': 0,
+                        'spending': 0,
+                        'referral_spent': 0,
+                        'withdrawn': 0,
+                        'pending': 0,
+                        'available_referral': 0,
+                        'available_total': 0,
+                        'only_referral_mode': settings.REFERRAL_WITHDRAWAL_ONLY_REFERRAL_BALANCE,
+                    },
+                )
+
         # Проверяем доступный баланс
         if stats is None:
             stats = await self.get_referral_balance_stats(db, user_id)

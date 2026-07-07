@@ -11,6 +11,12 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
     'version': 1,
     'rows': [
         {
+            'id': 'open_app_row',
+            'buttons': ['open_app'],
+            'conditions': None,
+            'max_per_row': 1,
+        },
+        {
             'id': 'connect_row',
             'buttons': ['connect'],
             'conditions': {'has_active_subscription': True, 'subscription_is_active': True},
@@ -90,6 +96,15 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         },
     ],
     'buttons': {
+        'open_app': {
+            'type': 'mini_app',
+            'text': {'ru': '📱 Открыть приложение', 'en': '📱 Open app'},
+            'action': 'https://ledokol.shop',
+            'enabled': True,
+            'visibility': 'all',
+            'conditions': None,
+            'dynamic_text': False,
+        },
         'connect': {
             'type': 'builtin',
             'builtin_id': 'connect',
@@ -99,7 +114,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
             'visibility': 'subscribers',
             'conditions': {'has_active_subscription': True, 'subscription_is_active': True},
             'dynamic_text': False,
-            'open_mode': 'callback',  # "callback" или "direct"
+            'open_mode': 'direct',  # "callback" или "direct"
             'webapp_url': None,  # URL для Mini App при open_mode="direct"
         },
         'happ_download': {
@@ -115,7 +130,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'subscription': {
             'type': 'builtin',
             'builtin_id': 'subscription',
-            'text': {'ru': '🔑 Подписка', 'en': '🔑 Subscription'},
+            'text': {'ru': '🔑 Управление подпиской', 'en': '🔑 Subscription'},
             'action': 'menu_subscription',
             'enabled': True,
             'visibility': 'subscribers',
@@ -155,7 +170,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'buy_subscription': {
             'type': 'builtin',
             'builtin_id': 'buy_subscription',
-            'text': {'ru': '🛒 Купить подписку', 'en': '🛒 Buy subscription'},
+            'text': {'ru': '💎 Купить подписку', 'en': '💎 Buy subscription'},
             'action': 'menu_buy',
             'enabled': True,
             'visibility': 'all',
@@ -285,7 +300,7 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
     },
     {
         'id': 'subscription',
-        'default_text': {'ru': '🔑 Подписка', 'en': '🔑 Subscription'},
+        'default_text': {'ru': '🔑 Управление подпиской', 'en': '🔑 Subscription'},
         'callback_data': 'menu_subscription',
         'default_conditions': {'has_active_subscription': True},
         'supports_dynamic_text': False,
@@ -313,7 +328,7 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
     },
     {
         'id': 'buy_subscription',
-        'default_text': {'ru': '🛒 Купить подписку', 'en': '🛒 Buy subscription'},
+        'default_text': {'ru': '💎 Купить подписку', 'en': '💎 Buy subscription'},
         'callback_data': 'menu_buy',
         'default_conditions': {'show_buy': True},
         'supports_dynamic_text': False,

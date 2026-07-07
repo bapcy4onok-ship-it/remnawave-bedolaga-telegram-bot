@@ -443,6 +443,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
         message_template = texts.t(
             'SUBSCRIPTION_DAILY_OVERVIEW_TEMPLATE',
             """👤 {full_name}
+🆔 ID: <code>{telegram_id}</code>
 💰 Баланс: {balance}
 📱 Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
 
@@ -456,6 +457,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
         message_template = texts.t(
             'SUBSCRIPTION_OVERVIEW_TEMPLATE',
             """👤 {full_name}
+🆔 ID: <code>{telegram_id}</code>
 💰 Баланс: {balance}
 📱 Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
 
@@ -478,6 +480,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
 
     message = message_template.format(
         full_name=html.escape(db_user.full_name or ''),
+        telegram_id=db_user.telegram_id,
         balance=settings.format_price(db_user.balance_kopeks),
         status_emoji=status_emoji,
         status_display=status_display,
@@ -576,7 +579,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
 
         message += '\n\n' + texts.t(
             'SUBSCRIPTION_CONNECT_LINK_SECTION',
-            '🔗 <b>Ссылка для подключения:</b>\n{subscription_url}',
+            '🔗 <b>Ссылка для подключения:</b>\n\n{subscription_url}',
         ).format(subscription_url=subscription_link_display)
         message += '\n\n' + texts.t(
             'SUBSCRIPTION_CONNECT_LINK_PROMPT',

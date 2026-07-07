@@ -7,17 +7,19 @@ import qrcode
 import structlog
 from aiogram import Dispatcher, F, types
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database.models import User
+from app.database.models import PartnerStatus, User
 from app.keyboards.inline import get_referral_keyboard
 from app.localization.texts import get_texts
 from app.services.admin_notification_service import AdminNotificationService, NotificationCategory
+from app.services.partner_application_service import partner_application_service
 from app.services.referral_withdrawal_service import referral_withdrawal_service
-from app.states import ReferralWithdrawalStates
+from app.states import PartnerApplicationStates, ReferralWithdrawalStates
 from app.utils.photo_message import edit_or_answer_photo
 from app.utils.user_utils import (
     get_detailed_referral_list,
@@ -53,7 +55,7 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
         texts.t('REFERRAL_PROGRAM_TITLE', '👥 <b>Реферальная программа</b>')
         + '\n\n'
         + texts.t('REFERRAL_STATS_HEADER', '📊 <b>Ваша статистика:</b>')
-        + '\n'
+        + '\n\n'
         + texts.t(
             'REFERRAL_STATS_INVITED',
             '• Приглашено пользователей: <b>{count}</b>',
@@ -85,6 +87,7 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
         ).format(amount=texts.format_price(summary['month_earned_kopeks']))
         + '\n\n'
         + texts.t('REFERRAL_REWARDS_HEADER', '🎁 <b>Как работают награды:</b>')
+        + '\n'
     )
 
     if settings.REFERRAL_FIRST_TOPUP_BONUS_KOPEKS > 0:
@@ -96,7 +99,8 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
             minimum=texts.format_price(settings.REFERRAL_MINIMUM_TOPUP_KOPEKS),
         )
 
-    if settings.REFERRAL_INVITER_BONUS_KOPEKS > 0:
+    # Партнёрам фиксированный бонус не начисляется — строку не показываем
+    if settings.REFERRAL_INVITER_BONUS_KOPEKS > 0 and not db_user.is_partner:
         referral_text += '\n' + texts.t(
             'REFERRAL_REWARD_INVITER',
             '• Вы получаете при первом пополнении реферала: <b>{bonus}</b>',
@@ -120,15 +124,15 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
 
     # Show bot link
     referral_text += (
-        texts.t('REFERRAL_BOT_LINK_TITLE', '🤖 <b>Ссылка на бота:</b>') + f'\n{html_escape(bot_referral_link)}\n'
+        texts.t('REFERRAL_BOT_LINK_TITLE', '🤖 <b>Ссылка на бота:</b>') + f'\n\n{html_escape(bot_referral_link)}\n'
     )
 
     # Show cabinet link if configured
     if cabinet_referral_link:
         referral_text += (
             '\n'
-            + texts.t('REFERRAL_CABINET_LINK_TITLE', '🌐 <b>Ссылка на кабинет:</b>')
-            + f'\n{html_escape(cabinet_referral_link)}\n'
+            + texts.t('REFERRAL_CABINET_LINK_TITLE', '🌐 <b>Ссылка на сайт:</b>')
+            + f'\n\n{html_escape(cabinet_referral_link)}\n'
         )
 
     referral_text += (
@@ -240,7 +244,7 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
     await edit_or_answer_photo(
         callback,
         referral_text,
-        get_referral_keyboard(db_user.language),
+        get_referral_keyboard(db_user.language, partner_status=db_user.partner_status),
     )
     await callback.answer()
 
@@ -283,7 +287,7 @@ async def show_referral_qr(
     if cabinet_referral_link:
         caption += '\n\n' + texts.t(
             'REFERRAL_QR_CABINET_LINK',
-            '🌐 Ссылка на кабинет:\n{link}',
+            '🌐 Ссылка на сайт:\n{link}',
         ).format(link=cabinet_referral_link)
 
     try:
@@ -902,6 +906,347 @@ async def cancel_withdrawal_request(callback: types.CallbackQuery, db_user: User
     await edit_or_answer_photo(callback, texts.t('REFERRAL_WITHDRAWAL_CANCELLED', '❌ Заявка отменена'), keyboard)
 
 
+# ==================== ЗАЯВКА НА ПАРТНЁРСТВО ====================
+
+
+def _partner_back_keyboard(texts) -> types.InlineKeyboardMarkup:
+    return types.InlineKeyboardMarkup(
+        inline_keyboard=[[types.InlineKeyboardButton(text=texts.BACK, callback_data='menu_referrals')]]
+    )
+
+
+def _partner_step_keyboard(texts) -> types.InlineKeyboardMarkup:
+    return types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text=texts.t('REFERRAL_PARTNER_SKIP_STEP', '⏭️ Пропустить'),
+                    callback_data='referral_partner_skip',
+                )
+            ],
+            [types.InlineKeyboardButton(text=texts.t('CANCEL', '❌ Отмена'), callback_data='referral_partner_cancel')],
+        ]
+    )
+
+
+# Шаги заявки — те же поля и порядок, что в форме личного кабинета
+_PARTNER_APPLY_STEPS: list[dict] = [
+    {
+        'key': 'partner_company_name',
+        'state': PartnerApplicationStates.waiting_for_company,
+        'kind': 'text',
+        'max_len': 255,
+        'title': ('REFERRAL_PARTNER_FIELD_COMPANY', '🏢 Название компании'),
+        'hint': ('REFERRAL_PARTNER_FIELD_COMPANY_HINT', 'Название вашей компании или бренда'),
+    },
+    {
+        'key': 'partner_telegram_channel',
+        'state': PartnerApplicationStates.waiting_for_channel,
+        'kind': 'text',
+        'max_len': 255,
+        'title': ('REFERRAL_PARTNER_FIELD_CHANNEL', '📢 Telegram-канал'),
+        'hint': ('REFERRAL_PARTNER_FIELD_CHANNEL_HINT', 'Например: @вашканал'),
+    },
+    {
+        'key': 'partner_website_url',
+        'state': PartnerApplicationStates.waiting_for_website,
+        'kind': 'text',
+        'max_len': 500,
+        'title': ('REFERRAL_PARTNER_FIELD_WEBSITE', '🌐 Сайт'),
+        'hint': ('REFERRAL_PARTNER_FIELD_WEBSITE_HINT', 'Например: https://example.com'),
+    },
+    {
+        'key': 'partner_description',
+        'state': PartnerApplicationStates.waiting_for_description,
+        'kind': 'text',
+        'max_len': 2000,
+        'title': ('REFERRAL_PARTNER_FIELD_DESCRIPTION', '📝 Описание'),
+        'hint': ('REFERRAL_PARTNER_FIELD_DESCRIPTION_HINT', 'Расскажите о вашей аудитории и планах продвижения'),
+    },
+    {
+        'key': 'partner_expected_referrals',
+        'state': PartnerApplicationStates.waiting_for_expected,
+        'kind': 'int',
+        'min_value': 0,
+        'max_value': 2_000_000_000,
+        'title': ('REFERRAL_PARTNER_FIELD_EXPECTED', '👥 Ожидаемое количество рефералов в месяц'),
+        'hint': ('REFERRAL_PARTNER_FIELD_EXPECTED_HINT', 'Отправьте примерное количество в месяц (число)'),
+    },
+    {
+        'key': 'partner_desired_commission',
+        'state': PartnerApplicationStates.waiting_for_commission,
+        'kind': 'int',
+        'min_value': 1,
+        'max_value': 100,
+        'title': ('REFERRAL_PARTNER_FIELD_COMMISSION', '💰 Желаемый процент комиссии'),
+        'hint': ('REFERRAL_PARTNER_FIELD_COMMISSION_HINT', 'Отправьте число от 1 до 100'),
+    },
+]
+
+_PARTNER_STATE_TO_INDEX = {step['state'].state: i for i, step in enumerate(_PARTNER_APPLY_STEPS)}
+
+
+def _partner_step_text(texts, index: int) -> str:
+    step = _PARTNER_APPLY_STEPS[index]
+    return (
+        texts.t('REFERRAL_PARTNER_STEP', '<b>Шаг {current} из {total}</b>').format(
+            current=index + 1, total=len(_PARTNER_APPLY_STEPS)
+        )
+        + '\n\n'
+        + texts.t(*step['title'])
+        + '\n'
+        + texts.t(*step['hint'])
+        + '\n\n'
+        + texts.t('REFERRAL_PARTNER_OPTIONAL_HINT', 'Поле необязательное — его можно пропустить.')
+    )
+
+
+def _partner_confirm_text(texts, data: dict) -> str:
+    lines = [texts.t('REFERRAL_PARTNER_CONFIRM_TITLE', '🤝 <b>Проверьте заявку</b>'), '']
+
+    filled = False
+    for step in _PARTNER_APPLY_STEPS:
+        value = data.get(step['key'])
+        if value is None or value == '':
+            continue
+        filled = True
+        lines.append(f'{texts.t(*step["title"])}: {html_escape(str(value))}')
+
+    if not filled:
+        lines.append(
+            texts.t(
+                'REFERRAL_PARTNER_ALL_SKIPPED',
+                'Все поля пропущены — заявка будет подана только с данными вашего профиля.',
+            )
+        )
+
+    lines += ['', texts.t('REFERRAL_PARTNER_CONFIRM_QUESTION', 'Отправить заявку?')]
+    return '\n'.join(lines)
+
+
+def _partner_confirm_keyboard(texts) -> types.InlineKeyboardMarkup:
+    return types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text=texts.t('REFERRAL_PARTNER_SUBMIT_BUTTON', '✅ Отправить'),
+                    callback_data='referral_partner_confirm',
+                )
+            ],
+            [types.InlineKeyboardButton(text=texts.t('CANCEL', '❌ Отмена'), callback_data='referral_partner_cancel')],
+        ]
+    )
+
+
+async def _partner_advance(
+    state: FSMContext,
+    texts,
+    index: int,
+    *,
+    message: types.Message | None = None,
+    callback: types.CallbackQuery | None = None,
+):
+    """Переходит к следующему шагу заявки или к подтверждению."""
+    next_index = index + 1
+
+    if next_index < len(_PARTNER_APPLY_STEPS):
+        await state.set_state(_PARTNER_APPLY_STEPS[next_index]['state'])
+        text = _partner_step_text(texts, next_index)
+        keyboard = _partner_step_keyboard(texts)
+    else:
+        await state.set_state(PartnerApplicationStates.confirming)
+        data = await state.get_data()
+        text = _partner_confirm_text(texts, data)
+        keyboard = _partner_confirm_keyboard(texts)
+
+    if message is not None:
+        await message.answer(text, reply_markup=keyboard)
+    else:
+        await edit_or_answer_photo(callback, text, keyboard)
+
+
+async def show_partner_status(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
+    """Показывает статус заявки на партнёрство."""
+    texts = get_texts(db_user.language)
+
+    application = await partner_application_service.get_latest_application(db, db_user.id)
+
+    if db_user.partner_status == PartnerStatus.APPROVED.value:
+        text = texts.t('REFERRAL_PARTNER_APPROVED_TEXT', '🤝 Вы являетесь партнёром проекта!')
+    elif db_user.partner_status == PartnerStatus.PENDING.value:
+        text = texts.t(
+            'REFERRAL_PARTNER_PENDING_TEXT',
+            '⏳ <b>Заявка на партнёрство на рассмотрении</b>\n\nМы уведомим вас о решении.',
+        )
+        if application and application.created_at:
+            text += '\n\n' + texts.t('REFERRAL_PARTNER_APPLIED_AT', '📅 Подана: {date}').format(
+                date=application.created_at.strftime('%d.%m.%Y')
+            )
+    else:
+        text = texts.t('REFERRAL_PARTNER_NO_APPLICATION', 'У вас нет активной заявки.')
+
+    await edit_or_answer_photo(callback, text, _partner_back_keyboard(texts))
+    await callback.answer()
+
+
+async def start_partner_application(
+    callback: types.CallbackQuery, db_user: User, db: AsyncSession, state: FSMContext
+):
+    """Начинает подачу заявки на партнёрство."""
+    texts = get_texts(db_user.language)
+
+    if db_user.partner_status == PartnerStatus.APPROVED.value:
+        await callback.answer(texts.t('REFERRAL_PARTNER_ALREADY', 'Вы уже являетесь партнёром'), show_alert=True)
+        return
+    if db_user.partner_status == PartnerStatus.PENDING.value:
+        await callback.answer(
+            texts.t('REFERRAL_PARTNER_PENDING_ALERT', 'Ваша заявка уже на рассмотрении'), show_alert=True
+        )
+        return
+
+    text = texts.t(
+        'REFERRAL_PARTNER_APPLY_INTRO',
+        '🤝 <b>Заявка на партнёрство</b>\n\n'
+        'Заполните анкету для подачи заявки на партнёрскую программу. '
+        'Все поля необязательные.',
+    )
+
+    if db_user.partner_status == PartnerStatus.REJECTED.value:
+        application = await partner_application_service.get_latest_application(db, db_user.id)
+        if application and application.admin_comment:
+            text += '\n\n' + texts.t(
+                'REFERRAL_PARTNER_REJECTED_COMMENT',
+                '💬 Комментарий по прошлой заявке: {comment}',
+            ).format(comment=html_escape(application.admin_comment))
+
+    await state.set_state(_PARTNER_APPLY_STEPS[0]['state'])
+
+    text += '\n\n' + _partner_step_text(texts, 0)
+    await edit_or_answer_photo(callback, text, _partner_step_keyboard(texts))
+    await callback.answer()
+
+
+async def process_partner_step(message: types.Message, db_user: User, state: FSMContext):
+    """Принимает значение текущего шага анкеты."""
+    current_state = await state.get_state()
+    index = _PARTNER_STATE_TO_INDEX.get(current_state)
+    if index is None:
+        return
+
+    texts = get_texts(db_user.language)
+    step = _PARTNER_APPLY_STEPS[index]
+    raw = (message.text or '').strip()
+
+    if step['kind'] == 'int':
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            await message.answer(texts.t('REFERRAL_PARTNER_NUMBER_INVALID', '❌ Отправьте число'))
+            return
+        if value < step['min_value'] or value > step['max_value']:
+            await message.answer(
+                texts.t('REFERRAL_PARTNER_NUMBER_RANGE', '❌ Число должно быть от {min} до {max}').format(
+                    min=step['min_value'], max=step['max_value']
+                )
+            )
+            return
+    else:
+        if not raw:
+            await message.answer(
+                texts.t('REFERRAL_PARTNER_TEXT_EMPTY', '❌ Отправьте текст или нажмите «Пропустить»')
+            )
+            return
+        if len(raw) > step['max_len']:
+            await message.answer(
+                texts.t('REFERRAL_PARTNER_TEXT_TOO_LONG', '❌ Слишком длинный текст (максимум {max} символов)').format(
+                    max=step['max_len']
+                )
+            )
+            return
+        value = raw
+
+    await state.update_data(**{step['key']: value})
+    await _partner_advance(state, texts, index, message=message)
+
+
+async def skip_partner_step(callback: types.CallbackQuery, db_user: User, state: FSMContext):
+    """Пропускает текущий шаг анкеты."""
+    current_state = await state.get_state()
+    index = _PARTNER_STATE_TO_INDEX.get(current_state)
+    if index is None:
+        await callback.answer()
+        return
+
+    texts = get_texts(db_user.language)
+    step = _PARTNER_APPLY_STEPS[index]
+    await state.update_data(**{step['key']: None})
+    await _partner_advance(state, texts, index, callback=callback)
+    await callback.answer()
+
+
+async def confirm_partner_application(
+    callback: types.CallbackQuery, db_user: User, db: AsyncSession, state: FSMContext
+):
+    """Отправляет заявку на партнёрство."""
+    texts = get_texts(db_user.language)
+    data = await state.get_data()
+
+    application, error = await partner_application_service.submit_application(
+        db,
+        user_id=db_user.id,
+        company_name=data.get('partner_company_name'),
+        website_url=data.get('partner_website_url'),
+        telegram_channel=data.get('partner_telegram_channel'),
+        description=data.get('partner_description'),
+        expected_monthly_referrals=data.get('partner_expected_referrals'),
+        desired_commission_percent=data.get('partner_desired_commission'),
+    )
+
+    await state.clear()
+
+    if not application:
+        await callback.answer(error or texts.t('ERROR_OCCURRED', 'Произошла ошибка'), show_alert=True)
+        return
+
+    try:
+        notification_service = AdminNotificationService(callback.bot)
+        await notification_service.send_partner_application_notification(
+            user=db_user,
+            application_data={
+                'company_name': application.company_name,
+                'telegram_channel': application.telegram_channel,
+                'website_url': application.website_url,
+                'description': application.description,
+                'expected_monthly_referrals': application.expected_monthly_referrals,
+                'desired_commission_percent': application.desired_commission_percent,
+            },
+        )
+    except Exception as e:
+        logger.error('Не удалось отправить уведомление о заявке на партнёрство', error=e)
+
+    await edit_or_answer_photo(
+        callback,
+        texts.t(
+            'REFERRAL_PARTNER_SUBMITTED',
+            '✅ <b>Заявка отправлена!</b>\n\nМы рассмотрим её и сообщим о решении.',
+        ),
+        _partner_back_keyboard(texts),
+    )
+    await callback.answer()
+
+
+async def cancel_partner_application(callback: types.CallbackQuery, db_user: User, state: FSMContext):
+    """Отменяет подачу заявки на партнёрство."""
+    await state.clear()
+    texts = get_texts(db_user.language)
+    await callback.answer(texts.t('CANCELLED', 'Отменено'))
+    await edit_or_answer_photo(
+        callback,
+        texts.t('REFERRAL_PARTNER_CANCELLED', '❌ Подача заявки отменена'),
+        _partner_back_keyboard(texts),
+    )
+
+
 def register_handlers(dp: Dispatcher):
     dp.callback_query.register(show_referral_info, F.data == 'menu_referrals')
 
@@ -932,6 +1277,18 @@ def register_handlers(dp: Dispatcher):
 
     # Обработка текстового ввода суммы
     dp.message.register(process_withdrawal_amount, ReferralWithdrawalStates.waiting_for_amount)
+
+    # Заявка на партнёрство
+    dp.callback_query.register(start_partner_application, F.data == 'referral_partner_apply')
+    dp.callback_query.register(show_partner_status, F.data == 'referral_partner_status')
+    dp.callback_query.register(
+        skip_partner_step, F.data == 'referral_partner_skip', StateFilter(PartnerApplicationStates)
+    )
+    dp.callback_query.register(
+        confirm_partner_application, F.data == 'referral_partner_confirm', PartnerApplicationStates.confirming
+    )
+    dp.callback_query.register(cancel_partner_application, F.data == 'referral_partner_cancel')
+    dp.message.register(process_partner_step, StateFilter(PartnerApplicationStates))
 
     # Обработка текстового ввода реквизитов
     dp.message.register(process_payment_details, ReferralWithdrawalStates.waiting_for_payment_details)

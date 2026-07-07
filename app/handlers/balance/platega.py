@@ -68,10 +68,10 @@ async def _prompt_amount(
 
     prompt_template = texts.t(
         'PLATEGA_TOPUP_PROMPT',
-        (f'💳 <b>Оплата через Platega ({{method_name}})</b>\n\n{default_prompt_body}Оплата происходит через Platega.'),
+        (f'💳 <b>Оплата через Platega ({{method_name}})</b>\n\n{default_prompt_body}'),
     )
 
-    keyboard = get_back_keyboard(db_user.language)
+    keyboard = get_back_keyboard(db_user.language, 'balance_topup')
 
     await message.edit_text(
         prompt_template.format(

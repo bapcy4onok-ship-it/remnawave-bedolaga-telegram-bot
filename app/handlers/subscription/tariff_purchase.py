@@ -307,11 +307,18 @@ def format_tariff_info_for_user(
 
     traffic = format_traffic(tariff.traffic_limit_gb)
 
+    # Если у тарифа задан потолок устройств выше базового — показываем диапазон,
+    # чтобы пользователь понимал, что число устройств можно увеличить (напр. "от 2 до 15").
+    if tariff.max_device_limit and tariff.max_device_limit > tariff.device_limit:
+        devices_text = f'от {tariff.device_limit} до {tariff.max_device_limit}'
+    else:
+        devices_text = f'{tariff.device_limit}'
+
     text = f"""📦 <b>{html.escape(tariff.name)}</b>
 
 <b>Параметры:</b>
 • Трафик: {traffic}
-• Устройств: {tariff.device_limit}
+• Устройств: {devices_text}
 """
 
     if tariff.description:
@@ -2076,8 +2083,14 @@ def _calc_extra_devices_cost(tariff: Tariff, subscription_device_limit: int, per
     device_price = getattr(tariff, 'device_price_kopeks', None) or 0
     if device_price <= 0:
         return 0
+    prices = tariff.period_prices or {}
+    ref_month_price = int(prices.get('30', 0) or 0)
+    base_price = int(prices.get(str(period_days), 0) or 0)
+    if period_days < 30 and ref_month_price > 0 and base_price > 0:
+        # Период короче месяца: устройство стоит ту же долю месячной цены,
+        # что и сам период от месяца (base[P]/base[30]). 14д при base 50/90 → 50.
+        return additional * device_price * base_price // ref_month_price
     if period_days < 30:
-        # Период короче месяца: round(14/30)=0→1 завышал доплату до целого месяца.
         return additional * device_price * period_days // 30
     months = max(1, round(period_days / 30))
     return additional * device_price * months

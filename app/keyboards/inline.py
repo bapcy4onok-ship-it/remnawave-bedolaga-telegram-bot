@@ -2185,7 +2185,7 @@ def get_autopay_notification_keyboard(subscription_id: int, language: str = DEFA
     )
 
 
-def get_referral_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMarkup:
+def get_referral_keyboard(language: str = DEFAULT_LANGUAGE, partner_status: str = 'none') -> InlineKeyboardMarkup:
     texts = get_texts(language)
 
     keyboard = [
@@ -2207,8 +2207,32 @@ def get_referral_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMar
         ],
     ]
 
-    # Добавляем кнопку вывода, если включена
-    if settings.is_referral_withdrawal_enabled():
+    # Кнопки партнёрской программы
+    if settings.REFERRAL_PARTNER_SECTION_VISIBLE:
+        if partner_status == 'pending':
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=texts.t('REFERRAL_PARTNER_PENDING_BUTTON', '⏳ Заявка на рассмотрении'),
+                        callback_data='referral_partner_status',
+                    )
+                ]
+            )
+        elif partner_status != 'approved':
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=texts.t('REFERRAL_PARTNER_APPLY_BUTTON', '🤝 Стать партнёром'),
+                        callback_data='referral_partner_apply',
+                    )
+                ]
+            )
+
+    # Добавляем кнопку вывода, если включена (при PARTNERS_ONLY — только партнёрам)
+    withdrawal_visible = settings.is_referral_withdrawal_enabled() and (
+        not settings.REFERRAL_WITHDRAWAL_PARTNERS_ONLY or partner_status == 'approved'
+    )
+    if withdrawal_visible:
         keyboard.append(
             [
                 InlineKeyboardButton(

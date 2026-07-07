@@ -2461,7 +2461,9 @@ def get_referral_code_keyboard(language: str):
 
 async def get_main_menu_text(user, texts, db: AsyncSession):
     base_text = texts.MAIN_MENU.format(
-        user_name=html.escape(user.full_name or ''), subscription_status=_get_subscription_status(user, texts)
+        user_name=html.escape(user.full_name or ''),
+        telegram_id=user.telegram_id,
+        subscription_status=_get_subscription_status(user, texts),
     )
 
     action_prompt = texts.t('MAIN_MENU_ACTION_PROMPT', 'Выберите действие:')
@@ -2508,7 +2510,9 @@ async def get_main_menu_text(user, texts, db: AsyncSession):
 
 async def get_main_menu_text_simple(user_name, texts, db: AsyncSession):
     base_text = texts.MAIN_MENU.format(
-        user_name=html.escape(user_name or ''), subscription_status=_get_subscription_status_simple(texts)
+        user_name=html.escape(user_name or ''),
+        telegram_id='',
+        subscription_status=_get_subscription_status_simple(texts),
     )
 
     action_prompt = texts.t('MAIN_MENU_ACTION_PROMPT', 'Выберите действие:')

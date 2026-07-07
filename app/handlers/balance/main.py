@@ -516,13 +516,6 @@ async def process_topup_amount(message: types.Message, db_user: User, state: FSM
 
     try:
         if not message.text:
-            if message.successful_payment:
-                logger.info(
-                    'Получено сообщение об успешном платеже без текста, обработчик суммы пополнения завершает работу'
-                )
-                await state.clear()
-                return
-
             await message.answer(texts.INVALID_AMOUNT, reply_markup=get_back_keyboard(db_user.language))
             return
 
@@ -743,7 +736,11 @@ def register_balance_handlers(dp: Dispatcher):
 
     dp.callback_query.register(check_yookassa_payment_status, F.data.startswith('check_yookassa_'))
 
-    dp.message.register(process_topup_amount, BalanceStates.waiting_for_amount)
+    # ~F.successful_payment: сообщение об успешной оплате Stars не должно трактоваться
+    # как ввод суммы, даже если пользователь остался в состоянии waiting_for_amount.
+    # Иначе этот хендлер перехватывает платёж раньше handle_successful_payment
+    # (он зарегистрирован раньше по порядку) и деньги не зачисляются.
+    dp.message.register(process_topup_amount, BalanceStates.waiting_for_amount, ~F.successful_payment)
 
     from .cryptobot import start_cryptobot_payment
 

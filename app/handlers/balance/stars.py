@@ -44,9 +44,9 @@ async def start_stars_payment(callback: types.CallbackQuery, db_user: User, stat
 
     message_text = texts.TOP_UP_AMOUNT
 
-    keyboard = get_back_keyboard(db_user.language)
+    keyboard = get_back_keyboard(db_user.language, 'balance_topup')
 
-    await callback.message.edit_text(message_text, reply_markup=keyboard)
+    await callback.message.edit_text(message_text, reply_markup=keyboard, parse_mode='HTML')
 
     await state.update_data(
         stars_prompt_message_id=callback.message.message_id,
@@ -122,7 +122,7 @@ async def process_stars_payment_amount(message: types.Message, db_user: User, am
                 logger.warning('Не удалось удалить сообщение с запросом суммы Stars', delete_error=delete_error)
 
         invoice_message = await message.answer(
-            f'⭐ <b>Оплата через Telegram Stars</b>\n\n'
+            f'<b>Оплата через Telegram Stars</b>\n\n'
             f'💰 Сумма: {texts.format_price(amount_kopeks)}\n'
             f'⭐ К оплате: {stars_amount} звезд\n'
             f'📊 Курс: {stars_rate}₽ за звезду\n\n'

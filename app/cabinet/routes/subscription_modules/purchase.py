@@ -121,8 +121,14 @@ async def _build_tariff_response(
             base_tariff_price = int(price_kopeks)
 
             # Стоимость доп. устройств за этот период.
-            # Период короче месяца считаем пропорционально дням (иначе 14 дней = целый месяц).
-            if period_days < 30:
+            # Период короче месяца: устройство стоит ту же долю месячной цены, что и сам
+            # период от месяца (base[P]/base[30]). 14д при base 50/90 → 50, а не целый месяц.
+            ref_month_price = int((tariff.period_prices or {}).get('30', 0) or 0)
+            if period_days < 30 and ref_month_price > 0 and base_tariff_price > 0:
+                extra_devices_cost = (
+                    extra_devices_count * extra_device_price_per_month * base_tariff_price // ref_month_price
+                )
+            elif period_days < 30:
                 extra_devices_cost = extra_devices_count * extra_device_price_per_month * period_days // 30
             else:
                 extra_devices_cost = extra_devices_count * extra_device_price_per_month * months

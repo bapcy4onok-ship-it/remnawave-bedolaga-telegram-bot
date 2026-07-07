@@ -604,15 +604,15 @@ async def process_referral_registration(db: AsyncSession, new_user_id: int, refe
                 f'По вашей ссылке зарегистрировался пользователь <b>{html.escape(new_user.full_name)}</b>!\n\n'
                 f'💰 Когда он пополнит баланс от {settings.format_price(settings.REFERRAL_MINIMUM_TOPUP_KOPEKS)}, '
             )
-            if settings.REFERRAL_INVITER_BONUS_KOPEKS > 0 and commission_percent > 0:
+            # Партнёрам фиксированный бонус не положен — только процент
+            inviter_fixed_bonus = 0 if referrer.is_partner else settings.REFERRAL_INVITER_BONUS_KOPEKS
+            if inviter_fixed_bonus > 0 and commission_percent > 0:
                 inviter_notification += (
-                    f'вы получите {settings.format_price(settings.REFERRAL_INVITER_BONUS_KOPEKS)} + '
+                    f'вы получите {settings.format_price(inviter_fixed_bonus)} + '
                     f'{commission_percent}% от суммы пополнения.\n\n'
                 )
-            elif settings.REFERRAL_INVITER_BONUS_KOPEKS > 0:
-                inviter_notification += (
-                    f'вы получите {settings.format_price(settings.REFERRAL_INVITER_BONUS_KOPEKS)}.\n\n'
-                )
+            elif inviter_fixed_bonus > 0:
+                inviter_notification += f'вы получите {settings.format_price(inviter_fixed_bonus)}.\n\n'
             elif commission_percent > 0:
                 inviter_notification += f'вы получите {commission_percent}% от суммы.\n\n'
             else:
@@ -790,7 +790,9 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
                     )
 
             commission_amount = int(topup_amount_kopeks * commission_percent / 100)
-            inviter_bonus = settings.REFERRAL_INVITER_BONUS_KOPEKS + commission_amount
+            # Партнёрам фиксированный бонус не начисляется — только процент с пополнений
+            inviter_fixed_bonus = 0 if referrer.is_partner else settings.REFERRAL_INVITER_BONUS_KOPEKS
+            inviter_bonus = inviter_fixed_bonus + commission_amount
 
             if inviter_bonus > 0:
                 balance_ok = await add_user_balance(
@@ -819,10 +821,8 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
 
                     if bot:
                         bonus_parts = []
-                        if settings.REFERRAL_INVITER_BONUS_KOPEKS > 0:
-                            bonus_parts.append(
-                                f'фикс. бонус {settings.format_price(settings.REFERRAL_INVITER_BONUS_KOPEKS)}'
-                            )
+                        if inviter_fixed_bonus > 0:
+                            bonus_parts.append(f'фикс. бонус {settings.format_price(inviter_fixed_bonus)}')
                         if commission_amount > 0:
                             bonus_parts.append(
                                 f'комиссия {commission_percent}% = {settings.format_price(commission_amount)}'

@@ -286,3 +286,13 @@ class ReferralWithdrawalStates(StatesGroup):
     waiting_for_amount = State()
     waiting_for_payment_details = State()
     confirming = State()
+
+
+class PartnerApplicationStates(StatesGroup):
+    waiting_for_company = State()
+    waiting_for_channel = State()
+    waiting_for_website = State()
+    waiting_for_description = State()
+    waiting_for_expected = State()
+    waiting_for_commission = State()
+    confirming = State()

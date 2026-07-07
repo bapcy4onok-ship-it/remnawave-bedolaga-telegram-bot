@@ -791,7 +791,12 @@ class ReferralDiagnosticsService:
 
                         commission_percent = get_effective_referral_commission_percent(referrer)
                         commission_amount = int(first_topup.amount_kopeks * commission_percent / 100)
-                        inviter_bonus = max(settings.REFERRAL_INVITER_BONUS_KOPEKS, commission_amount)
+                        # Партнёрам фиксированный бонус не начисляется — только процент
+                        inviter_bonus = (
+                            commission_amount
+                            if referrer.is_partner
+                            else max(settings.REFERRAL_INVITER_BONUS_KOPEKS, commission_amount)
+                        )
 
                         if inviter_bonus > 0:
                             detail.bonus_to_referrer_kopeks = inviter_bonus
@@ -926,7 +931,12 @@ class ReferralDiagnosticsService:
             # Бонусы НЕ начислены — добавляем в отчёт
             commission_percent = get_effective_referral_commission_percent(referrer)
             commission_amount = int(first_topup.amount_kopeks * commission_percent / 100)
-            referrer_bonus = max(settings.REFERRAL_INVITER_BONUS_KOPEKS, commission_amount)
+            # Партнёрам фиксированный бонус не начисляется — только процент
+            referrer_bonus = (
+                commission_amount
+                if referrer.is_partner
+                else max(settings.REFERRAL_INVITER_BONUS_KOPEKS, commission_amount)
+            )
 
             missing = MissingBonus(
                 referral_id=referral.id,

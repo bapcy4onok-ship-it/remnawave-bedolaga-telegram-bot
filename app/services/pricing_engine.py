@@ -587,11 +587,16 @@ class PricingEngine:
         )
         tariff_device_limit = tariff.device_limit or 0
         extra_devices = max(0, (device_limit or 0) - tariff_device_limit)
+        ref_month_price = int((tariff.period_prices or {}).get('30', 0) or 0)
         if is_daily and period_days <= 1:
             devices_price = extra_devices * device_price_per_unit
+        elif period_days < 30 and ref_month_price > 0 and base_price > 0:
+            # Период короче месяца: доп.устройство стоит ту же долю месячной цены,
+            # что и сам период от месяца (base[P]/base[30]). Напр. 14д при base 50/90 → 50,
+            # а не 90 (целый месяц) и не 42 (прорейт по дням).
+            devices_price = extra_devices * device_price_per_unit * base_price // ref_month_price
         elif period_days < 30:
-            # Период короче месяца: round(14/30)=0→1 завышал доплату до целого месяца.
-            # Считаем пропорционально дням (на периодах кратных 30 это совпадает с × months).
+            # Фоллбэк, если нет 30-дн. эталона: пропорционально дням.
             devices_price = extra_devices * device_price_per_unit * period_days // 30
         else:
             devices_price = extra_devices * device_price_per_unit * months

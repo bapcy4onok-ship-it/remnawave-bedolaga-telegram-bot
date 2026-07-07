@@ -524,6 +524,13 @@ async def handle_successful_payment(message: types.Message, db: AsyncSession, st
             telegram_payment_charge_id=payment.telegram_payment_charge_id,
         )
 
+        # Успешная оплата — терминальное событие: снимаем любое FSM-состояние
+        # (в т.ч. BalanceStates.waiting_for_amount), иначе после оплаты пользователь
+        # останется в режиме ввода суммы. Служебные данные забираем до очистки —
+        # они нужны ниже для удаления сообщений с запросом суммы и инвойсом.
+        state_data = await state.get_data()
+        await state.clear()
+
         user = await get_user_by_telegram_id(db, user_id)
         texts = get_texts(user.language if user and user.language else DEFAULT_LANGUAGE)
 
@@ -576,7 +583,6 @@ async def handle_successful_payment(message: types.Message, db: AsyncSession, st
 
         payment_service = PaymentService(message.bot)
 
-        state_data = await state.get_data()
         prompt_message_id = state_data.get('stars_prompt_message_id')
         prompt_chat_id = state_data.get('stars_prompt_chat_id', message.chat.id)
         invoice_message_id = state_data.get('stars_invoice_message_id')
@@ -600,13 +606,6 @@ async def handle_successful_payment(message: types.Message, db: AsyncSession, st
             stars_amount=payment.total_amount,
             payload=payment.invoice_payload,
             telegram_payment_charge_id=payment.telegram_payment_charge_id,
-        )
-
-        await state.update_data(
-            stars_prompt_message_id=None,
-            stars_prompt_chat_id=None,
-            stars_invoice_message_id=None,
-            stars_invoice_chat_id=None,
         )
 
         if success:

@@ -1346,12 +1346,21 @@ class MonitoringService:
                     # без тарифа) settings.get_available_renewal_periods().
                     tariff = getattr(subscription, 'tariff', None)
 
-                    autopay_period = (
+                    primary_period = (
                         resolve_autopay_period_candidate(getattr(subscription, 'autopay_period_days', None), tariff)
                         or resolve_autopay_period_candidate(getattr(settings, 'DEFAULT_AUTOPAY_PERIOD_DAYS', 0), tariff)
                         or (tariff.get_shortest_period() if tariff else None)
                         or 30
                     )
+
+                    # Период автопродления с фолбэком по балансу: сначала пробуем основной
+                    # (обычно месяц из DEFAULT_AUTOPAY_PERIOD_DAYS), а если баланса на него не
+                    # хватает — самый короткий период тарифа (напр. 14 дней). Так подписка
+                    # продлевается хотя бы на минимальный срок вместо провала автоплатежа.
+                    fallback_period = tariff.get_shortest_period() if tariff else None
+                    candidate_periods = [primary_period]
+                    if fallback_period and fallback_period < primary_period:
+                        candidate_periods.append(fallback_period)
 
                     try:
                         from app.database.crud.user import lock_user_for_pricing
@@ -1359,13 +1368,22 @@ class MonitoringService:
 
                         user = await lock_user_for_pricing(db, user.id)
 
-                        pricing = await pricing_engine.calculate_renewal_price(
-                            db,
-                            subscription,
-                            autopay_period,
-                            user=user,
-                        )
-                        renewal_cost = pricing.final_total
+                        # По умолчанию — основной период/цена (для уведомления о нехватке,
+                        # если ни один кандидат не покрывается балансом).
+                        autopay_period = primary_period
+                        renewal_cost = None
+                        for candidate in candidate_periods:
+                            pricing = await pricing_engine.calculate_renewal_price(
+                                db,
+                                subscription,
+                                candidate,
+                                user=user,
+                            )
+                            autopay_period = candidate
+                            renewal_cost = pricing.final_total
+                            # Берём первый период, который полностью покрывается балансом.
+                            if renewal_cost > 0 and user.balance_kopeks >= renewal_cost:
+                                break
                     except Exception as e:
                         logger.error(
                             'Ошибка расчёта стоимости автопродления, пропускаем',

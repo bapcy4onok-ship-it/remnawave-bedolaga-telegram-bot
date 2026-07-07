@@ -1219,6 +1219,7 @@ async def get_main_menu_text(user, texts, db: AsyncSession):
 
         base_text = texts.MAIN_MENU.format(
             user_name=html.escape(user.full_name or ''),
+            telegram_id=user.telegram_id,
             subscription_status=subscriptions_status,
         )
 
@@ -1246,6 +1247,7 @@ async def get_main_menu_text(user, texts, db: AsyncSession):
 
         base_text = texts.MAIN_MENU.format(
             user_name=html.escape(user.full_name or ''),
+            telegram_id=user.telegram_id,
             subscription_status=_get_subscription_status(user, texts, is_daily_tariff),
         )
 
