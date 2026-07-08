@@ -377,9 +377,15 @@ async def update_role(
 
     update_data = payload.model_dump(exclude_unset=True)
 
-    # System roles: only permissions can be extended, block is_active/level changes
+    # System roles: only permissions can be extended, block is_active/level changes.
+    # The cabinet UI always sends `level` even when untouched, so only reject
+    # values that actually differ from the current ones.
     if role.is_system:
-        blocked = {'is_active', 'level'} & update_data.keys()
+        blocked = {
+            field
+            for field in ('is_active', 'level')
+            if field in update_data and update_data[field] != getattr(role, field)
+        }
         if blocked:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
