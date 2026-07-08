@@ -2786,8 +2786,14 @@ async def _resolve_connected_servers(
     return connected_servers
 
 
-async def _load_devices_info(user: User) -> tuple[int, list[MiniAppDevice]]:
-    remnawave_uuid = getattr(user, 'remnawave_uuid', None)
+async def _load_devices_info(user: User, subscription=None) -> tuple[int, list[MiniAppDevice]]:
+    # Multi-tariff: каждая подписка — свой пользователь панели, поэтому берём
+    # UUID подписки, а не общий user.remnawave_uuid (иначе показали бы устройства
+    # другого тарифа и лимит выглядел бы общим). Single-tariff: один пользователь.
+    if subscription is not None and settings.is_multi_tariff_enabled():
+        remnawave_uuid = getattr(subscription, 'remnawave_uuid', None)
+    else:
+        remnawave_uuid = getattr(user, 'remnawave_uuid', None)
     if not remnawave_uuid:
         return 0, []
 
@@ -3381,7 +3387,7 @@ async def get_subscription_details(
         autopay_payload,
     )
 
-    devices_count, devices = await _load_devices_info(user)
+    devices_count, devices = await _load_devices_info(user, subscription)
 
     # Загружаем данные суточного тарифа
     is_daily_tariff = False
@@ -4097,7 +4103,19 @@ async def activate_promo_code(
             detail={'code': 'invalid', 'message': 'Promo code must not be empty'},
         )
 
-    result = await promo_code_service.activate_promocode(db, user.id, code)
+    result = await promo_code_service.activate_promocode(db, user.id, code, subscription_id=payload.subscription_id)
+
+    # Multi-tariff days-promo: user must choose which subscription to extend. Return the
+    # eligible list (HTTP 200) so the client can re-submit with subscription_id, instead
+    # of dead-ending on a generic 400 with the list discarded.
+    if result.get('error') == 'select_subscription':
+        return MiniAppPromoCodeActivationResponse(
+            success=False,
+            error='select_subscription',
+            eligible_subscriptions=result.get('eligible_subscriptions', []),
+            code=result.get('code', code),
+        )
+
     if result.get('success'):
         promocode_data = result.get('promocode') or {}
 
@@ -4135,9 +4153,12 @@ async def activate_promo_code(
         'used': status.HTTP_409_CONFLICT,
         'already_used_by_user': status.HTTP_409_CONFLICT,
         'no_subscription_for_days': status.HTTP_400_BAD_REQUEST,
+        'subscription_not_found': status.HTTP_404_NOT_FOUND,
         'active_discount_exists': status.HTTP_409_CONFLICT,
         'not_first_purchase': status.HTTP_400_BAD_REQUEST,
         'daily_limit': status.HTTP_429_TOO_MANY_REQUESTS,
+        'trial_subscription_exists': status.HTTP_409_CONFLICT,
+        'trial_provisioning_failed': status.HTTP_503_SERVICE_UNAVAILABLE,
         'server_error': status.HTTP_500_INTERNAL_SERVER_ERROR,
     }
     message_map = {
@@ -4149,9 +4170,12 @@ async def activate_promo_code(
         'used': 'Promo code already used',
         'already_used_by_user': 'Promo code already used by this user',
         'no_subscription_for_days': 'This promo code requires an active or expired subscription',
+        'subscription_not_found': 'Subscription not found',
         'active_discount_exists': 'You already have an active discount',
         'not_first_purchase': 'This promo code is only available for first purchase',
         'daily_limit': 'Too many promo code activations today',
+        'trial_subscription_exists': 'You already have a subscription, so this trial code cannot be applied',
+        'trial_provisioning_failed': 'Could not provision the trial right now, please try again later',
         'user_not_found': 'User not found',
         'server_error': 'Failed to activate promo code',
     }

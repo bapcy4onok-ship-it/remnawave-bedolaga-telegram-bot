@@ -276,10 +276,11 @@ class SubscriptionService:
             try:
                 existing = await api.get_user_by_uuid(subscription.remnawave_uuid)
                 if existing:
-                    try:
-                        await api.reset_user_devices(existing.uuid)
-                    except Exception as hwid_error:
-                        logger.warning('⚠️ Не удалось сбросить HWID', hwid_error=hwid_error)
+                    if settings.RESET_DEVICES_ON_RENEWAL:
+                        try:
+                            await api.reset_user_devices(existing.uuid)
+                        except Exception as hwid_error:
+                            logger.warning('⚠️ Не удалось сбросить HWID', hwid_error=hwid_error)
 
                     updated = await api.update_user(uuid=existing.uuid, **common_kwargs)
                     if reset_traffic:
@@ -296,13 +297,20 @@ class SubscriptionService:
         # short_id (6 hex chars) приклеивается к base; helper гарантирует, что
         # итоговая длина ≤ REMNAWAVE_USERNAME_MAX_LENGTH (исторический баг с
         # `didykmarin_email_didykmarin_703_49883b` — 38 chars вместо 36).
+        #
+        # КРИТИЧНО для multi-tariff: суффикс ОБЯЗАН быть уникален per-subscription,
+        # иначе два тарифа одного юзера собирают ОДИНАКОВЫЙ username → панель
+        # возвращает одного и того же пользователя → общий HWID-лимит (баг «лимит
+        # по наименьшему тарифу»). На пустой/legacy short_id ('' из server_default)
+        # падаем на детерминированный per-subscription суффикс по id.
+        short_suffix = subscription.remnawave_short_id or f'sub{subscription.id}'
         username = settings.build_remnawave_subscription_username(
             full_name=user.full_name,
             username=user.username,
             telegram_id=user.telegram_id,
             email=user.email,
             user_id=user.id,
-            suffix=f'_{subscription.remnawave_short_id}',
+            suffix=f'_{short_suffix}',
         )
 
         updated_user = await api.create_user(username=username, **common_kwargs)
@@ -372,11 +380,12 @@ class SubscriptionService:
             logger.info('🔄 Найден существующий пользователь в панели', _format_user_log=self._format_user_log(user))
             remnawave_user = existing_users[0]
 
-            try:
-                await api.reset_user_devices(remnawave_user.uuid)
-                logger.info('🔧 Сброшены HWID устройства', _format_user_log=self._format_user_log(user))
-            except Exception as hwid_error:
-                logger.warning('⚠️ Не удалось сбросить HWID', hwid_error=hwid_error)
+            if settings.RESET_DEVICES_ON_RENEWAL:
+                try:
+                    await api.reset_user_devices(remnawave_user.uuid)
+                    logger.info('🔧 Сброшены HWID устройства', _format_user_log=self._format_user_log(user))
+                except Exception as hwid_error:
+                    logger.warning('⚠️ Не удалось сбросить HWID', hwid_error=hwid_error)
 
             updated_user = await api.update_user(uuid=remnawave_user.uuid, **common_kwargs)
             if reset_traffic:
@@ -1101,3 +1110,36 @@ class SubscriptionService:
             )
 
         return propagate_result
+
+
+async def reset_subscription_with_panel(db, user: User, subscription: Subscription) -> dict:
+    """Обнулить подписку «как будто не оформляли» и снять доступ в панели RemnaWave,
+    НЕ удаляя пользователя из БД (тикеты и аккаунт остаются).
+
+    Панельного пользователя ОТКЛЮЧАЕМ (disable), а не удаляем — обратимо. Дальше юзер
+    может купить тариф с нуля. Возвращает ``{'panel_disabled': bool, 'panel_uuid': str|None}``.
+    """
+    from app.database.crud.subscription import reset_subscription
+
+    # В мультитарифном режиме у каждой подписки свой панельный UUID — НЕ откатываемся
+    # на user.remnawave_uuid (это легаси single-tariff UUID, иначе можно отключить
+    # не того панельного пользователя). В single-tariff fallback на user корректен.
+    if settings.is_multi_tariff_enabled():
+        panel_uuid = getattr(subscription, 'remnawave_uuid', None)
+    else:
+        panel_uuid = getattr(subscription, 'remnawave_uuid', None) or getattr(user, 'remnawave_uuid', None)
+
+    panel_disabled = False
+    if panel_uuid:
+        try:
+            panel_disabled = await SubscriptionService().disable_remnawave_user(panel_uuid)
+        except Exception as e:
+            logger.warning('Не удалось отключить пользователя в RemnaWave при обнулении подписки', error=e)
+    else:
+        logger.warning(
+            'Обнуление подписки: панельный UUID не найден, отключение в панели пропущено',
+            subscription_id=getattr(subscription, 'id', None),
+        )
+
+    await reset_subscription(db, subscription)
+    return {'panel_disabled': panel_disabled, 'panel_uuid': panel_uuid}
