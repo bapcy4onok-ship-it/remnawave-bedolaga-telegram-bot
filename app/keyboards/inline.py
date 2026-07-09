@@ -3462,9 +3462,6 @@ def get_my_tickets_keyboard(
 
     for ticket in tickets:
         status_emoji = ticket.get('status_emoji', '❓')
-        # Override status emoji for closed tickets in admin list
-        if ticket.get('is_closed', False):
-            status_emoji = '✅'
         title = ticket.get('title', 'Без названия')[:25]
         button_text = f'{status_emoji} #{ticket["id"]} {title}'
 
@@ -3559,8 +3556,6 @@ def get_admin_tickets_keyboard(
     closed_rows = []
     for ticket in tickets:
         status_emoji = ticket.get('status_emoji', '❓')
-        if ticket.get('is_closed', False):
-            status_emoji = '✅'
         user_name = ticket.get('user_name', 'Unknown')
         username = ticket.get('username')
         telegram_id = ticket.get('telegram_id')
@@ -3586,10 +3581,10 @@ def get_admin_tickets_keyboard(
     # Scope switcher
     switch_row = []
     switch_row.append(
-        InlineKeyboardButton(text=texts.t('OPEN_TICKETS', '🔴 Открытые'), callback_data='admin_tickets_scope_open')
+        InlineKeyboardButton(text=texts.t('OPEN_TICKETS', '🟢 Открытые'), callback_data='admin_tickets_scope_open')
     )
     switch_row.append(
-        InlineKeyboardButton(text=texts.t('CLOSED_TICKETS', '🟢 Закрытые'), callback_data='admin_tickets_scope_closed')
+        InlineKeyboardButton(text=texts.t('CLOSED_TICKETS', '🔴 Закрытые'), callback_data='admin_tickets_scope_closed')
     )
     keyboard.append(switch_row)
 
