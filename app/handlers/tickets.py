@@ -994,24 +994,17 @@ async def cancel_ticket_reply(callback: types.CallbackQuery, state: FSMContext, 
     await callback.answer()
 
 
-async def close_ticket_notification(callback: types.CallbackQuery, db_user: User):
-    """Закрыть уведомление о тикете"""
-    texts = get_texts(db_user.language)
-
-    # Проверяем, доступно ли сообщение для удаления
+async def close_ticket_notification(
+    callback: types.CallbackQuery, state: FSMContext, db_user: User, db: AsyncSession
+):
+    """Закрыть уведомление о тикете: убираем его и показываем главное меню"""
     if isinstance(callback.message, InaccessibleMessage):
         await callback.answer()
         return
 
-    try:
-        await callback.message.delete()
-    except TelegramBadRequest:
-        # Message is too old to delete (>48h) — edit it instead
-        try:
-            await callback.message.edit_text(texts.t('NOTIFICATION_CLOSED', 'Уведомление закрыто.'))
-        except TelegramBadRequest:
-            pass
-    await callback.answer(texts.t('NOTIFICATION_CLOSED', 'Уведомление закрыто.'))
+    from app.handlers.menu import handle_back_to_menu
+
+    await handle_back_to_menu(callback, state, db_user, db)
 
 
 def _build_ticket_notification_keyboard(service: AdminNotificationService, ticket: Ticket, user: User | None):
