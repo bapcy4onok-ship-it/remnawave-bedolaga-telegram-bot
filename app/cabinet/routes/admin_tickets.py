@@ -510,7 +510,7 @@ async def reply_to_ticket(
         try:
             from app.handlers.admin.tickets import notify_user_about_ticket_reply
 
-            await notify_user_about_ticket_reply(bot, ticket, request.message, db)
+            await notify_user_about_ticket_reply(bot, ticket, request.message, db, responder=admin)
         except Exception as e:
             logger.warning('Failed to notify user about ticket reply', error=e)
         finally:

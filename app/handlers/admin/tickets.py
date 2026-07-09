@@ -513,8 +513,8 @@ async def handle_admin_ticket_reply(message: types.Message, state: FSMContext, d
 
         await state.clear()
 
-        # Уведомляем пользователя о новом ответе
-        await notify_user_about_ticket_reply(message.bot, ticket, reply_text, db)
+        # Уведомляем пользователя о новом ответе (с именем и рангом отвечающего)
+        await notify_user_about_ticket_reply(message.bot, ticket, reply_text, db, responder=db_user)
         # Админ-уведомления о ответе в тикет отключены по требованию
 
     except Exception as e:
@@ -1089,8 +1089,14 @@ async def show_support_leaderboard(callback: types.CallbackQuery, db_user: User,
     await callback.answer()
 
 
-async def notify_user_about_ticket_reply(bot: Bot, ticket: Ticket, reply_text: str, db: AsyncSession):
-    """Уведомить пользователя о новом ответе в тикете"""
+async def notify_user_about_ticket_reply(
+    bot: Bot, ticket: Ticket, reply_text: str, db: AsyncSession, responder: User | None = None
+):
+    """Уведомить пользователя о новом ответе в тикете.
+
+    Если передан responder (админ/модератор, который ответил) — в шапке
+    уведомления показываем его имя и ранг, как в старом боте поддержки.
+    """
     try:
         # Respect runtime toggle for user ticket notifications
         try:
@@ -1127,6 +1133,24 @@ async def notify_user_about_ticket_reply(bot: Bot, ticket: Ticket, reply_text: s
             'TICKET_REPLY_NOTIFICATION',
             '🎫 Получен ответ по тикету #{ticket_id}\n\n{reply_preview}\n\nНажмите кнопку ниже, чтобы перейти к тикету:',
         ).format(ticket_id=ticket.id, reply_preview=reply_text[:100] + '...' if len(reply_text) > 100 else reply_text)
+
+        # Шапка «кто отвечает + ранг» (как в старом боте поддержки)
+        if responder is not None:
+            try:
+                from app.services import support_ranks
+
+                responder_name = html.escape(responder.full_name or responder.username or 'Поддержка')
+                closed = await support_ranks.get_closed_count(db, responder)
+                intro = texts.t(
+                    'TICKET_RESPONDER_INTRO', '🧊 Вам ответит {name}\n{rank_label} Ранг модератора: {rank_name}'
+                ).format(
+                    name=responder_name,
+                    rank_label=support_ranks.rank_emoji_html(*support_ranks.get_rank(closed)[:2]),
+                    rank_name=support_ranks.get_rank(closed)[2],
+                )
+                base_text = f'{intro}\n\n{base_text}'
+            except Exception as intro_error:
+                logger.warning('Failed to build responder intro', error=intro_error)
         keyboard = types.InlineKeyboardMarkup(
             inline_keyboard=[
                 [
