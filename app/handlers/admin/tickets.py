@@ -17,6 +17,7 @@ from app.keyboards.inline import (
     get_admin_tickets_keyboard,
 )
 from app.localization.texts import get_texts
+from app.services import support_ranks
 from app.services.support_settings_service import SupportSettingsService
 from app.states import AdminTicketStates
 from app.utils.cache import RateLimitCache
@@ -102,6 +103,8 @@ async def show_admin_tickets(callback: types.CallbackQuery, db_user: User, db: A
         scope = 'open'
     elif data_str == 'admin_tickets_scope_closed':
         scope = 'closed'
+    elif data_str == 'admin_tickets_scope_mine':
+        scope = 'mine'
     elif data_str.startswith('admin_tickets_page_'):
         try:
             parts = data_str.split('_')
@@ -114,16 +117,20 @@ async def show_admin_tickets(callback: types.CallbackQuery, db_user: User, db: A
         except ValueError:
             current_page = 1
     statuses = (
-        [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value] if scope == 'open' else [TicketStatus.CLOSED.value]
+        [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value] if scope in ('open', 'mine') else [TicketStatus.CLOSED.value]
     )
+    # «Мои» — активные тикеты, взятые текущим модератором
+    assigned_filter = db_user.id if scope == 'mine' else None
     page_size = 10
     # total count for proper pagination
-    total_count = await TicketCRUD.count_tickets_by_statuses(db, statuses)
+    total_count = await TicketCRUD.count_tickets_by_statuses(db, statuses, assigned_to_user_id=assigned_filter)
     total_pages = max(1, (total_count + page_size - 1) // page_size) if total_count > 0 else 1
     current_page = max(current_page, 1)
     current_page = min(current_page, total_pages)
     offset = (current_page - 1) * page_size
-    tickets = await TicketCRUD.get_tickets_by_statuses(db, statuses=statuses, limit=page_size, offset=offset)
+    tickets = await TicketCRUD.get_tickets_by_statuses(
+        db, statuses=statuses, limit=page_size, offset=offset, assigned_to_user_id=assigned_filter
+    )
 
     # Даже если тикетов нет, показываем переключатели разделов
 
@@ -143,16 +150,18 @@ async def show_admin_tickets(callback: types.CallbackQuery, db_user: User, db: A
                 'username': username,
                 'telegram_id': telegram_id,
                 'is_closed': ticket.is_closed,
-                'locked_emoji': ('🔒' if ticket.is_user_reply_blocked else ''),
+                'locked_emoji': ('🔒' if ticket.is_user_reply_blocked else '')
+                + ('🤝' if ticket.assigned_to_user_id else ''),
             }
         )
 
     # Итоговые страницы уже посчитаны выше
-    header_text = (
-        texts.t('ADMIN_TICKETS_TITLE_OPEN', '🎫 Открытые тикеты поддержки:')
-        if scope == 'open'
-        else texts.t('ADMIN_TICKETS_TITLE_CLOSED', '🎫 Закрытые тикеты поддержки:')
-    )
+    if scope == 'mine':
+        header_text = texts.t('ADMIN_TICKETS_TITLE_MINE', '🤝 Мои тикеты в работе:')
+    elif scope == 'open':
+        header_text = texts.t('ADMIN_TICKETS_TITLE_OPEN', '🎫 Открытые тикеты поддержки:')
+    else:
+        header_text = texts.t('ADMIN_TICKETS_TITLE_CLOSED', '🎫 Закрытые тикеты поддержки:')
     # Determine proper back target for moderators
     back_cb = 'admin_submenu_support'
     try:
@@ -250,7 +259,16 @@ async def view_admin_ticket(
         header += '📱 Username: отсутствует\n'
     header += f'📝 Заголовок: {html.escape(ticket.title)}\n'
     header += f'📊 Статус: {ticket.status_emoji} {status_text}\n'
-    header += f'📅 Создан: {ticket.created_at.strftime("%d.%m.%Y %H:%M")}\n\n'
+    header += f'📅 Создан: {ticket.created_at.strftime("%d.%m.%Y %H:%M")}\n'
+    if ticket.assigned_to_user_id:
+        assignee = ticket.assigned_to
+        assignee_name = html.escape(
+            (assignee.full_name or assignee.username or str(assignee.telegram_id)) if assignee else '—'
+        )
+        if assignee and assignee.id == db_user.id:
+            assignee_name += texts.t('TICKET_ASSIGNED_YOU_SUFFIX', ' (вы)')
+        header += texts.t('TICKET_ASSIGNED_TO', '🤝 В работе у: {name}').format(name=assignee_name) + '\n'
+    header += '\n'
 
     if ticket.is_user_reply_blocked:
         if ticket.user_reply_block_permanent:
@@ -279,7 +297,12 @@ async def view_admin_ticket(
         getattr(m, 'has_media', False) and getattr(m, 'media_type', None) == 'photo' for m in ticket.messages or []
     )
     keyboard = get_admin_ticket_view_keyboard(
-        ticket_id, ticket.is_closed, db_user.language, is_user_blocked=ticket.is_user_reply_blocked
+        ticket_id,
+        ticket.is_closed,
+        db_user.language,
+        is_user_blocked=ticket.is_user_reply_blocked,
+        is_assigned=bool(ticket.assigned_to_user_id),
+        is_assigned_to_me=(ticket.assigned_to_user_id == db_user.id),
     )
 
     # Кнопка профиля пользователя
@@ -513,7 +536,9 @@ async def handle_admin_ticket_reply(message: types.Message, state: FSMContext, d
         await state.clear()
 
         # Уведомляем пользователя о новом ответе
-        await notify_user_about_ticket_reply(message.bot, ticket, reply_text, db)
+        await notify_user_about_ticket_reply(
+            message.bot, ticket, reply_text, db, responder_name=(message.from_user.full_name or None)
+        )
         # Админ-уведомления о ответе в тикет отключены по требованию
 
     except Exception as e:
@@ -559,7 +584,7 @@ async def close_all_open_admin_tickets(callback: types.CallbackQuery, db_user: U
     texts = get_texts(db_user.language)
 
     try:
-        closed_ticket_ids = await TicketCRUD.close_all_open_tickets(db)
+        closed_ticket_ids = await TicketCRUD.close_all_open_tickets(db, closed_by_user_id=db_user.id if db_user else None)
     except Exception as error:
         logger.error('Error closing all open tickets', error=error)
         await callback.answer(texts.t('TICKET_UPDATE_ERROR', '❌ Ошибка при обновлении тикета.'), show_alert=True)
@@ -623,7 +648,7 @@ async def close_admin_ticket(callback: types.CallbackQuery, db_user: User, db: A
     ticket_id = int(callback.data.replace('admin_close_ticket_', ''))
 
     try:
-        success = await TicketCRUD.close_ticket(db, ticket_id)
+        success = await TicketCRUD.close_ticket(db, ticket_id, closed_by_user_id=db_user.id if db_user else None)
 
         if success:
             # audit
@@ -1042,7 +1067,205 @@ async def block_user_permanently(callback: types.CallbackQuery, db_user: User, d
         await callback.answer('❌ Ошибка', show_alert=True)
 
 
-async def notify_user_about_ticket_reply(bot: Bot, ticket: Ticket, reply_text: str, db: AsyncSession):
+def _is_support_staff(telegram_id: int) -> bool:
+    return settings.is_admin(telegram_id) or SupportSettingsService.is_moderator(telegram_id)
+
+
+def _support_back_callback(telegram_id: int) -> str:
+    """Куда ведёт «Назад» из экранов поддержки: модераторам — в их панель."""
+    if not settings.is_admin(telegram_id) and SupportSettingsService.is_moderator(telegram_id):
+        return 'moderator_panel'
+    return 'admin_submenu_support'
+
+
+async def take_admin_ticket(callback: types.CallbackQuery, db_user: User, db: AsyncSession, state: FSMContext):
+    """«✋ Взять тикет» — закрепить тикет за собой"""
+    if not _is_support_staff(callback.from_user.id):
+        texts = get_texts(db_user.language)
+        await callback.answer(texts.ACCESS_DENIED, show_alert=True)
+        return
+    texts = get_texts(db_user.language)
+    try:
+        ticket_id = int(callback.data.replace('admin_take_ticket_', ''))
+    except ValueError:
+        await callback.answer(texts.t('TICKET_NOT_FOUND', 'Тикет не найден.'), show_alert=True)
+        return
+
+    existing = await TicketCRUD.get_ticket_by_id(db, ticket_id, load_messages=False)
+    if not existing or existing.is_closed:
+        await callback.answer(texts.t('TICKET_TAKE_CLOSED', 'Тикет не найден или уже закрыт.'), show_alert=True)
+        return
+    if existing.assigned_to_user_id and existing.assigned_to_user_id != db_user.id:
+        await callback.answer(texts.t('TICKET_ALREADY_TAKEN', 'Тикет уже взят другим модератором.'), show_alert=True)
+        return
+
+    ticket = await TicketCRUD.assign_ticket(db, ticket_id, db_user.id)
+    if not ticket:
+        await callback.answer(texts.t('TICKET_TAKE_CLOSED', 'Тикет не найден или уже закрыт.'), show_alert=True)
+        return
+
+    try:
+        await TicketCRUD.add_support_audit(
+            db,
+            actor_user_id=db_user.id,
+            actor_telegram_id=callback.from_user.id,
+            is_moderator=not settings.is_admin(callback.from_user.id),
+            action='take_ticket',
+            ticket_id=ticket_id,
+            target_user_id=ticket.user_id,
+            details={},
+        )
+    except Exception:
+        pass
+
+    # Сообщим пользователю, что тикет взят в работу
+    try:
+        if SupportSettingsService.get_user_ticket_notifications_enabled() and ticket.user and ticket.user.telegram_id:
+            user_texts = get_texts(ticket.user.language)
+            await callback.bot.send_message(
+                int(ticket.user.telegram_id),
+                user_texts.t(
+                    'TICKET_TAKEN_USER_NOTIFY', '✋ Ваш тикет #{ticket_id} взят в работу. Скоро вам ответят.'
+                ).format(ticket_id=ticket_id),
+            )
+    except Exception:
+        pass
+
+    await callback.answer(texts.t('TICKET_TAKEN', '✅ Тикет взят в работу.'))
+    if isinstance(callback.message, types.Message):
+        try:
+            await view_admin_ticket(callback, db_user, db, state, ticket_id=ticket_id)
+        except Exception:
+            pass
+
+
+async def release_admin_ticket(callback: types.CallbackQuery, db_user: User, db: AsyncSession, state: FSMContext):
+    """«↩️ Отпустить тикет» — снять своё назначение"""
+    if not _is_support_staff(callback.from_user.id):
+        texts = get_texts(db_user.language)
+        await callback.answer(texts.ACCESS_DENIED, show_alert=True)
+        return
+    texts = get_texts(db_user.language)
+    try:
+        ticket_id = int(callback.data.replace('admin_release_ticket_', ''))
+    except ValueError:
+        await callback.answer(texts.t('TICKET_NOT_FOUND', 'Тикет не найден.'), show_alert=True)
+        return
+
+    ticket = await TicketCRUD.get_ticket_by_id(db, ticket_id, load_messages=False)
+    if not ticket:
+        await callback.answer(texts.t('TICKET_NOT_FOUND', 'Тикет не найден.'), show_alert=True)
+        return
+    # Отпустить может взявший модератор или полный админ
+    if ticket.assigned_to_user_id != db_user.id and not settings.is_admin(callback.from_user.id):
+        await callback.answer(texts.t('TICKET_NOT_YOURS', 'Тикет взят другим модератором.'), show_alert=True)
+        return
+
+    await TicketCRUD.unassign_ticket(db, ticket_id)
+    try:
+        await TicketCRUD.add_support_audit(
+            db,
+            actor_user_id=db_user.id,
+            actor_telegram_id=callback.from_user.id,
+            is_moderator=not settings.is_admin(callback.from_user.id),
+            action='release_ticket',
+            ticket_id=ticket_id,
+            target_user_id=ticket.user_id,
+            details={},
+        )
+    except Exception:
+        pass
+
+    await callback.answer(texts.t('TICKET_RELEASED', '↩️ Тикет снова в общем списке.'))
+    if isinstance(callback.message, types.Message):
+        try:
+            await view_admin_ticket(callback, db_user, db, state, ticket_id=ticket_id)
+        except Exception:
+            pass
+
+
+async def show_support_stats(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
+    """📊 Статистика тикетов + мой ранг"""
+    if not _is_support_staff(callback.from_user.id):
+        texts = get_texts(db_user.language)
+        await callback.answer(texts.ACCESS_DENIED, show_alert=True)
+        return
+    texts = get_texts(db_user.language)
+
+    total = await TicketCRUD.count_tickets(db)
+    open_count = await TicketCRUD.count_tickets_by_statuses(db, [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value])
+    closed_count = await TicketCRUD.count_tickets_by_statuses(db, [TicketStatus.CLOSED.value])
+    avg_minutes = await TicketCRUD.get_avg_first_response_minutes(db)
+    my_closed = await support_ranks.get_closed_count(db, db_user)
+
+    if avg_minutes is None:
+        avg_text = texts.t('NO_DATA', 'нет данных')
+    elif avg_minutes < 60:
+        avg_text = f'{avg_minutes:.0f} мин'
+    else:
+        avg_text = f'{avg_minutes / 60:.1f} ч'
+
+    text = (
+        f'{texts.t("SUPPORT_STATS_TITLE", "📊 <b>Статистика тикетов</b>")}\n'
+        '━━━━━━━━━━━━━━━\n'
+        f'Всего тикетов: <b>{total}</b>\n'
+        f'🔴 Открытых: <b>{open_count}</b>\n'
+        f'🟢 Закрытых: <b>{closed_count}</b>\n'
+        f'⏱ Среднее время первого ответа: <b>{avg_text}</b>\n\n'
+        f'Закрыто вами: <b>{my_closed}</b>\n'
+        f'Ваш ранг: {support_ranks.progress_text(my_closed)}'
+    )
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text=texts.BACK, callback_data=_support_back_callback(callback.from_user.id)
+                )
+            ]
+        ]
+    )
+    await safe_edit_or_resend(callback.message, text, keyboard)
+    await callback.answer()
+
+
+async def show_support_leaderboard(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
+    """🏆 Рейтинг модераторов по закрытым тикетам (с рангами)"""
+    if not _is_support_staff(callback.from_user.id):
+        texts = get_texts(db_user.language)
+        await callback.answer(texts.ACCESS_DENIED, show_alert=True)
+        return
+    texts = get_texts(db_user.language)
+
+    rows = await support_ranks.get_leaderboard(db, limit=15)
+    lines = [texts.t('SUPPORT_LEADERBOARD_TITLE', '🏆 <b>Рейтинг модераторов</b>'), '━━━━━━━━━━━━━━━']
+    if not rows:
+        lines.append(texts.t('SUPPORT_LEADERBOARD_EMPTY', 'Пока никто не закрыл ни одного тикета.'))
+    else:
+        medals = ['🥇', '🥈', '🥉']
+        for i, row in enumerate(rows):
+            medal = medals[i] if i < 3 else f'{i + 1}.'
+            rank_label = support_ranks.get_rank_label(row['closed'])
+            display = html.escape(str(row['display']))
+            if row.get('telegram_id'):
+                display = f'<a href="tg://user?id={row["telegram_id"]}">{display}</a>'
+            lines.append(f'{medal} {display} — {rank_label} ({row["closed"]})')
+
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text=texts.BACK, callback_data=_support_back_callback(callback.from_user.id)
+                )
+            ]
+        ]
+    )
+    await safe_edit_or_resend(callback.message, '\n'.join(lines), keyboard)
+    await callback.answer()
+
+
+async def notify_user_about_ticket_reply(
+    bot: Bot, ticket: Ticket, reply_text: str, db: AsyncSession, responder_name: str | None = None
+):
     """Уведомить пользователя о новом ответе в тикете"""
     try:
         # Respect runtime toggle for user ticket notifications
@@ -1080,6 +1303,11 @@ async def notify_user_about_ticket_reply(bot: Bot, ticket: Ticket, reply_text: s
             'TICKET_REPLY_NOTIFICATION',
             '🎫 Получен ответ по тикету #{ticket_id}\n\n{reply_preview}\n\nНажмите кнопку ниже, чтобы перейти к тикету:',
         ).format(ticket_id=ticket.id, reply_preview=reply_text[:100] + '...' if len(reply_text) > 100 else reply_text)
+        if responder_name:
+            responder_line = texts.t('TICKET_RESPONDER_INTRO', '🧊 Вам ответит {name}').format(
+                name=responder_name
+            )
+            base_text = f'{responder_line}\n\n{base_text}'
         keyboard = types.InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -1142,7 +1370,14 @@ def register_handlers(dp: Dispatcher):
     dp.callback_query.register(show_admin_tickets, F.data == 'admin_tickets')
     dp.callback_query.register(show_admin_tickets, F.data == 'admin_tickets_scope_open')
     dp.callback_query.register(show_admin_tickets, F.data == 'admin_tickets_scope_closed')
+    dp.callback_query.register(show_admin_tickets, F.data == 'admin_tickets_scope_mine')
     dp.callback_query.register(close_all_open_admin_tickets, F.data == 'admin_tickets_close_all_open')
+
+    # Назначение тикетов («взять/отпустить»), статистика и рейтинг модераторов
+    dp.callback_query.register(take_admin_ticket, F.data.startswith('admin_take_ticket_'))
+    dp.callback_query.register(release_admin_ticket, F.data.startswith('admin_release_ticket_'))
+    dp.callback_query.register(show_support_stats, F.data == 'admin_support_stats')
+    dp.callback_query.register(show_support_leaderboard, F.data == 'admin_support_leaderboard')
 
     dp.callback_query.register(view_admin_ticket, F.data.startswith('admin_view_ticket_'))
     dp.callback_query.register(view_admin_ticket, F.data.startswith('admin_ticket_page_'))

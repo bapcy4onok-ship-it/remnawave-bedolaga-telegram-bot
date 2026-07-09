@@ -3332,8 +3332,15 @@ class Ticket(Base):
     # SLA reminders
     last_sla_reminder_at = Column(AwareDateTime(), nullable=True)
 
+    # Назначение тикета модератору («взять тикет») и учёт закрытий для рангов
+    assigned_to_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    assigned_at = Column(AwareDateTime(), nullable=True)
+    closed_by_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+
     # Связи
-    user = relationship('User', backref='tickets')
+    user = relationship('User', foreign_keys=[user_id], backref='tickets')
+    assigned_to = relationship('User', foreign_keys=[assigned_to_user_id])
+    closed_by = relationship('User', foreign_keys=[closed_by_user_id])
     messages = relationship('TicketMessage', back_populates='ticket', cascade='all, delete-orphan')
 
     @property

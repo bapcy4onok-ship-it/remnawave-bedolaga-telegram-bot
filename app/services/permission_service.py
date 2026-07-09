@@ -54,7 +54,7 @@ PERMISSION_REGISTRY: dict[str, list[str]] = {
         'send_offer',
         'referral',
     ],
-    'tickets': ['read', 'reply', 'close', 'settings'],
+    'tickets': ['read', 'reply', 'close', 'assign', 'moderators', 'settings'],
     'stats': ['read', 'export'],
     'sales_stats': ['read', 'export'],
     'broadcasts': ['read', 'create', 'edit', 'delete', 'send'],

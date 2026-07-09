@@ -220,6 +220,32 @@ class SupportSettingsService:
             return cls._save()
         return True
 
+    # Rank offsets (перенос счётчиков закрытых тикетов из старого бота, ключ — telegram_id)
+    @classmethod
+    def get_rank_offsets(cls) -> dict[int, int]:
+        cls._load()
+        raw = cls._data.get('rank_offsets') or {}
+        offsets: dict[int, int] = {}
+        for key, value in raw.items():
+            try:
+                offsets[int(key)] = int(value)
+            except Exception:
+                continue
+        return offsets
+
+    @classmethod
+    def set_rank_offset(cls, telegram_id: int, closed_count: int) -> bool:
+        try:
+            tid = int(telegram_id)
+            count = int(closed_count)
+        except Exception:
+            return False
+        cls._load()
+        offsets = cls._data.get('rank_offsets') or {}
+        offsets[str(tid)] = count
+        cls._data['rank_offsets'] = offsets
+        return cls._save()
+
     # Cabinet notifications (веб-кабинет)
     @classmethod
     def get_cabinet_user_notifications_enabled(cls) -> bool:

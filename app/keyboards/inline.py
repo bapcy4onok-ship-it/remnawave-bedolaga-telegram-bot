@@ -3589,11 +3589,19 @@ def get_admin_tickets_keyboard(
         InlineKeyboardButton(text=texts.t('OPEN_TICKETS', '🔴 Открытые'), callback_data='admin_tickets_scope_open')
     )
     switch_row.append(
+        InlineKeyboardButton(text=texts.t('MY_TICKETS_SCOPE', '🤝 Мои'), callback_data='admin_tickets_scope_mine')
+    )
+    switch_row.append(
         InlineKeyboardButton(text=texts.t('CLOSED_TICKETS', '🟢 Закрытые'), callback_data='admin_tickets_scope_closed')
     )
     keyboard.append(switch_row)
 
-    if open_rows and scope in ('all', 'open'):
+    if open_rows and scope == 'mine':
+        keyboard.append(
+            [InlineKeyboardButton(text=texts.t('MY_TICKETS_HEADER', 'Мои тикеты в работе'), callback_data='noop')]
+        )
+        keyboard.extend(open_rows)
+    elif open_rows and scope in ('all', 'open'):
         keyboard.append(
             [
                 InlineKeyboardButton(
@@ -3640,10 +3648,37 @@ def get_admin_tickets_keyboard(
 
 
 def get_admin_ticket_view_keyboard(
-    ticket_id: int, is_closed: bool = False, language: str = DEFAULT_LANGUAGE, *, is_user_blocked: bool = False
+    ticket_id: int,
+    is_closed: bool = False,
+    language: str = DEFAULT_LANGUAGE,
+    *,
+    is_user_blocked: bool = False,
+    is_assigned: bool = False,
+    is_assigned_to_me: bool = False,
 ) -> InlineKeyboardMarkup:
     texts = get_texts(language)
     keyboard = []
+
+    # «Взять тикет» / «Отпустить тикет» — назначение модератору
+    if not is_closed:
+        if is_assigned_to_me:
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=texts.t('RELEASE_TICKET', '↩️ Отпустить тикет'),
+                        callback_data=f'admin_release_ticket_{ticket_id}',
+                    )
+                ]
+            )
+        elif not is_assigned:
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=texts.t('TAKE_TICKET', '✋ Взять тикет'),
+                        callback_data=f'admin_take_ticket_{ticket_id}',
+                    )
+                ]
+            )
 
     if not is_closed:
         keyboard.append(
@@ -3714,6 +3749,7 @@ def get_ticket_notification_keyboard(
     is_user_blocked: bool = False,
     is_admin: bool = False,
     fsm_enabled: bool = True,
+    is_assigned: bool = False,
     cabinet_button: InlineKeyboardButton | None = None,
     language: str = DEFAULT_LANGUAGE,
 ) -> InlineKeyboardMarkup:
@@ -3765,6 +3801,17 @@ def get_ticket_notification_keyboard(
                 InlineKeyboardButton(
                     text='👤 К пользователю',
                     callback_data=f'admin_user_manage_{user_id}_from_ticket_{ticket_id}',
+                )
+            ]
+        )
+
+    # «Взять тикет» — обычный callback, работает и в группе.
+    if not is_closed and not is_assigned:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=texts.t('TAKE_TICKET', '✋ Взять тикет'),
+                    callback_data=f'admin_take_ticket_{ticket_id}',
                 )
             ]
         )

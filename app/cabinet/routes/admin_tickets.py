@@ -54,6 +54,8 @@ class AdminTicketResponse(BaseModel):
     messages_count: int = 0
     user: AdminTicketUserInfo | None = None
     last_message: TicketMessageResponse | None = None
+    assigned_to: AdminTicketUserInfo | None = None
+    assigned_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -72,6 +74,8 @@ class AdminTicketDetailResponse(BaseModel):
     is_reply_blocked: bool = False
     user: AdminTicketUserInfo | None = None
     messages: list[TicketMessageResponse] = []
+    assigned_to: AdminTicketUserInfo | None = None
+    assigned_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -207,6 +211,10 @@ def _ticket_to_admin_response(ticket: Ticket, include_messages: bool = False) ->
     if hasattr(ticket, 'user') and ticket.user:
         user_info = _user_to_info(ticket.user)
 
+    assigned_info = None
+    if getattr(ticket, 'assigned_to', None):
+        assigned_info = _user_to_info(ticket.assigned_to)
+
     return AdminTicketResponse(
         id=ticket.id,
         title=ticket.title or f'Ticket #{ticket.id}',
@@ -218,6 +226,8 @@ def _ticket_to_admin_response(ticket: Ticket, include_messages: bool = False) ->
         messages_count=messages_count,
         user=user_info,
         last_message=last_message,
+        assigned_to=assigned_info,
+        assigned_at=ticket.assigned_at,
     )
 
 
@@ -244,6 +254,181 @@ async def get_ticket_stats(
         answered=statuses.get('answered', 0),
         closed=statuses.get('closed', 0),
     )
+
+
+class AdminLeaderboardEntry(BaseModel):
+    """Moderator leaderboard entry with rank."""
+
+    telegram_id: int | None = None
+    user_id: int | None = None
+    display: str
+    username: str | None = None
+    closed: int
+    rank: str
+
+
+class AdminModeratorInfo(BaseModel):
+    """Support moderator info."""
+
+    telegram_id: int
+    user: AdminTicketUserInfo | None = None
+    closed_count: int = 0
+    rank: str | None = None
+
+
+class AdminModeratorAddRequest(BaseModel):
+    """Add support moderator."""
+
+    telegram_id: int = Field(..., gt=0, description='Telegram ID of the moderator')
+
+
+@router.get('/leaderboard', response_model=list[AdminLeaderboardEntry])
+async def get_support_leaderboard(
+    limit: int = Query(25, ge=1, le=100),
+    admin: User = Depends(require_permission('tickets:read')),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Moderator leaderboard by closed tickets (includes old-bot offsets)."""
+    from app.services import support_ranks
+
+    rows = await support_ranks.get_leaderboard(db, limit=limit)
+    return [
+        AdminLeaderboardEntry(
+            telegram_id=row.get('telegram_id'),
+            user_id=row.get('user_id'),
+            display=str(row.get('display') or ''),
+            username=row.get('username'),
+            closed=int(row.get('closed') or 0),
+            rank=support_ranks.get_rank_name(int(row.get('closed') or 0)),
+        )
+        for row in rows
+    ]
+
+
+@router.get('/moderators', response_model=list[AdminModeratorInfo])
+async def list_support_moderators(
+    admin: User = Depends(require_permission('tickets:moderators')),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """List support moderators with their rank counters."""
+    from app.services import support_ranks
+    from app.services.support_settings_service import SupportSettingsService
+
+    moderator_ids = SupportSettingsService.get_moderators()
+    users_by_tid: dict[int, User] = {}
+    if moderator_ids:
+        result = await db.execute(select(User).where(User.telegram_id.in_(moderator_ids)))
+        users_by_tid = {int(u.telegram_id): u for u in result.scalars().all() if u.telegram_id}
+
+    offsets = SupportSettingsService.get_rank_offsets()
+    items: list[AdminModeratorInfo] = []
+    for tid in moderator_ids:
+        user = users_by_tid.get(tid)
+        if user:
+            closed = await support_ranks.get_closed_count(db, user)
+        else:
+            closed = int(offsets.get(tid, 0))
+        items.append(
+            AdminModeratorInfo(
+                telegram_id=tid,
+                user=_user_to_info(user) if user else None,
+                closed_count=closed,
+                rank=support_ranks.get_rank_name(closed),
+            )
+        )
+    return items
+
+
+@router.post('/moderators', response_model=list[AdminModeratorInfo], status_code=status.HTTP_201_CREATED)
+async def add_support_moderator(
+    request: AdminModeratorAddRequest,
+    admin: User = Depends(require_permission('tickets:moderators')),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Add a support moderator by Telegram ID."""
+    from app.services.support_settings_service import SupportSettingsService
+
+    if not SupportSettingsService.add_moderator(request.telegram_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Failed to add moderator')
+    return await list_support_moderators(admin=admin, db=db)
+
+
+@router.delete('/moderators/{telegram_id}')
+async def remove_support_moderator(
+    telegram_id: int,
+    admin: User = Depends(require_permission('tickets:moderators')),
+):
+    """Remove a support moderator."""
+    from app.services.support_settings_service import SupportSettingsService
+
+    if not SupportSettingsService.remove_moderator(telegram_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Failed to remove moderator')
+    return {'success': True}
+
+
+@router.post('/{ticket_id}/assign', response_model=AdminTicketDetailResponse)
+async def assign_ticket_to_me(
+    ticket_id: int,
+    admin: User = Depends(require_permission('tickets:assign')),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Take the ticket (assign to the calling admin)."""
+    existing = await TicketCRUD.get_ticket_by_id(db, ticket_id, load_messages=False)
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ticket not found')
+    if existing.is_closed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Ticket is closed')
+    if existing.assigned_to_user_id and existing.assigned_to_user_id != admin.id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Ticket is already taken')
+
+    ticket = await TicketCRUD.assign_ticket(db, ticket_id, admin.id)
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Failed to assign ticket')
+
+    try:
+        await TicketCRUD.add_support_audit(
+            db,
+            actor_user_id=admin.id,
+            actor_telegram_id=admin.telegram_id,
+            is_moderator=False,
+            action='take_ticket',
+            ticket_id=ticket_id,
+            target_user_id=ticket.user_id,
+            details={'via': 'cabinet'},
+        )
+    except Exception:
+        pass
+
+    return await get_ticket_detail(ticket_id=ticket_id, admin=admin, db=db)
+
+
+@router.post('/{ticket_id}/unassign', response_model=AdminTicketDetailResponse)
+async def unassign_ticket(
+    ticket_id: int,
+    admin: User = Depends(require_permission('tickets:assign')),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Release the ticket back to the common queue."""
+    existing = await TicketCRUD.get_ticket_by_id(db, ticket_id, load_messages=False)
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ticket not found')
+
+    await TicketCRUD.unassign_ticket(db, ticket_id)
+    try:
+        await TicketCRUD.add_support_audit(
+            db,
+            actor_user_id=admin.id,
+            actor_telegram_id=admin.telegram_id,
+            is_moderator=False,
+            action='release_ticket',
+            ticket_id=ticket_id,
+            target_user_id=existing.user_id,
+            details={'via': 'cabinet'},
+        )
+    except Exception:
+        pass
+
+    return await get_ticket_detail(ticket_id=ticket_id, admin=admin, db=db)
 
 
 @router.get('/settings', response_model=TicketSettingsResponse)
@@ -364,17 +549,25 @@ async def get_all_tickets(
     status_filter: str | None = Query(None, alias='status', description='Filter by status'),
     priority_filter: str | None = Query(None, alias='priority', description='Filter by priority'),
     user_id: int | None = Query(None, description='Filter by user ID'),
+    assigned: str | None = Query(None, description="Assignment filter: 'me' or 'unassigned'"),
     admin: User = Depends(require_permission('tickets:read')),
     db: AsyncSession = Depends(get_cabinet_db),
 ):
     """Get all tickets for admin."""
     # Base query with user relationship
-    query = select(Ticket).options(selectinload(Ticket.messages), selectinload(Ticket.user))
+    query = select(Ticket).options(selectinload(Ticket.messages), selectinload(Ticket.user), selectinload(Ticket.assigned_to))
 
     # Build count query
     count_query = select(func.count()).select_from(Ticket)
 
     # Apply filters
+    if assigned == 'me':
+        query = query.where(Ticket.assigned_to_user_id == admin.id)
+        count_query = count_query.where(Ticket.assigned_to_user_id == admin.id)
+    elif assigned == 'unassigned':
+        query = query.where(Ticket.assigned_to_user_id.is_(None))
+        count_query = count_query.where(Ticket.assigned_to_user_id.is_(None))
+
     if status_filter:
         query = query.where(Ticket.status == status_filter)
         count_query = count_query.where(Ticket.status == status_filter)
@@ -418,7 +611,7 @@ async def get_ticket_detail(
 ):
     """Get ticket with all messages for admin."""
     query = (
-        select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.messages), selectinload(Ticket.user))
+        select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.messages), selectinload(Ticket.user), selectinload(Ticket.assigned_to))
     )
 
     result = await db.execute(query)
@@ -448,6 +641,8 @@ async def get_ticket_detail(
         is_reply_blocked=ticket.is_reply_blocked if hasattr(ticket, 'is_reply_blocked') else False,
         user=user_info,
         messages=messages_response,
+        assigned_to=(_user_to_info(ticket.assigned_to) if getattr(ticket, 'assigned_to', None) else None),
+        assigned_at=ticket.assigned_at,
     )
 
 
@@ -548,7 +743,7 @@ async def update_ticket_status(
         )
 
     query = (
-        select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.messages), selectinload(Ticket.user))
+        select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.messages), selectinload(Ticket.user), selectinload(Ticket.assigned_to))
     )
 
     result = await db.execute(query)
@@ -564,8 +759,10 @@ async def update_ticket_status(
     ticket.updated_at = datetime.now(UTC)
     if request.status == 'closed':
         ticket.closed_at = datetime.now(UTC)
+        ticket.closed_by_user_id = admin.id
     else:
         ticket.closed_at = None
+        ticket.closed_by_user_id = None
 
     await db.commit()
     await db.refresh(ticket)
@@ -588,6 +785,8 @@ async def update_ticket_status(
         is_reply_blocked=ticket.is_reply_blocked if hasattr(ticket, 'is_reply_blocked') else False,
         user=user_info,
         messages=messages_response,
+        assigned_to=(_user_to_info(ticket.assigned_to) if getattr(ticket, 'assigned_to', None) else None),
+        assigned_at=ticket.assigned_at,
     )
 
 
@@ -607,7 +806,7 @@ async def update_ticket_priority(
         )
 
     query = (
-        select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.messages), selectinload(Ticket.user))
+        select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.messages), selectinload(Ticket.user), selectinload(Ticket.assigned_to))
     )
 
     result = await db.execute(query)
@@ -643,4 +842,6 @@ async def update_ticket_priority(
         is_reply_blocked=ticket.is_reply_blocked if hasattr(ticket, 'is_reply_blocked') else False,
         user=user_info,
         messages=messages_response,
+        assigned_to=(_user_to_info(ticket.assigned_to) if getattr(ticket, 'assigned_to', None) else None),
+        assigned_at=ticket.assigned_at,
     )

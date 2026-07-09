@@ -137,16 +137,51 @@ async def show_support_submenu(callback: types.CallbackQuery, db_user: User, db:
 
 
 # Moderator panel entry (from main menu quick button)
-@admin_required
 @error_handler
 async def show_moderator_panel(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
+    # Доступ: полный админ или модератор поддержки (@admin_required модераторов не пускает)
+    if not (settings.is_admin(callback.from_user.id) or SupportSettingsService.is_moderator(callback.from_user.id)):
+        texts = get_texts(db_user.language)
+        await callback.answer(texts.ACCESS_DENIED, show_alert=True)
+        return
+
     texts = get_texts(db_user.language)
+
+    from app.database.models import TicketStatus
+    from app.services import support_ranks
+
+    open_count = await TicketCRUD.count_tickets_by_statuses(db, [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value])
+    my_count = await TicketCRUD.count_tickets_by_statuses(
+        db, [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value], assigned_to_user_id=db_user.id
+    )
+    my_closed = await support_ranks.get_closed_count(db, db_user)
+
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=texts.t('ADMIN_SUPPORT_TICKETS', '🎫 Тикеты поддержки'), callback_data='admin_tickets'
+                    text=texts.t('ADMIN_SUPPORT_TICKETS_OPEN_BTN', '🎫 Открытые тикеты ({count})').format(
+                        count=open_count
+                    ),
+                    callback_data='admin_tickets',
                 )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=texts.t('ADMIN_SUPPORT_TICKETS_MINE_BTN', '🤝 Мои тикеты в работе ({count})').format(
+                        count=my_count
+                    ),
+                    callback_data='admin_tickets_scope_mine',
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=texts.t('ADMIN_SUPPORT_STATS_BTN', '📊 Статистика'), callback_data='admin_support_stats'
+                ),
+                InlineKeyboardButton(
+                    text=texts.t('ADMIN_SUPPORT_LEADERBOARD_BTN', '🏆 Рейтинг'),
+                    callback_data='admin_support_leaderboard',
+                ),
             ],
             [
                 InlineKeyboardButton(
@@ -157,8 +192,10 @@ async def show_moderator_panel(callback: types.CallbackQuery, db_user: User, db:
     )
     await callback.message.edit_text(
         texts.t('ADMIN_SUPPORT_MODERATION_TITLE', '🧑‍⚖️ <b>Модерация поддержки</b>')
-        + '\n\n'
-        + texts.t('ADMIN_SUPPORT_MODERATION_DESCRIPTION', 'Доступ к тикетам поддержки.'),
+        + '\n━━━━━━━━━━━━━━━\n'
+        + texts.t('MODERATOR_RANK_LINE', 'Ранг: {rank}').format(rank=support_ranks.progress_text(my_closed))
+        + '\n'
+        + texts.t('MODERATOR_CLOSED_LINE', 'Закрыто тикетов: <b>{count}</b>').format(count=my_closed),
         parse_mode='HTML',
         reply_markup=kb,
     )

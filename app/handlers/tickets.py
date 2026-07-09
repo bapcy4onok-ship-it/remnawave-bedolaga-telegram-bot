@@ -1026,9 +1026,71 @@ def _build_ticket_notification_keyboard(service: AdminNotificationService, ticke
         is_user_blocked=getattr(ticket, 'is_user_reply_blocked', False),
         is_admin=(role == 'admin'),
         fsm_enabled=(role != 'group'),
+        is_assigned=bool(getattr(ticket, 'assigned_to_user_id', None)),
         cabinet_button=cabinet_button,
         language=settings.DEFAULT_LANGUAGE,
     )
+
+
+async def _notify_support_staff_dm(
+    bot,
+    ticket: Ticket,
+    user: User | None,
+    text: str,
+    *,
+    only_assignee: bool = False,
+):
+    """Личные уведомления модераторам поддержки (в дополнение к админ-топику).
+
+    only_assignee=True — писать только взявшему тикет модератору (ответ пользователя
+    в назначенном тикете); иначе — всем модераторам из настроек поддержки.
+    """
+    from app.config import settings
+    from app.services.support_settings_service import SupportSettingsService
+
+    try:
+        if not SupportSettingsService.get_admin_ticket_notifications_enabled():
+            return
+    except Exception:
+        pass
+
+    assignee_tid: int | None = None
+    try:
+        assignee = ticket.assigned_to
+        if assignee and assignee.telegram_id:
+            assignee_tid = int(assignee.telegram_id)
+    except Exception:
+        assignee_tid = None
+
+    if only_assignee:
+        recipients = [assignee_tid] if assignee_tid else []
+    else:
+        recipients = []
+        try:
+            recipients = [int(m) for m in SupportSettingsService.get_moderators()]
+        except Exception:
+            recipients = []
+        if assignee_tid and assignee_tid not in recipients:
+            recipients.append(assignee_tid)
+
+    for tid in dict.fromkeys(recipients):
+        try:
+            keyboard = get_ticket_notification_keyboard(
+                ticket.id,
+                user_id=user.id if user else None,
+                telegram_id=user.telegram_id if user else None,
+                username=user.username if user else None,
+                is_closed=ticket.is_closed,
+                is_user_blocked=getattr(ticket, 'is_user_reply_blocked', False),
+                is_admin=settings.is_admin(tid),
+                fsm_enabled=True,
+                is_assigned=bool(assignee_tid),
+                language=settings.DEFAULT_LANGUAGE,
+            )
+            await bot.send_message(tid, text, reply_markup=keyboard, parse_mode='HTML')
+        except Exception:
+            # Модератор мог не запускать бота — просто пропускаем
+            pass
 
 
 async def notify_admins_about_new_ticket(ticket: Ticket, db: AsyncSession):
@@ -1099,6 +1161,9 @@ async def notify_admins_about_new_ticket(ticket: Ticket, db: AsyncSession):
         await service.send_ticket_event_notification(
             notification_text, keyboard, media_file_id=media_file_id, media_type=media_type
         )
+
+        # Личные уведомления модераторам поддержки
+        await _notify_support_staff_dm(bot, ticket, user, notification_text)
     except Exception as e:
         logger.error('Error notifying admins about new ticket', error=e)
 
@@ -1160,6 +1225,11 @@ async def notify_admins_about_ticket_reply(
             notification_text, keyboard, media_file_id=media_file_id, media_type=media_type
         )
         logger.info('Ticket reply notification sent', ticket_id=ticket.id, result=result)
+
+        # Личное уведомление: взявшему тикет модератору, иначе — всем модераторам
+        await _notify_support_staff_dm(
+            bot, ticket, user, notification_text, only_assignee=bool(ticket.assigned_to_user_id)
+        )
     except Exception as e:
         logger.error('Error notifying admins about ticket reply', error=e)
 
