@@ -1173,7 +1173,7 @@ async def _notify_support_staff_dm(
 
     recipients: set[int] = set()
     try:
-        recipients.update(int(x) for x in (settings.ADMIN_IDS or []))
+        recipients.update(settings.get_admin_ids())
     except Exception:
         pass
     moderators: set[int] = set()
