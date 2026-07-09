@@ -813,7 +813,8 @@ async def handle_ticket_reply(message: types.Message, state: FSMContext, db_user
         media_file_id = message.photo[-1].file_id
         media_caption = message.caption
 
-    if len(reply_text) < 5:
+    # Допускаем фото без текста/с короткой подписью (как при создании тикета)
+    if len(reply_text) < 5 and not media_file_id:
         texts = get_texts(db_user.language)
         await message.answer(
             texts.t('TICKET_REPLY_TOO_SHORT', 'Ответ должен содержать минимум 5 символов. Попробуйте еще раз:')
