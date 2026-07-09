@@ -75,7 +75,7 @@ class TicketCRUD:
         db: AsyncSession, ticket_id: int, load_messages: bool = True, load_user: bool = False
     ) -> Ticket | None:
         """Получить тикет по ID"""
-        query = select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.assigned_to))
+        query = select(Ticket).where(Ticket.id == ticket_id)
 
         if load_user:
             query = query.options(selectinload(Ticket.user))
@@ -191,17 +191,11 @@ class TicketCRUD:
 
     @staticmethod
     async def get_tickets_by_statuses(
-        db: AsyncSession,
-        statuses: list[str],
-        limit: int = 50,
-        offset: int = 0,
-        assigned_to_user_id: int | None = None,
+        db: AsyncSession, statuses: list[str], limit: int = 50, offset: int = 0
     ) -> list[Ticket]:
-        query = select(Ticket).options(selectinload(Ticket.user), selectinload(Ticket.assigned_to))
+        query = select(Ticket).options(selectinload(Ticket.user))
         if statuses:
             query = query.where(Ticket.status.in_(statuses))
-        if assigned_to_user_id is not None:
-            query = query.where(Ticket.assigned_to_user_id == assigned_to_user_id)
         query = query.order_by(desc(Ticket.updated_at)).offset(offset).limit(limit)
         result = await db.execute(query)
         return result.scalars().all()
@@ -215,40 +209,12 @@ class TicketCRUD:
         return int(result.scalar() or 0)
 
     @staticmethod
-    async def count_tickets_by_statuses(
-        db: AsyncSession, statuses: list[str], assigned_to_user_id: int | None = None
-    ) -> int:
+    async def count_tickets_by_statuses(db: AsyncSession, statuses: list[str]) -> int:
         query = select(func.count()).select_from(Ticket)
         if statuses:
             query = query.where(Ticket.status.in_(statuses))
-        if assigned_to_user_id is not None:
-            query = query.where(Ticket.assigned_to_user_id == assigned_to_user_id)
         result = await db.execute(query)
         return int(result.scalar() or 0)
-
-    @staticmethod
-    async def assign_ticket(db: AsyncSession, ticket_id: int, user_id: int) -> Ticket | None:
-        """Взять тикет в работу (назначить модератору). Возвращает тикет или None."""
-        ticket = await TicketCRUD.get_ticket_by_id(db, ticket_id, load_messages=False, load_user=True)
-        if not ticket or ticket.status == TicketStatus.CLOSED.value:
-            return None
-        ticket.assigned_to_user_id = user_id
-        ticket.assigned_at = datetime.now(UTC)
-        ticket.updated_at = datetime.now(UTC)
-        await db.commit()
-        await db.refresh(ticket)
-        return ticket
-
-    @staticmethod
-    async def unassign_ticket(db: AsyncSession, ticket_id: int) -> bool:
-        ticket = await TicketCRUD.get_ticket_by_id(db, ticket_id, load_messages=False)
-        if not ticket:
-            return False
-        ticket.assigned_to_user_id = None
-        ticket.assigned_at = None
-        ticket.updated_at = datetime.now(UTC)
-        await db.commit()
-        return True
 
     @staticmethod
     async def get_closed_count_for_user(db: AsyncSession, user_id: int) -> int:
@@ -272,28 +238,6 @@ class TicketCRUD:
         )
         result = await db.execute(query)
         return [(row[0], int(row[1])) for row in result.all()]
-
-    @staticmethod
-    async def get_avg_first_response_minutes(db: AsyncSession) -> float | None:
-        """Среднее время (мин) от создания тикета до первого ответа админа/модератора."""
-        first_admin = (
-            select(
-                TicketMessage.ticket_id.label('ticket_id'),
-                func.min(TicketMessage.created_at).label('first_admin_at'),
-            )
-            .where(TicketMessage.is_from_admin == True)
-            .group_by(TicketMessage.ticket_id)
-            .subquery()
-        )
-        query = select(
-            func.avg(func.extract('epoch', first_admin.c.first_admin_at - Ticket.created_at) / 60.0)
-        ).select_from(Ticket.__table__.join(first_admin, first_admin.c.ticket_id == Ticket.id))
-        result = await db.execute(query)
-        value = result.scalar()
-        if value is None:
-            return None
-        minutes = float(value)
-        return minutes if minutes >= 0 else None
 
     @staticmethod
     async def update_ticket_status(

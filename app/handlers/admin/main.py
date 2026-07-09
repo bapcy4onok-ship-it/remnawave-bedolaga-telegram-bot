@@ -123,13 +123,37 @@ async def show_support_submenu(callback: types.CallbackQuery, db_user: User, db:
                 [InlineKeyboardButton(text=texts.BACK, callback_data='back_to_menu')],
             ]
         )
+
+    # Ранг за закрытые тикеты (как в старом боте поддержки) + кнопка рейтинга
+    rank_line = ''
+    try:
+        from app.services import support_ranks
+
+        my_closed = await support_ranks.get_closed_count(db, db_user)
+        _, icon, rank_name = support_ranks.get_rank(my_closed)
+        rank_line = texts.t('ADMIN_SUPPORT_RANK_LINE', '\n\n{icon} Ваш ранг: {rank} (закрыто тикетов: {count})').format(
+            icon=icon, rank=rank_name, count=my_closed
+        )
+        kb.inline_keyboard.insert(
+            -1,
+            [
+                InlineKeyboardButton(
+                    text=texts.t('SUPPORT_LEADERBOARD_BTN', '🏆 Рейтинг модераторов'),
+                    callback_data='admin_support_leaderboard',
+                )
+            ],
+        )
+    except Exception:
+        pass
+
     await callback.message.edit_text(
         texts.t('ADMIN_SUPPORT_SUBMENU_TITLE', '🛟 **Поддержка**\n\n')
         + (
             texts.t('ADMIN_SUPPORT_SUBMENU_DESCRIPTION_MODERATOR', 'Доступ к тикетам.')
             if is_moderator_only
             else texts.t('ADMIN_SUPPORT_SUBMENU_DESCRIPTION', 'Управление тикетами и настройками поддержки:')
-        ),
+        )
+        + rank_line,
         reply_markup=kb,
         parse_mode='Markdown',
     )
@@ -147,41 +171,22 @@ async def show_moderator_panel(callback: types.CallbackQuery, db_user: User, db:
 
     texts = get_texts(db_user.language)
 
-    from app.database.models import TicketStatus
     from app.services import support_ranks
 
-    open_count = await TicketCRUD.count_tickets_by_statuses(db, [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value])
-    my_count = await TicketCRUD.count_tickets_by_statuses(
-        db, [TicketStatus.OPEN.value, TicketStatus.ANSWERED.value], assigned_to_user_id=db_user.id
-    )
     my_closed = await support_ranks.get_closed_count(db, db_user)
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=texts.t('ADMIN_SUPPORT_TICKETS_OPEN_BTN', '🎫 Открытые тикеты ({count})').format(
-                        count=open_count
-                    ),
-                    callback_data='admin_tickets',
+                    text=texts.t('ADMIN_SUPPORT_TICKETS', '🎫 Тикеты поддержки'), callback_data='admin_tickets'
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=texts.t('ADMIN_SUPPORT_TICKETS_MINE_BTN', '🤝 Мои тикеты в работе ({count})').format(
-                        count=my_count
-                    ),
-                    callback_data='admin_tickets_scope_mine',
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text=texts.t('ADMIN_SUPPORT_STATS_BTN', '📊 Статистика'), callback_data='admin_support_stats'
-                ),
-                InlineKeyboardButton(
-                    text=texts.t('ADMIN_SUPPORT_LEADERBOARD_BTN', '🏆 Рейтинг'),
+                    text=texts.t('SUPPORT_LEADERBOARD_BTN', '🏆 Рейтинг модераторов'),
                     callback_data='admin_support_leaderboard',
-                ),
+                )
             ],
             [
                 InlineKeyboardButton(
@@ -192,7 +197,9 @@ async def show_moderator_panel(callback: types.CallbackQuery, db_user: User, db:
     )
     await callback.message.edit_text(
         texts.t('ADMIN_SUPPORT_MODERATION_TITLE', '🧑‍⚖️ <b>Модерация поддержки</b>')
-        + '\n━━━━━━━━━━━━━━━\n'
+        + '\n\n'
+        + texts.t('ADMIN_SUPPORT_MODERATION_DESCRIPTION', 'Доступ к тикетам поддержки.')
+        + '\n\n'
         + texts.t('MODERATOR_RANK_LINE', 'Ранг: {rank}').format(rank=support_ranks.progress_text(my_closed))
         + '\n'
         + texts.t('MODERATOR_CLOSED_LINE', 'Закрыто тикетов: <b>{count}</b>').format(count=my_closed),
