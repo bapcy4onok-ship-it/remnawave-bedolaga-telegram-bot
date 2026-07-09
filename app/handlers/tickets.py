@@ -354,7 +354,7 @@ async def show_my_tickets(callback: types.CallbackQuery, db_user: User, db: Asyn
                     ],
                     [
                         types.InlineKeyboardButton(
-                            text=texts.t('VIEW_CLOSED_TICKETS', '🟢 Закрытые тикеты'), callback_data='my_tickets_closed'
+                            text=texts.t('VIEW_CLOSED_TICKETS', '🔴 Закрытые тикеты'), callback_data='my_tickets_closed'
                         )
                     ],
                     [types.InlineKeyboardButton(text=texts.BACK, callback_data='menu_support')],
@@ -378,7 +378,7 @@ async def show_my_tickets(callback: types.CallbackQuery, db_user: User, db: Asyn
         0,
         [
             types.InlineKeyboardButton(
-                text=texts.t('VIEW_CLOSED_TICKETS', '🟢 Закрытые тикеты'), callback_data='my_tickets_closed'
+                text=texts.t('VIEW_CLOSED_TICKETS', '🔴 Закрытые тикеты'), callback_data='my_tickets_closed'
             )
         ],
     )
@@ -412,7 +412,7 @@ async def show_my_tickets_closed(callback: types.CallbackQuery, db_user: User, d
                 inline_keyboard=[
                     [
                         types.InlineKeyboardButton(
-                            text=texts.t('BACK_TO_OPEN_TICKETS', '🔴 Открытые тикеты'), callback_data='my_tickets'
+                            text=texts.t('BACK_TO_OPEN_TICKETS', '🟢 Открытые тикеты'), callback_data='my_tickets'
                         )
                     ],
                     [types.InlineKeyboardButton(text=texts.BACK, callback_data='menu_support')],
@@ -439,13 +439,13 @@ async def show_my_tickets_closed(callback: types.CallbackQuery, db_user: User, d
         0,
         [
             types.InlineKeyboardButton(
-                text=texts.t('BACK_TO_OPEN_TICKETS', '🔴 Открытые тикеты'), callback_data='my_tickets'
+                text=texts.t('BACK_TO_OPEN_TICKETS', '🟢 Открытые тикеты'), callback_data='my_tickets'
             )
         ],
     )
     await edit_or_answer_photo(
         callback=callback,
-        caption=texts.t('CLOSED_TICKETS_TITLE', '🟢 Закрытые тикеты:'),
+        caption=texts.t('CLOSED_TICKETS_TITLE', '🔴 Закрытые тикеты:'),
         keyboard=kb,
         parse_mode='HTML',
     )
