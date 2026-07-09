@@ -1099,8 +1099,106 @@ async def notify_admins_about_new_ticket(ticket: Ticket, db: AsyncSession):
         await service.send_ticket_event_notification(
             notification_text, keyboard, media_file_id=media_file_id, media_type=media_type
         )
+
+        await _notify_support_staff_dm(
+            bot, ticket, user, notification_text, media_file_id=media_file_id, media_type=media_type
+        )
     except Exception as e:
         logger.error('Error notifying admins about new ticket', error=e)
+
+
+async def _notify_support_staff_dm(
+    bot: Bot,
+    ticket: Ticket,
+    user: User | None,
+    notification_text: str,
+    *,
+    media_file_id: str | None = None,
+    media_type: str | None = None,
+):
+    """Личные уведомления саппорту (админы + модераторы) о новом тикете.
+
+    Дублирует уведомление из админ-топика каждому в ЛС, с web_app-кнопкой
+    «Открыть в кабинете», ведущей сразу на тикет. Автору тикета не шлём.
+    Ошибки отправки (бот не запущен получателем и т.п.) не прерывают остальных.
+    """
+    from app.config import settings
+    from app.services.support_settings_service import SupportSettingsService
+
+    try:
+        if not SupportSettingsService.get_admin_ticket_notifications_enabled():
+            return
+    except Exception:
+        pass
+
+    recipients: set[int] = set()
+    try:
+        recipients.update(int(x) for x in (settings.ADMIN_IDS or []))
+    except Exception:
+        pass
+    try:
+        recipients.update(int(x) for x in SupportSettingsService.get_moderators())
+    except Exception:
+        pass
+    author_tg_id = getattr(user, 'telegram_id', None)
+    if author_tg_id:
+        recipients.discard(int(author_tg_id))
+    if not recipients:
+        return
+
+    texts = get_texts(settings.DEFAULT_LANGUAGE)
+    cabinet_button_text = texts.t('OPEN_TICKET_IN_CABINET', '🗂 Открыть в кабинете')
+    cabinet_button = build_admin_ticket_cabinet_button(ticket.id, text=cabinet_button_text, in_group=False)
+    if cabinet_button is None:
+        # Не cabinet-режим меню (MAIN_MENU_MODE=default): строим web_app-кнопку
+        # напрямую от CABINET_URL — фронт понимает диплинк /admin/tickets/<id>.
+        cabinet_base = settings._normalized_cabinet_url()
+        if cabinet_base:
+            cabinet_button = types.InlineKeyboardButton(
+                text=cabinet_button_text,
+                web_app=types.WebAppInfo(url=f'{cabinet_base}/admin/tickets/{ticket.id}'),
+            )
+
+    from app.utils.message_patch import caption_exceeds_telegram_limit
+
+    for tg_id in recipients:
+        keyboard = get_ticket_notification_keyboard(
+            ticket.id,
+            user_id=user.id if user else None,
+            telegram_id=author_tg_id,
+            username=user.username if user else None,
+            is_closed=ticket.is_closed,
+            is_user_blocked=getattr(ticket, 'is_user_reply_blocked', False),
+            is_admin=settings.is_admin(tg_id),
+            fsm_enabled=True,
+            cabinet_button=cabinet_button,
+            language=settings.DEFAULT_LANGUAGE,
+        )
+        try:
+            if media_file_id and media_type == 'photo' and not caption_exceeds_telegram_limit(notification_text):
+                await bot.send_photo(
+                    chat_id=tg_id,
+                    photo=media_file_id,
+                    caption=notification_text,
+                    parse_mode='HTML',
+                    reply_markup=keyboard,
+                )
+            else:
+                await bot.send_message(
+                    chat_id=tg_id,
+                    text=notification_text,
+                    parse_mode='HTML',
+                    reply_markup=keyboard,
+                )
+                if media_file_id and media_type == 'photo':
+                    await bot.send_photo(chat_id=tg_id, photo=media_file_id)
+        except Exception as dm_error:
+            logger.warning(
+                'Failed to DM support staff about new ticket',
+                telegram_id=tg_id,
+                ticket_id=ticket.id,
+                error=dm_error,
+            )
 
 
 async def notify_admins_about_ticket_reply(
