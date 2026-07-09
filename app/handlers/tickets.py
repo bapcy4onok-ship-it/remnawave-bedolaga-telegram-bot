@@ -1322,6 +1322,11 @@ async def notify_admins_about_ticket_reply(
             notification_text, keyboard, media_file_id=media_file_id, media_type=media_type
         )
         logger.info('Ticket reply notification sent', ticket_id=ticket.id, result=result)
+
+        # ЛС саппорту на каждое движение тикета, не только на создание
+        await _notify_support_staff_dm(
+            bot, ticket, user, notification_text, db, media_file_id=media_file_id, media_type=media_type
+        )
     except Exception as e:
         logger.error('Error notifying admins about ticket reply', error=e)
 

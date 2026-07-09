@@ -181,6 +181,30 @@ async def show_admin_tickets(callback: types.CallbackQuery, db_user: User, db: A
     await callback.answer()
 
 
+async def _ticket_staff_names(db: AsyncSession, ticket: Ticket) -> dict[int, str]:
+    """Имена сотрудников, ответивших в тикете (для подписи «кто именно»).
+
+    Старые ответы из кабинета сохранены с user_id владельца тикета — они
+    остаются безымянной «Поддержкой».
+    """
+    staff_ids = {
+        m.user_id for m in (ticket.messages or []) if m.is_from_admin and m.user_id and m.user_id != ticket.user_id
+    }
+    if not staff_ids:
+        return {}
+    from sqlalchemy import select
+
+    result = await db.execute(select(User).where(User.id.in_(staff_ids)))
+    return {u.id: (u.full_name or u.username or '').strip() for u in result.scalars()}
+
+
+def _staff_sender_label(msg, staff_names: dict[int, str]) -> str:
+    if msg.is_user_message:
+        return '👤 Пользователь'
+    name = staff_names.get(msg.user_id, '')
+    return f'🛠️ {html.escape(name)} (Поддержка)' if name else '🛠️ Поддержка'
+
+
 async def view_admin_ticket(
     callback: types.CallbackQuery,
     db_user: User,
@@ -262,9 +286,10 @@ async def view_admin_ticket(
     # Формируем блоки сообщений
     message_blocks: list[str] = []
     if ticket.messages:
+        staff_names = await _ticket_staff_names(db, ticket)
         message_blocks.append(f'💬 Сообщения ({len(ticket.messages)}):\n\n')
         for msg in ticket.messages:
-            sender = '👤 Пользователь' if msg.is_user_message else '🛠️ Поддержка'
+            sender = _staff_sender_label(msg, staff_names)
             block = f'{sender} ({msg.created_at.strftime("%d.%m %H:%M")}):\n{html.escape(msg.message_text)}\n\n'
             if getattr(msg, 'has_media', False) and getattr(msg, 'media_type', None) == 'photo':
                 block += '📎 Вложение: фото\n\n'
@@ -853,9 +878,10 @@ async def handle_admin_block_duration_input(message: types.Message, state: FSMCo
                 elif updated.user_reply_block_until:
                     ticket_text += f'⏳ Блок до: {updated.user_reply_block_until.strftime("%d.%m.%Y %H:%M")}\n'
             if updated.messages:
+                staff_names = await _ticket_staff_names(db, updated)
                 ticket_text += f'💬 Сообщения ({len(updated.messages)}):\n\n'
                 for msg in updated.messages:
-                    sender = '👤 Пользователь' if msg.is_user_message else '🛠️ Поддержка'
+                    sender = _staff_sender_label(msg, staff_names)
                     ticket_text += f'{sender} ({msg.created_at.strftime("%d.%m %H:%M")}):\n'
                     ticket_text += f'{html.escape(msg.message_text)}\n\n'
                     if getattr(msg, 'has_media', False) and getattr(msg, 'media_type', None) == 'photo':

@@ -56,6 +56,9 @@ class TicketMessageResponse(BaseModel):
     id: int
     message_text: str
     is_from_admin: bool
+    # Имя сотрудника, написавшего сообщение (только для is_from_admin;
+    # None у старых записей, где автор не сохранялся)
+    author_name: str | None = None
     has_media: bool = False
     media_type: str | None = None
     media_file_id: str | None = None

@@ -156,7 +156,22 @@ class TicketSettingsUpdateRequest(BaseModel):
     cabinet_admin_notifications_enabled: bool | None = Field(None, description='Enable admin notifications in cabinet')
 
 
-def _message_to_response(message: TicketMessage) -> TicketMessageResponse:
+async def _staff_names_for(db: AsyncSession, ticket: Ticket) -> dict[int, str]:
+    """Имена сотрудников, ответивших в тикете.
+
+    Старые ответы из кабинета сохранены с user_id владельца тикета —
+    для них имя не восстановить, остаются без подписи.
+    """
+    staff_ids = {
+        m.user_id for m in (ticket.messages or []) if m.is_from_admin and m.user_id and m.user_id != ticket.user_id
+    }
+    if not staff_ids:
+        return {}
+    result = await db.execute(select(User).where(User.id.in_(staff_ids)))
+    return {u.id: (u.full_name or u.username or '').strip() for u in result.scalars()}
+
+
+def _message_to_response(message: TicketMessage, staff_names: dict[int, str] | None = None) -> TicketMessageResponse:
     """Convert TicketMessage to response."""
     raw_items = getattr(message, 'media_items', None) or None
     items = None
@@ -168,10 +183,14 @@ def _message_to_response(message: TicketMessage) -> TicketMessageResponse:
         except (TypeError, KeyError, ValueError) as exc:
             logger.warning('Failed to parse media_items', message_id=message.id, error=str(exc))
             items = None
+    author_name = None
+    if staff_names and message.is_from_admin:
+        author_name = staff_names.get(message.user_id) or None
     return TicketMessageResponse(
         id=message.id,
         message_text=message.message_text or '',
         is_from_admin=message.is_from_admin,
+        author_name=author_name,
         has_media=bool(message.media_file_id) or bool(items),
         media_type=message.media_type,
         media_file_id=message.media_file_id,
@@ -431,7 +450,8 @@ async def get_ticket_detail(
         )
 
     messages = sorted(ticket.messages or [], key=lambda m: m.created_at)
-    messages_response = [_message_to_response(m) for m in messages]
+    staff_names = await _staff_names_for(db, ticket)
+    messages_response = [_message_to_response(m, staff_names) for m in messages]
 
     user_info = None
     if ticket.user:
@@ -531,7 +551,7 @@ async def reply_to_ticket(
     except Exception as e:
         logger.warning('Failed to create cabinet notification for admin reply', error=e)
 
-    return _message_to_response(message)
+    return _message_to_response(message, {admin.id: (admin.full_name or admin.username or '').strip()})
 
 
 @router.post('/{ticket_id}/status', response_model=AdminTicketDetailResponse)
@@ -576,7 +596,8 @@ async def update_ticket_status(
     await db.refresh(ticket)
 
     messages = sorted(ticket.messages or [], key=lambda m: m.created_at)
-    messages_response = [_message_to_response(m) for m in messages]
+    staff_names = await _staff_names_for(db, ticket)
+    messages_response = [_message_to_response(m, staff_names) for m in messages]
 
     user_info = None
     if ticket.user:
@@ -631,7 +652,8 @@ async def update_ticket_priority(
     await db.refresh(ticket)
 
     messages = sorted(ticket.messages or [], key=lambda m: m.created_at)
-    messages_response = [_message_to_response(m) for m in messages]
+    staff_names = await _staff_names_for(db, ticket)
+    messages_response = [_message_to_response(m, staff_names) for m in messages]
 
     user_info = None
     if ticket.user:
