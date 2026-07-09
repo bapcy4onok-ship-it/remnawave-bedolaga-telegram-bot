@@ -551,9 +551,26 @@ async def view_ticket(callback: types.CallbackQuery, db_user: User, db: AsyncSes
     )
     message_blocks: list[str] = []
     if ticket.messages:
+        # Имена сотрудников для подписи «кто именно ответил». Старые ответы из
+        # кабинета сохранены с user_id владельца тикета — для них остаётся
+        # безымянная «Поддержка».
+        staff_names: dict[int, str] = {}
+        staff_ids = {
+            m.user_id for m in ticket.messages if m.is_from_admin and m.user_id and m.user_id != ticket.user_id
+        }
+        if staff_ids:
+            from sqlalchemy import select as _select
+
+            for staff in (await db.execute(_select(User).where(User.id.in_(staff_ids)))).scalars():
+                staff_names[staff.id] = (staff.full_name or staff.username or '').strip()
+
         message_blocks.append(f'💬 Сообщения ({len(ticket.messages)}):\n\n')
         for msg in ticket.messages:
-            sender = '👤 Вы' if msg.is_user_message else '🛠️ Поддержка'
+            if msg.is_user_message:
+                sender = '👤 Вы'
+            else:
+                staff_name = staff_names.get(msg.user_id, '')
+                sender = f'🛠️ {html.escape(staff_name)} (Поддержка)' if staff_name else '🛠️ Поддержка'
             block = f'{sender} ({format_local_datetime(msg.created_at, "%d.%m %H:%M")}):\n{html.escape(msg.message_text or "")}\n\n'
             if getattr(msg, 'has_media', False) and getattr(msg, 'media_type', None) == 'photo':
                 block += '📎 Вложение: фото\n\n'

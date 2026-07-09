@@ -483,7 +483,9 @@ async def reply_to_ticket(
 
     message = TicketMessage(
         ticket_id=ticket.id,
-        user_id=ticket.user_id,
+        # Автор — сам сотрудник (как в боте), чтобы в переписке было видно,
+        # кто именно ответил. Раньше писался ticket.user_id (владелец тикета).
+        user_id=admin.id,
         message_text=request.message,
         is_from_admin=True,
         has_media=has_media,
