@@ -1142,7 +1142,7 @@ async def notify_user_about_ticket_reply(
                 responder_name = html.escape(responder.full_name or responder.username or 'Поддержка')
                 closed = await support_ranks.get_closed_count(db, responder)
                 intro = texts.t(
-                    'TICKET_RESPONDER_INTRO', '🧊 Вам ответит {name}\n{rank_label} Ранг модератора: {rank_name}'
+                    'TICKET_RESPONDER_INTRO', '🧊 Вам отвечает {name}\n{rank_label} Ранг модератора: {rank_name}'
                 ).format(
                     name=responder_name,
                     rank_label=support_ranks.rank_emoji_html(*support_ranks.get_rank(closed)[:2]),
