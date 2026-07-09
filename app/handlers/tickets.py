@@ -1101,10 +1101,47 @@ async def notify_admins_about_new_ticket(ticket: Ticket, db: AsyncSession):
         )
 
         await _notify_support_staff_dm(
-            bot, ticket, user, notification_text, media_file_id=media_file_id, media_type=media_type
+            bot, ticket, user, notification_text, db, media_file_id=media_file_id, media_type=media_type
         )
     except Exception as e:
         logger.error('Error notifying admins about new ticket', error=e)
+
+
+async def _get_role_based_support_ids(db: AsyncSession) -> tuple[set[int], set[int]]:
+    """Telegram-id получателей ЛС-уведомлений по ролям кабинета.
+
+    Возвращает (superadmins, support): активные назначения активных ролей —
+    уровень SUPERADMIN_LEVEL и выше, и роль «Поддержка». Пользователи без
+    telegram_id (email-админы) пропускаются — им ЛС не отправить.
+    """
+    from sqlalchemy import func as sa_func
+    from sqlalchemy import or_, select
+
+    from app.database.crud.rbac import SUPERADMIN_LEVEL
+    from app.database.models import AdminRole, UserRole
+
+    stmt = (
+        select(User.telegram_id, AdminRole.level, AdminRole.name)
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(AdminRole, AdminRole.id == UserRole.role_id)
+        .where(
+            UserRole.is_active.is_(True),
+            AdminRole.is_active.is_(True),
+            User.telegram_id.isnot(None),
+            or_(UserRole.expires_at.is_(None), UserRole.expires_at > sa_func.now()),
+            or_(AdminRole.level >= SUPERADMIN_LEVEL, AdminRole.name == 'Поддержка'),
+        )
+    )
+    superadmins: set[int] = set()
+    support: set[int] = set()
+    for telegram_id, level, name in (await db.execute(stmt)).all():
+        if not telegram_id:
+            continue
+        if level >= SUPERADMIN_LEVEL:
+            superadmins.add(int(telegram_id))
+        if name == 'Поддержка':
+            support.add(int(telegram_id))
+    return superadmins, support
 
 
 async def _notify_support_staff_dm(
@@ -1112,12 +1149,15 @@ async def _notify_support_staff_dm(
     ticket: Ticket,
     user: User | None,
     notification_text: str,
+    db: AsyncSession,
     *,
     media_file_id: str | None = None,
     media_type: str | None = None,
 ):
-    """Личные уведомления саппорту (админы + модераторы) о новом тикете.
+    """Личные уведомления саппорту о новом тикете.
 
+    Получатели: суперадмины (ADMIN_IDS + роль уровня 999 в кабинете) и все
+    с ролью «Поддержка» в кабинете (+ внутренний список модераторов бота).
     Дублирует уведомление из админ-топика каждому в ЛС, с web_app-кнопкой
     «Открыть в кабинете», ведущей сразу на тикет. Автору тикета не шлём.
     Ошибки отправки (бот не запущен получателем и т.п.) не прерывают остальных.
@@ -1136,10 +1176,23 @@ async def _notify_support_staff_dm(
         recipients.update(int(x) for x in (settings.ADMIN_IDS or []))
     except Exception:
         pass
+    moderators: set[int] = set()
     try:
-        recipients.update(int(x) for x in SupportSettingsService.get_moderators())
+        moderators = {int(x) for x in SupportSettingsService.get_moderators()}
+        recipients.update(moderators)
     except Exception:
         pass
+    try:
+        role_superadmins, role_support = await _get_role_based_support_ids(db)
+        recipients.update(role_superadmins)
+        recipients.update(role_support)
+        # Роль «Поддержка» в кабинете ⇒ модератор в боте: синхронизируем
+        # внутренний список, чтобы работали кнопки «Ответить»/«Закрыть»,
+        # панель «Модерация» и ранги без ручного добавления.
+        for tid in role_support - moderators:
+            SupportSettingsService.add_moderator(tid)
+    except Exception as role_error:
+        logger.warning('Failed to load role-based ticket notification recipients', error=role_error)
     author_tg_id = getattr(user, 'telegram_id', None)
     if author_tg_id:
         recipients.discard(int(author_tg_id))
