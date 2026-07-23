@@ -410,6 +410,236 @@ def _extract_guest_purchase_token(metadata: dict[str, Any] | None) -> str | None
     return metadata.get('purchase_token') or None
 
 
+# ---------------------------------------------------------------------------
+# Donation fulfillment ("Support the project") — shared across all providers
+# ---------------------------------------------------------------------------
+
+# Mirrors payment_service._GETTER_OVERRIDES (kept local to avoid a circular
+# import). Maps a provider model_name to its local-payment getter when it
+# differs from the standard get_{model_name}_payment_by_id pattern.
+_PAYMENT_GETTER_OVERRIDES: dict[str, str] = {
+    'mulenpay': 'get_mulenpay_payment_by_local_id',
+}
+
+
+async def patch_payment_metadata(
+    db: AsyncSession,
+    model_name: str,
+    local_payment_id: int,
+    extra: dict[str, Any],
+) -> bool:
+    """Merge ``extra`` into a provider's local payment ``metadata_json``.
+
+    Used to tag a freshly-created cabinet payment with a purpose marker (e.g.
+    ``{'purpose': 'donation'}``) that the webhook processor reads back later. The
+    same mechanism backs the guest-purchase flow. Returns ``True`` on success.
+    """
+    from importlib import import_module
+
+    try:
+        crud_module = import_module(f'app.database.crud.{model_name}')
+        getter_name = _PAYMENT_GETTER_OVERRIDES.get(model_name, f'get_{model_name}_payment_by_id')
+        getter = getattr(crud_module, getter_name, None)
+        if getter is None:
+            logger.warning(
+                'No getter found for patching payment metadata', model_name=model_name, getter_name=getter_name
+            )
+            return False
+        payment_record = await getter(db, local_payment_id)
+        if payment_record is None:
+            return False
+        existing_meta = dict(getattr(payment_record, 'metadata_json', None) or {})
+        existing_meta.update(extra)
+        payment_record.metadata_json = existing_meta
+        await db.commit()
+        return True
+    except Exception as patch_error:
+        logger.warning(
+            'Failed to patch payment metadata',
+            model_name=model_name,
+            local_payment_id=local_payment_id,
+            error=patch_error,
+        )
+        return False
+
+
+def mark_local_payment_paid(payment: Any, *, status: str | None = None) -> None:
+    """Mark a provider's local payment row as paid for a consumed donation.
+
+    A donation does NOT credit the balance, but the row still has a real
+    ``user_id``, so it must reach a terminal *paid* state — otherwise it lingers
+    as a "pending" payment in the donor's cabinet and gets re-polled. This runs
+    only inside the payment-confirmed code path, so is_paid=True is accurate.
+    Balance is never touched here.
+    """
+    if getattr(payment, 'is_paid', False):
+        return
+    if status is not None and hasattr(payment, 'status'):
+        payment.status = status
+    if hasattr(payment, 'is_paid'):
+        payment.is_paid = True
+    if hasattr(payment, 'paid_at') and getattr(payment, 'paid_at', None) is None:
+        payment.paid_at = datetime.now(UTC)
+    if hasattr(payment, 'updated_at'):
+        payment.updated_at = datetime.now(UTC)
+
+
+def _is_donation_metadata(metadata: dict[str, Any] | None) -> bool:
+    """Return True if the payment metadata marks a «Support the project» donation."""
+    return isinstance(metadata, dict) and metadata.get('purpose') == 'donation'
+
+
+async def try_fulfill_donation(
+    db: AsyncSession,
+    *,
+    metadata: dict[str, Any] | None,
+    payment_amount_kopeks: int,
+    provider_payment_id: str,
+    provider_name: str,
+    user_id: int,
+    payment_method: Any,
+    bot: Any | None = None,
+) -> bool | None:
+    """Record a donation detected in payment metadata WITHOUT crediting balance.
+
+    Returns:
+        ``True``  -- this is a donation and was recorded (or already recorded).
+        ``None``  -- NOT a donation; the caller must proceed with the normal
+                     balance-crediting flow.
+
+    Intentionally does NOT run referral bonuses, first-topup flags, saved-cart
+    resume or the standard balance notification — a donation is money for the
+    project, not a top-up.
+    """
+    if not _is_donation_metadata(metadata):
+        return None
+
+    from app.database.crud.donation import create_donation, donation_exists
+    from app.database.crud.user import get_user_by_id
+    from app.database.models import PaymentMethod, Transaction, TransactionType
+    from app.services.payment_service import create_transaction
+
+    external_id = str(provider_payment_id)
+    payment_method_value = payment_method.value if isinstance(payment_method, PaymentMethod) else str(payment_method)
+
+    try:
+        # Idempotency: a DONATION transaction for this (external_id, method) already exists?
+        existing = await db.execute(
+            select(Transaction.id).where(
+                Transaction.type == TransactionType.DONATION.value,
+                Transaction.external_id == external_id,
+                Transaction.payment_method == payment_method_value,
+            )
+        )
+        if existing.scalars().first() is not None:
+            logger.info(
+                'Donation already recorded, skipping',
+                provider=provider_name,
+                external_id=external_id,
+            )
+            return True
+
+        user = await get_user_by_id(db, user_id)
+
+        transaction = await create_transaction(
+            db=db,
+            user_id=user_id,
+            type=TransactionType.DONATION,
+            amount_kopeks=payment_amount_kopeks,
+            description='Пожертвование на развитие проекта',
+            payment_method=payment_method if isinstance(payment_method, PaymentMethod) else None,
+            external_id=external_id,
+            is_completed=True,
+            commit=False,
+        )
+
+        if not await donation_exists(db, external_id=external_id, payment_method=payment_method_value):
+            await create_donation(
+                db,
+                user=user,
+                user_id=user_id,
+                amount_kopeks=payment_amount_kopeks,
+                payment_method=payment_method_value,
+                external_id=external_id,
+                transaction_id=transaction.id,
+                commit=False,
+            )
+
+        # NOTE: balance is intentionally NOT credited. No referral bonus, no
+        # has_made_first_topup, no saved-cart resume.
+        await db.commit()
+
+        logger.info(
+            '💜 Пожертвование записано',
+            provider=provider_name,
+            external_id=external_id,
+            amount_kopeks=payment_amount_kopeks,
+            user_id=user_id,
+        )
+    except Exception as donation_error:
+        await db.rollback()
+        logger.exception(
+            'Error recording donation from webhook',
+            provider=provider_name,
+            external_id=external_id,
+            error=donation_error,
+        )
+        # Consumed regardless — never fall through to balance crediting for a
+        # payment explicitly marked as a donation.
+        return True
+
+    # Best-effort notifications (after commit, never block the payment flow).
+    if bot is not None:
+        await _notify_donation(bot, db, user_id, payment_amount_kopeks, payment_method_value)
+
+    return True
+
+
+async def _notify_donation(
+    bot: Any,
+    db: AsyncSession,
+    user_id: int,
+    amount_kopeks: int,
+    payment_method_value: str | None,
+) -> None:
+    """Send the admin donation notification and a thank-you to the donor."""
+    from app.database.crud.user import get_user_by_id
+
+    try:
+        user = await get_user_by_id(db, user_id)
+    except Exception:
+        user = None
+
+    if user is None:
+        return
+
+    try:
+        from app.services.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService(bot).send_donation_notification(
+            user,
+            amount_kopeks=amount_kopeks,
+            payment_method=payment_method_value,
+        )
+    except Exception as notify_error:
+        logger.warning('Не удалось отправить админ-уведомление о пожертвовании', error=notify_error)
+
+    telegram_id = getattr(user, 'telegram_id', None)
+    if not telegram_id:
+        return
+
+    try:
+        texts = get_texts(getattr(user, 'language', None) or 'ru')
+        message = texts.t(
+            'DONATION_THANK_YOU',
+            '💜 <b>Спасибо за поддержку проекта!</b>\n\nВаше пожертвование на сумму {amount} получено. '
+            'Оно не зачисляется на баланс — это ваш вклад в развитие проекта. Спасибо! 🙏',
+        ).format(amount=settings.format_price(amount_kopeks))
+        await bot.send_message(chat_id=telegram_id, text=message, parse_mode='HTML')
+    except Exception as thank_error:
+        logger.warning('Не удалось отправить донору благодарность за пожертвование', error=thank_error)
+
+
 async def try_fulfill_guest_purchase(
     db: AsyncSession,
     *,

@@ -64,6 +64,7 @@ class Settings(BaseSettings):
     ADMIN_NOTIFICATIONS_ERRORS_TOPIC_ID: int | None = None  # Ошибки бота
     ADMIN_NOTIFICATIONS_PROMO_TOPIC_ID: int | None = None  # Промокоды, кампании, промогруппы
     ADMIN_NOTIFICATIONS_PARTNERS_TOPIC_ID: int | None = None  # Партнёрки, выводы, админ-действия
+    ADMIN_NOTIFICATIONS_DONATIONS_TOPIC_ID: int | None = None  # Пожертвования «Поддержать проект»
 
     # Per-category enable/disable (default True for backwards compatibility)
     ADMIN_NOTIFICATIONS_PURCHASES_ENABLED: bool = True
@@ -76,6 +77,7 @@ class Settings(BaseSettings):
     ADMIN_NOTIFICATIONS_PROMO_ENABLED: bool = True
     ADMIN_NOTIFICATIONS_PARTNERS_ENABLED: bool = True
     ADMIN_NOTIFICATIONS_TICKETS_ENABLED: bool = True
+    ADMIN_NOTIFICATIONS_DONATIONS_ENABLED: bool = True
 
     # Настройки очереди чеков NaloGO
     NALOGO_QUEUE_CHECK_INTERVAL: int = 600  # Интервал проверки очереди (секунды, 10 мин)

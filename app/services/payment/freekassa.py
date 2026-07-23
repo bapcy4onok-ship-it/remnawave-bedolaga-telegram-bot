@@ -275,6 +275,24 @@ class FreekassaPaymentMixin:
         if guest_result is not None:
             return True
 
+        # --- Donation flow ("Support the project") ---
+        from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+        donation_result = await try_fulfill_donation(
+            db,
+            metadata=fk_metadata,
+            payment_amount_kopeks=payment.amount_kopeks,
+            provider_payment_id=str(intid) if intid else payment.order_id,
+            provider_name='freekassa',
+            user_id=payment.user_id,
+            payment_method=PaymentMethod.FREEKASSA,
+            bot=getattr(self, 'bot', None),
+        )
+        if donation_result is not None:
+            mark_local_payment_paid(payment)
+            await db.commit()
+            return True
+
         # Получаем пользователя
         user = await payment_module.get_user_by_id(db, payment.user_id)
         if not user:

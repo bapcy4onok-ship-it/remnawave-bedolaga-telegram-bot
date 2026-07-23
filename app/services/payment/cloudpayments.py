@@ -246,6 +246,24 @@ class CloudPaymentsPaymentMixin:
             await db.flush()
             return True
 
+        # --- Donation flow ("Support the project") ---
+        from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+        donation_result = await try_fulfill_donation(
+            db,
+            metadata=cp_metadata,
+            payment_amount_kopeks=amount_kopeks,
+            provider_payment_id=str(transaction_id_cp) if transaction_id_cp else invoice_id,
+            provider_name='cloudpayments',
+            user_id=payment.user_id,
+            payment_method=PaymentMethod.CLOUDPAYMENTS,
+            bot=getattr(self, 'bot', None),
+        )
+        if donation_result is not None:
+            mark_local_payment_paid(payment)
+            await db.commit()
+            return True
+
         # Update payment record
         payment.transaction_id_cp = transaction_id_cp
         payment.status = 'completed'

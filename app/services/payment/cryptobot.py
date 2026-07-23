@@ -244,6 +244,48 @@ class CryptoBotPaymentMixin:
                     await db.commit()
                     return True
 
+            # --- Donation flow ("Support the project") ---
+            # CryptoBot has no metadata_json, so the marker is in the payload (JSON).
+            # amount_kopeks is embedded by the cabinet so the recorded RUB value is
+            # exactly what the donor chose (avoids USD->RUB re-derivation).
+            crypto_donation_meta: dict[str, Any] | None = None
+            if crypto_payload_str:
+                try:
+                    import json as _json
+
+                    parsed = _json.loads(crypto_payload_str)
+                    if isinstance(parsed, dict) and parsed.get('purpose') == 'donation':
+                        crypto_donation_meta = parsed
+                except (ValueError, TypeError):
+                    pass
+
+            if crypto_donation_meta is not None:
+                from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+                donation_kopeks = int(crypto_donation_meta.get('amount_kopeks') or 0)
+                if donation_kopeks <= 0:
+                    # Defensive fallback: derive from USD if the amount wasn't embedded.
+                    try:
+                        donation_rubles = await currency_converter.usd_to_rub(updated_payment.amount_float)
+                        donation_kopeks = int(math.ceil(donation_rubles) * 100)
+                    except Exception:
+                        donation_kopeks = 0
+
+                donation_result = await try_fulfill_donation(
+                    db,
+                    metadata=crypto_donation_meta,
+                    payment_amount_kopeks=donation_kopeks,
+                    provider_payment_id=invoice_id,
+                    provider_name='cryptobot',
+                    user_id=updated_payment.user_id,
+                    payment_method=PaymentMethod.CRYPTOBOT,
+                    bot=getattr(self, 'bot', None),
+                )
+                if donation_result is not None:
+                    mark_local_payment_paid(locked, status='paid')
+                    await db.commit()
+                    return True
+
             if not updated_payment.transaction_id:
                 amount_usd = updated_payment.amount_float
 

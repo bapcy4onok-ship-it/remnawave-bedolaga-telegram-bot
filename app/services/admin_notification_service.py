@@ -71,6 +71,7 @@ class NotificationCategory(StrEnum):
     PROMO = 'promo'  # Промокоды, кампании, промогруппы
     PARTNERS = 'partners'  # Партнёрки, выводы, админ-действия
     TICKETS = 'tickets'  # Тикеты (уже существует)
+    DONATIONS = 'donations'  # Пожертвования «Поддержать проект»
 
 
 logger = structlog.get_logger(__name__)
@@ -96,6 +97,7 @@ class AdminNotificationService:
             NotificationCategory.PROMO: getattr(settings, 'ADMIN_NOTIFICATIONS_PROMO_TOPIC_ID', None),
             NotificationCategory.PARTNERS: getattr(settings, 'ADMIN_NOTIFICATIONS_PARTNERS_TOPIC_ID', None),
             NotificationCategory.TICKETS: self.ticket_topic_id,
+            NotificationCategory.DONATIONS: getattr(settings, 'ADMIN_NOTIFICATIONS_DONATIONS_TOPIC_ID', None),
         }
 
         # Per-category enabled flags (default True — backwards compatible)
@@ -924,6 +926,47 @@ class AdminNotificationService:
             return await self._send_message(message, category=NotificationCategory.BALANCE)
         except Exception as e:
             logger.error('Ошибка отправки уведомления о пополнении', error=e, exc_info=True)
+            return False
+
+    async def send_donation_notification(
+        self,
+        user: User,
+        *,
+        amount_kopeks: int,
+        payment_method: str | None = None,
+        external_id: str | None = None,
+    ) -> bool:
+        """Уведомление админов о пожертвовании «Поддержать проект».
+
+        Уходит в отдельный топик ``NotificationCategory.DONATIONS`` (env
+        ``ADMIN_NOTIFICATIONS_DONATIONS_TOPIC_ID``; при пустом — в общий топик).
+        Указывает донора — админу важно видеть, кто и сколько пожертвовал.
+        """
+        if not self._is_enabled():
+            return False
+
+        try:
+            donor_display = self._get_user_display(user)
+            donor_identifier = self._get_user_identifier_display(user)
+            method_display = html.escape(str(payment_method)) if payment_method else '—'
+
+            lines = [
+                '💜 <b>Новое пожертвование!</b>',
+                '',
+                f'💰 Сумма: <b>{settings.format_price(amount_kopeks)}</b>',
+                f'👤 Донор: {donor_display}',
+                f'🆔 {donor_identifier}',
+                f'💳 Способ: {method_display}',
+            ]
+            message = '\n'.join(lines)
+        except Exception as error:
+            logger.error('Ошибка подготовки уведомления о пожертвовании', error=error, exc_info=True)
+            return False
+
+        try:
+            return await self._send_message(message, category=NotificationCategory.DONATIONS)
+        except Exception as e:
+            logger.error('Ошибка отправки уведомления о пожертвовании', error=e, exc_info=True)
             return False
 
     async def send_subscription_extension_notification(

@@ -137,6 +137,7 @@ class TransactionType(Enum):
     REFERRAL_REWARD = 'referral_reward'
     POLL_REWARD = 'poll_reward'
     GIFT_PAYMENT = 'gift_payment'
+    DONATION = 'donation'  # Пожертвование «Поддержать проект» — НЕ зачисляется на баланс
 
 
 class PromoCodeType(Enum):
@@ -2216,7 +2217,7 @@ class Subscription(Base):
         if actual_status == 'disabled':
             return '⚫ Отключена'
         if actual_status == 'limited':
-            return '⚠️ Трафик исчерпан'
+            return '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Трафик исчерпан'
         if actual_status == 'trial':
             return '🎯 Тестовая'
 
@@ -2235,7 +2236,7 @@ class Subscription(Base):
         if actual_status == 'disabled':
             return '⚫'
         if actual_status == 'limited':
-            return '⚠️'
+            return '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>'
         if actual_status == 'trial':
             return '🎁'
 
@@ -2378,6 +2379,45 @@ class Transaction(Base):
     completed_at = Column(AwareDateTime(), nullable=True)
 
     user = relationship('User', back_populates='transactions')
+
+    @property
+    def amount_rubles(self) -> float:
+        return self.amount_kopeks / 100
+
+
+class Donation(Base):
+    """Durable registry of «Поддержать проект» donations.
+
+    Kept separate from ``transactions`` on purpose: ``Transaction.user_id`` uses
+    ``ondelete='CASCADE'``, so a donor's transactions vanish when the account is
+    deleted. Donations must survive that (the «top sponsors» board should not
+    forget people who left), so the donor identity is denormalised into a snapshot
+    and the FK is ``SET NULL``.
+    """
+
+    __tablename__ = 'donations'
+    __table_args__ = (
+        UniqueConstraint('external_id', 'payment_method', name='uq_donation_external_id_method'),
+        Index('ix_donations_user_created', 'user_id', 'created_at'),
+        Index('ix_donations_created_at', 'created_at'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+
+    # Snapshot of the donor so the record survives account deletion (user_id → NULL).
+    donor_telegram_id = Column(BigInteger, nullable=True, index=True)
+    donor_username = Column(String(255), nullable=True)
+    donor_name = Column(String(255), nullable=True)
+
+    amount_kopeks = Column(Integer, nullable=False)
+    payment_method = Column(String(50), nullable=True)
+    external_id = Column(String(255), nullable=True)  # provider payment id — идемпотентность
+    transaction_id = Column(Integer, ForeignKey('transactions.id', ondelete='SET NULL'), nullable=True)
+
+    created_at = Column(AwareDateTime(), default=func.now())
+
+    user = relationship('User')
 
     @property
     def amount_rubles(self) -> float:
@@ -3373,7 +3413,7 @@ class Ticket(Base):
             TicketStatus.OPEN.value: '🟢',
             TicketStatus.ANSWERED.value: '🟡',
             TicketStatus.CLOSED.value: '🔴',
-            TicketStatus.PENDING.value: '⏳',
+            TicketStatus.PENDING.value: '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji>',
         }
         return status_emojis.get(self.status, '❓')
 

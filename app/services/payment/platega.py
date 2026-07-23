@@ -323,6 +323,24 @@ class PlategaPaymentMixin:
         if guest_result is not None:
             return payment
 
+        # --- Donation flow ("Support the project") ---
+        from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+        donation_result = await try_fulfill_donation(
+            db,
+            metadata=metadata,
+            payment_amount_kopeks=payment.amount_kopeks,
+            provider_payment_id=payment.correlation_id,
+            provider_name='platega',
+            user_id=payment.user_id,
+            payment_method=PaymentMethod.PLATEGA,
+            bot=getattr(self, 'bot', None),
+        )
+        if donation_result is not None:
+            mark_local_payment_paid(payment)
+            await db.commit()
+            return payment
+
         if payload is not None:
             metadata['webhook'] = payload
 

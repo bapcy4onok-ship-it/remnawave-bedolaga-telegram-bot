@@ -581,6 +581,36 @@ async def handle_successful_payment(message: types.Message, db: AsyncSession, st
             )
             return
 
+        # Пожертвование «Поддержать проект» (Stars-инвойс из кабинета, payload balance_donation_).
+        # НЕ зачисляется на баланс — записывается как донат. try_fulfill_donation сам
+        # шлёт админ-уведомление и благодарность донору.
+        if payment.invoice_payload and payment.invoice_payload.startswith('balance_donation_'):
+            from app.database.models import PaymentMethod
+            from app.services.payment.common import try_fulfill_donation
+
+            rubles_amount = TelegramStarsService.calculate_rubles_from_stars(payment.total_amount)
+            donation_kopeks = int((rubles_amount * Decimal(100)).to_integral_value(rounding=ROUND_HALF_UP))
+            donation_result = await try_fulfill_donation(
+                db,
+                metadata={'purpose': 'donation'},
+                payment_amount_kopeks=donation_kopeks,
+                provider_payment_id=payment.telegram_payment_charge_id,
+                provider_name='telegram_stars',
+                user_id=user.id,
+                payment_method=PaymentMethod.TELEGRAM_STARS,
+                bot=message.bot,
+            )
+            if not donation_result:
+                logger.error('Не удалось записать пожертвование Stars', user_id=user.id)
+                await message.answer(
+                    texts.t(
+                        'STARS_PAYMENT_ENROLLMENT_ERROR',
+                        '❌ Произошла ошибка при зачислении средств. '
+                        'Обратитесь в поддержку, платеж будет проверен вручную.',
+                    )
+                )
+            return
+
         payment_service = PaymentService(message.bot)
 
         prompt_message_id = state_data.get('stars_prompt_message_id')

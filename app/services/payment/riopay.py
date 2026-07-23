@@ -312,6 +312,24 @@ class RioPayPaymentMixin:
         if guest_result is not None:
             return True
 
+        # --- Donation flow ("Support the project") ---
+        from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+        donation_result = await try_fulfill_donation(
+            db,
+            metadata=riopay_metadata,
+            payment_amount_kopeks=payment.amount_kopeks,
+            provider_payment_id=str(riopay_order_id) if riopay_order_id else payment.order_id,
+            provider_name='riopay',
+            user_id=payment.user_id,
+            payment_method=PaymentMethod.RIOPAY,
+            bot=getattr(self, 'bot', None),
+        )
+        if donation_result is not None:
+            mark_local_payment_paid(payment)
+            await db.commit()
+            return True
+
         # Получаем пользователя
         user = await get_user_by_id(db, payment.user_id)
         if not user:

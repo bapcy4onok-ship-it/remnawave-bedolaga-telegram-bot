@@ -1,5 +1,6 @@
 """Balance and payment routes for cabinet."""
 
+import json
 import math
 import time
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -266,8 +267,22 @@ async def create_stars_invoice(
             detail='Failed to calculate Stars amount',
         )
 
+    # Donation: payload marker + wording so the bot's Stars handler records it as
+    # a donation (not credited to balance). See handlers/stars_payments.py.
+    is_donation = request.purpose == 'donation'
+
     # Create payload for tracking payment
-    payload = f'balance_topup_{user.id}_{normalized_kopeks}_{int(time.time())}'
+    payload_prefix = 'balance_donation_' if is_donation else 'balance_topup_'
+    payload = f'{payload_prefix}{user.id}_{normalized_kopeks}_{int(time.time())}'
+
+    if is_donation:
+        invoice_title = 'Поддержать проект'
+        invoice_description = f'Пожертвование {normalized_kopeks / 100:.2f} ₽ ({stars_amount} ⭐)'
+        price_label = 'Пожертвование'
+    else:
+        invoice_title = 'Пополнение баланса VPN'
+        invoice_description = f'Пополнение баланса на {normalized_kopeks / 100:.2f} ₽ ({stars_amount} ⭐)'
+        price_label = 'Пополнение баланса'
 
     # Create invoice through Telegram Bot API
     try:
@@ -276,12 +291,12 @@ async def create_stars_invoice(
 
         async with create_bot() as bot:
             invoice_url = await bot.create_invoice_link(
-                title='Пополнение баланса VPN',
-                description=f'Пополнение баланса на {normalized_kopeks / 100:.2f} ₽ ({stars_amount} ⭐)',
+                title=invoice_title,
+                description=invoice_description,
                 payload=payload,
                 provider_token='',
                 currency='XTR',
-                prices=[LabeledPrice(label='Пополнение баланса', amount=stars_amount)],
+                prices=[LabeledPrice(label=price_label, amount=stars_amount)],
             )
 
         logger.info(
@@ -341,6 +356,17 @@ async def create_topup(
             detail=f'Maximum amount is {method.max_amount_kopeks / 100:.2f} RUB',
         )
 
+    # Donation mode: the payment is recorded as a donation (not credited to balance).
+    # The marker travels in the provider's metadata_json/payload and is read back by
+    # the webhook processor (try_fulfill_donation). Tribute is an external donate link
+    # with no local record we can tag — excluded from donation mode for now.
+    is_donation = request.purpose == 'donation'
+    if is_donation and request.payment_method == 'tribute':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Donations are not supported for this payment method',
+        )
+
     amount_rubles = request.amount_kopeks / 100
     payment_url = None
     payment_id = None
@@ -354,7 +380,7 @@ async def create_topup(
             yookassa_metadata = {
                 'user_telegram_id': str(user.telegram_id) if user.telegram_id else '',
                 'user_username': user.username or '',
-                'purpose': 'balance_topup',
+                'purpose': 'donation' if is_donation else 'balance_topup',
                 'source': 'cabinet',
             }
 
@@ -418,6 +444,17 @@ async def create_topup(
                     detail='Unable to convert amount to USD',
                 )
 
+            # CryptoBot has no metadata_json column — the donation marker travels in the
+            # payload (JSON). We embed amount_kopeks so the recorded RUB value is exactly
+            # what the donor chose (no USD→RUB re-derivation). The processor reads user
+            # from the local payment record, so switching payload shape is safe.
+            if is_donation:
+                cryptobot_payload = json.dumps(
+                    {'purpose': 'donation', 'user_id': user.id, 'amount_kopeks': request.amount_kopeks}
+                )
+            else:
+                cryptobot_payload = f'cabinet_topup_{user.id}_{request.amount_kopeks}'
+
             payment_service = PaymentService()
             result = await payment_service.create_cryptobot_payment(
                 db=db,
@@ -427,7 +464,7 @@ async def create_topup(
                 description=settings.get_balance_payment_description(
                     request.amount_kopeks, telegram_user_id=user.telegram_id, user_db_id=user.id
                 ),
-                payload=f'cabinet_topup_{user.id}_{request.amount_kopeks}',
+                payload=cryptobot_payload,
             )
             if result:
                 payment_url = (
@@ -1036,6 +1073,33 @@ async def create_topup(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to create payment. Please try again later.',
         )
+
+    # Donation: tag the freshly-created local payment so the webhook processor records
+    # it as a donation instead of crediting balance. YooKassa (metadata dict) and
+    # CryptoBot (payload) are tagged inline above; every other provider stores
+    # metadata_json and is patched here. `local_payment_id` for cloudpayments is
+    # returned under `payment_id`; everyone else under `local_payment_id`.
+    if is_donation and request.payment_method not in ('yookassa', 'cryptobot'):
+        local_payment_id = result.get('local_payment_id') or result.get('payment_id')
+        patched = False
+        if local_payment_id:
+            from app.services.payment.common import patch_payment_metadata
+
+            patched = await patch_payment_metadata(
+                db, request.payment_method, int(local_payment_id), {'purpose': 'donation'}
+            )
+        if not patched:
+            # Never hand back a donation URL whose marker was not persisted — that would
+            # let the payment be credited to balance as a normal top-up.
+            logger.error(
+                'Failed to tag donation payment; refusing to return payment URL',
+                payment_method=request.payment_method,
+                local_payment_id=local_payment_id,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Failed to create donation. Please try again later.',
+            )
 
     if not payment_url:
         raise HTTPException(

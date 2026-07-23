@@ -322,6 +322,24 @@ class HeleketPaymentMixin:
         if guest_result is not None:
             return updated_payment
 
+        # --- Donation flow ("Support the project") ---
+        from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+        donation_result = await try_fulfill_donation(
+            db,
+            metadata=locked_metadata,
+            payment_amount_kopeks=amount_kopeks,
+            provider_payment_id=updated_payment.uuid,
+            provider_name='heleket',
+            user_id=updated_payment.user_id,
+            payment_method=PaymentMethod.HELEKET,
+            bot=getattr(self, 'bot', None),
+        )
+        if donation_result is not None:
+            mark_local_payment_paid(updated_payment)
+            await db.commit()
+            return updated_payment
+
         transaction = await payment_module.create_transaction(
             db,
             user_id=updated_payment.user_id,

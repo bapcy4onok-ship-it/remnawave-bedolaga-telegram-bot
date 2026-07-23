@@ -1,7 +1,7 @@
 """Balance and payment schemas for cabinet."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -70,6 +70,11 @@ class TopUpRequest(BaseModel):
     amount_kopeks: int = Field(..., ge=1000, le=2_000_000_000, description='Amount in kopeks (min 10 rubles)')
     payment_method: str = Field(..., description='Payment method ID')
     payment_option: str | None = Field(None, description='Payment option (e.g. Platega method code)')
+    # Донат: платёж НЕ зачисляется на баланс, а учитывается как пожертвование.
+    # Отсутствие/None — обычное пополнение баланса.
+    purpose: Literal['donation'] | None = Field(
+        None, description='Set to "donation" to record the payment as a donation (not credited to balance)'
+    )
 
 
 class TopUpResponse(BaseModel):
@@ -87,6 +92,9 @@ class StarsInvoiceRequest(BaseModel):
     """Request to create Telegram Stars invoice for balance top-up."""
 
     amount_kopeks: int = Field(..., ge=100, le=2_000_000_000, description='Amount in kopeks (min 1 ruble)')
+    purpose: Literal['donation'] | None = Field(
+        None, description='Set to "donation" to record the payment as a donation (not credited to balance)'
+    )
 
 
 class StarsInvoiceResponse(BaseModel):

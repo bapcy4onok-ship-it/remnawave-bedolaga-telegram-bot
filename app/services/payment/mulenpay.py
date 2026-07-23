@@ -252,6 +252,24 @@ class MulenPayPaymentMixin:
                 if guest_result is not None:
                     return True
 
+                # --- Donation flow ("Support the project") ---
+                from app.services.payment.common import mark_local_payment_paid, try_fulfill_donation
+
+                donation_result = await try_fulfill_donation(
+                    db,
+                    metadata=payment_meta,
+                    payment_amount_kopeks=payment.amount_kopeks,
+                    provider_payment_id=payment.uuid,
+                    provider_name='mulenpay',
+                    user_id=payment.user_id,
+                    payment_method=PaymentMethod.MULENPAY,
+                    bot=getattr(self, 'bot', None),
+                )
+                if donation_result is not None:
+                    mark_local_payment_paid(payment)
+                    await db.commit()
+                    return True
+
                 payment_description = getattr(
                     payment,
                     'description',

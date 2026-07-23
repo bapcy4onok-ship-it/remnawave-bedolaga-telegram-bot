@@ -215,6 +215,7 @@ class UserDetailResponse(BaseModel):
 
     # Stats
     total_spent_kopeks: int = 0
+    total_donated_kopeks: int = 0  # Пожертвования «Поддержать проект» (не влияет на баланс)
     purchase_count: int = 0
     used_promocodes: int = 0
     has_had_paid_subscription: bool = False

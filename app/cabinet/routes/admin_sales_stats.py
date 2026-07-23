@@ -1330,3 +1330,74 @@ async def get_payment_health(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to load payment health',
         )
+
+
+# ============ Donations ("Support the project") ============
+
+
+class DonorItem(BaseModel):
+    """Один спонсор в таблице «топ спонсоров»."""
+
+    user_id: int | None = None
+    donor_telegram_id: int | None = None
+    donor_username: str | None = None
+    donor_name: str | None = None
+    donations_count: int
+    total_kopeks: int
+    last_donation_at: datetime | None = None
+
+
+class DonationsStatsResponse(BaseModel):
+    """Статистика пожертвований: общая сумма + топ спонсоров."""
+
+    total_amount_kopeks: int
+    donors_count: int
+    top_donors: list[DonorItem]
+
+
+@router.get('/donations', response_model=DonationsStatsResponse)
+async def get_donations_stats(
+    days: int | None = Query(default=None),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    admin: User = Depends(require_permission('sales_stats:read')),
+    db: AsyncSession = Depends(get_cabinet_db),
+) -> DonationsStatsResponse:
+    """Статистика пожертвований «Поддержать проект»: общая сумма, число доноров, топ спонсоров.
+
+    Донаты не входят в выручку/партнёрку — это отдельный реестр. По умолчанию — всё время.
+    """
+    try:
+        from app.database.crud.donation import (
+            count_distinct_donors,
+            get_donation_leaderboard,
+            get_total_donations_kopeks,
+        )
+
+        # days=None → всё время; иначе — период, как у соседних эндпоинтов.
+        period_start: datetime | None = None
+        period_end: datetime | None = None
+        if (days is not None and days > 0) or (start_date and end_date):
+            period_start, period_end = _parse_period(days, start_date, end_date)
+
+        total_amount = await get_total_donations_kopeks(db, start=period_start, end=period_end)
+        donors_count = await count_distinct_donors(db, start=period_start, end=period_end)
+        leaderboard = await get_donation_leaderboard(
+            db, limit=limit, start=period_start, end=period_end
+        )
+
+        return DonationsStatsResponse(
+            total_amount_kopeks=total_amount,
+            donors_count=donors_count,
+            top_donors=[DonorItem(**row) for row in leaderboard],
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error('Failed to get donations stats', error=e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Failed to load donations stats',
+        )

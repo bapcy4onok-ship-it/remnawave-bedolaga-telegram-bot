@@ -686,6 +686,11 @@ async def get_user_detail(
     spending_stats = await get_users_spending_stats(db, [user.id])
     user_stats = spending_stats.get(user.id, {'total_spent': 0, 'purchase_count': 0})
 
+    # Donations «Поддержать проект» (отдельный реестр, не влияет на баланс/выручку)
+    from app.database.crud.donation import get_user_donation_total_kopeks
+
+    total_donated_kopeks = await get_user_donation_total_kopeks(db, user.id)
+
     # Build subscription info (all subscriptions + legacy single)
     subs = getattr(user, 'subscriptions', None) or []
     all_subscriptions_info = []
@@ -792,6 +797,7 @@ async def get_user_detail(
         promo_group=promo_group_info,
         referral=referral_info,
         total_spent_kopeks=user_stats.get('total_spent', 0),
+        total_donated_kopeks=total_donated_kopeks,
         purchase_count=user_stats.get('purchase_count', 0),
         used_promocodes=user.used_promocodes or 0,
         has_had_paid_subscription=user.has_had_paid_subscription,
