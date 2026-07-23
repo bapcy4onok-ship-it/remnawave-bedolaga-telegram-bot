@@ -576,7 +576,7 @@ async def check_pal24_payment_status(
             message_lines.append('✅ Платеж успешно завершен! Средства уже на балансе.')
         elif payment.status in {'NEW', 'PROCESS'}:
             message_lines.append('')
-            message_lines.append('⏳ Платеж еще не завершен. Оплатите счет и проверьте статус позже.')
+            message_lines.append('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще не завершен. Оплатите счет и проверьте статус позже.')
             if sbp_link:
                 message_lines.append('')
                 message_lines.append(f'🏦 СБП: {sbp_link}')

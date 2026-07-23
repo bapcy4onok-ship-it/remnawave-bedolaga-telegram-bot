@@ -121,7 +121,7 @@ def _format_period_discounts_lines(texts, group: PromoGroup, language: str) -> l
 
     header = texts.t(
         'ADMIN_PROMO_GROUP_PERIOD_DISCOUNTS_HEADER',
-        '⏳ Скидки по периодам:',
+        '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Скидки по периодам:',
     )
 
     lines = [header]

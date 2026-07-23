@@ -85,7 +85,7 @@ class ThrottlingMiddleware(BaseMiddleware):
                     max_calls=self.start_max_calls,
                 )
                 try:
-                    await event.answer(f'⏳ Слишком много запросов. Попробуйте через {cooldown} сек.')
+                    await event.answer(f'<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Слишком много запросов. Попробуйте через {cooldown} сек.')
                 except TelegramAPIError:
                     pass
                 self.start_buckets[user_id] = timestamps
@@ -115,7 +115,7 @@ class ThrottlingMiddleware(BaseMiddleware):
                     if is_ticket_state:
                         return None
                 try:
-                    await event.answer('⏳ Пожалуйста, не отправляйте сообщения так часто!')
+                    await event.answer('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Пожалуйста, не отправляйте сообщения так часто!')
                 except TelegramAPIError:
                     pass
                 return None

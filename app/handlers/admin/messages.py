@@ -237,7 +237,7 @@ async def show_messages_menu(callback: types.CallbackQuery, db_user: User, db: A
 - <b>По критериям</b> - настраиваемые фильтры
 - <b>История</b> - просмотр предыдущих рассылок
 
-⚠️ Будьте осторожны с массовыми рассылками!
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Будьте осторожны с массовыми рассылками!
 """
 
     await safe_edit_or_send_text(
@@ -393,7 +393,7 @@ async def delete_pinned_message(
         '✅ <b>Закрепленное сообщение удалено</b>\n\n'
         f'👥 Чатов обработано: {total}\n'
         f'✅ Откреплено: {unpinned_count}\n'
-        f'⚠️ Ошибок: {failed_count}\n\n'
+        f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Ошибок: {failed_count}\n\n'
         'Новое сообщение можно задать кнопкой "Обновить".',
         reply_markup=get_admin_messages_keyboard(db_user.language),
         parse_mode='HTML',
@@ -503,7 +503,7 @@ async def handle_pinned_broadcast_now(
             '✅ <b>Закрепленное сообщение обновлено</b>\n\n'
             '👥 Получателей: {total}\n'
             '✅ Отправлено: {sent}\n'
-            '⚠️ Ошибок: {failed}',
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Ошибок: {failed}',
         ).format(total=total, sent=sent_count, failed=failed_count),
         reply_markup=get_admin_messages_keyboard(db_user.language),
         parse_mode='HTML',
@@ -624,7 +624,7 @@ async def show_messages_history(callback: types.CallbackQuery, db_user: User, db
         text = f'📋 <b>История рассылок</b> (страница {page}/{total_pages})\n\n'
 
         for broadcast in broadcasts:
-            status_emoji = '✅' if broadcast.status == 'completed' else '❌' if broadcast.status == 'failed' else '⏳'
+            status_emoji = '✅' if broadcast.status == 'completed' else '❌' if broadcast.status == 'failed' else '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji>'
             success_rate = (
                 round((broadcast.sent_count / broadcast.total_count * 100), 1) if broadcast.total_count > 0 else 0
             )
@@ -1380,7 +1380,7 @@ async def confirm_broadcast(callback: types.CallbackQuery, db_user: User, state:
                 f'{blocked_line}'
                 f'• Ошибок: {current_failed}\n'
                 f'• Обработано: {processed}/{total}\n\n'
-                f'⏳ Не закрывайте диалог — рассылка продолжается...'
+                f'<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Не закрывайте диалог — рассылка продолжается...'
             )
         return ''
 

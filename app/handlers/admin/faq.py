@@ -60,7 +60,7 @@ async def _build_overview(
     if setting and not setting.is_enabled:
         status_text = texts.t(
             'ADMIN_FAQ_STATUS_DISABLED',
-            '⚠️ Показ FAQ выключен.',
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Показ FAQ выключен.',
         )
     elif active_pages:
         status_text = texts.t(
@@ -70,12 +70,12 @@ async def _build_overview(
     elif total_pages:
         status_text = texts.t(
             'ADMIN_FAQ_STATUS_ENABLED_EMPTY',
-            '⚠️ FAQ включён, но нет активных страниц.',
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> FAQ включён, но нет активных страниц.',
         )
     else:
         status_text = texts.t(
             'ADMIN_FAQ_STATUS_EMPTY',
-            '⚠️ FAQ ещё не настроен.',
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> FAQ ещё не настроен.',
         )
 
     pages_overview = texts.t(
@@ -705,7 +705,7 @@ async def process_edit_faq_title(
 
     if not page_id:
         await state.clear()
-        await message.answer(texts.t('ADMIN_FAQ_UNEXPECTED_STATE', '⚠️ Состояние сброшено.'))
+        await message.answer(texts.t('ADMIN_FAQ_UNEXPECTED_STATE', '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Состояние сброшено.'))
         return
 
     page = await FaqService.get_page(
@@ -842,7 +842,7 @@ async def process_edit_faq_content(
 
     if not page_id:
         await state.clear()
-        await message.answer(texts.t('ADMIN_FAQ_UNEXPECTED_STATE', '⚠️ Состояние сброшено.'))
+        await message.answer(texts.t('ADMIN_FAQ_UNEXPECTED_STATE', '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Состояние сброшено.'))
         return
 
     page = await FaqService.get_page(

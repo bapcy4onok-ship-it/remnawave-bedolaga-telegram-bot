@@ -1369,7 +1369,7 @@ async def select_tariff_period(
             f'📅 Период: {format_period(period)}\n'
             f'💰 Стоимость: {format_price_kopeks(final_price)}\n\n'
             f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-            f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>\n\n'
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>\n\n'
             f'🛒 <i>Корзина сохранена! После пополнения баланса подписка будет оформлена автоматически.</i>',
             reply_markup=get_tariff_insufficient_balance_keyboard(tariff_id, period, db_user.language),
             parse_mode='HTML',
@@ -2125,10 +2125,11 @@ def _calc_extra_devices_cost(tariff: Tariff, subscription_device_limit: int, per
     prices = tariff.period_prices or {}
     ref_month_price = int(prices.get('30', 0) or 0)
     base_price = int(prices.get(str(period_days), 0) or 0)
-    if period_days < 30 and ref_month_price > 0 and base_price > 0:
-        # Период короче месяца: устройство стоит ту же долю месячной цены,
-        # что и сам период от месяца (base[P]/base[30]). 14д при base 50/90 → 50.
-        return additional * device_price * base_price // ref_month_price
+    if ref_month_price > 0 and base_price > 0:
+        # Устройство дисконтируется той же пропорцией, что и период
+        # (base[P]/base[30]), округление за устройство — до рубля.
+        per_device = device_price * base_price // ref_month_price
+        return additional * ((per_device + 50) // 100 * 100)
     if period_days < 30:
         return additional * device_price * period_days // 30
     months = max(1, round(period_days / 30))
@@ -2477,7 +2478,7 @@ async def select_tariff_extend_period(
             f'📅 Период: {format_period(period)}\n'
             f'💰 К оплате: {format_price_kopeks(final_price)}\n\n'
             f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-            f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>\n\n'
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>\n\n'
             f'🛒 <i>Корзина сохранена! После пополнения баланса подписка будет продлена автоматически.</i>',
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
@@ -3039,7 +3040,7 @@ async def select_tariff_switch(
             remaining = current_subscription.end_date - datetime.now(UTC)
             remaining_days = max(0, remaining.days)
             if remaining_days > 1:
-                days_warning = f'\n\n⚠️ <b>Внимание!</b> У вас осталось {remaining_days} дн. подписки.\nПри смене на суточный тариф они будут утеряны!'
+                days_warning = f'\n\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b> У вас осталось {remaining_days} дн. подписки.\nПри смене на суточный тариф они будут утеряны!'
 
         if user_balance >= daily_price:
             await callback.message.edit_text(
@@ -3075,7 +3076,7 @@ async def select_tariff_switch(
                 f'💰 Цена: {format_price_kopeks(daily_price)}/день'
                 f'{discount_text}\n\n'
                 f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-                f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>'
+                f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>'
                 f'{days_warning}',
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=[
@@ -3097,7 +3098,7 @@ async def select_tariff_switch(
         if tariff.description:
             info_text += f'\n📝 {html.escape(tariff.description)}\n'
 
-        info_text += '\n⚠️ Оплачивается полная стоимость тарифа.\nВыберите период:'
+        info_text += '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Оплачивается полная стоимость тарифа.\nВыберите период:'
 
         await callback.message.edit_text(
             info_text,
@@ -3193,7 +3194,7 @@ async def select_tariff_switch_period(
             f'📅 Период: {format_period(period)}\n'
             f'💰 К оплате: {format_price_kopeks(final_price)}\n\n'
             f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-            f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>',
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>',
             reply_markup=get_tariff_switch_insufficient_balance_keyboard(tariff_id, period, db_user.language),
             parse_mode='HTML',
         )
@@ -4073,7 +4074,7 @@ async def preview_instant_switch(
     if is_new_daily and remaining_days > 1:
         daily_warning = texts.t(
             'DAILY_SWITCH_WARNING',
-            f'\n\n⚠️ <b>Внимание!</b> У вас осталось {remaining_days} дн. подписки.\nПри смене на суточный тариф они будут утеряны!',
+            f'\n\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b> У вас осталось {remaining_days} дн. подписки.\nПри смене на суточный тариф они будут утеряны!',
         ).format(days=remaining_days)
 
     # Для суточного тарифа особая логика показа
@@ -4116,7 +4117,7 @@ async def preview_instant_switch(
                 f'💰 Цена: {format_price_kopeks(daily_price)}/день'
                 f'{discount_text}\n\n'
                 f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-                f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>'
+                f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>'
                 f'{daily_warning}',
                 reply_markup=get_instant_switch_insufficient_balance_keyboard(tariff_id, db_user.language),
                 parse_mode='HTML',
@@ -4157,7 +4158,7 @@ async def preview_instant_switch(
                 f'📦 Новый тариф: <b>{html.escape(new_tariff.name)}</b>\n'
                 f'💰 Требуется доплата: {format_price_kopeks(upgrade_cost)}\n\n'
                 f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-                f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>',
+                f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>',
                 reply_markup=get_instant_switch_insufficient_balance_keyboard(tariff_id, db_user.language),
                 parse_mode='HTML',
             )
@@ -4567,7 +4568,7 @@ async def return_to_saved_tariff_cart(
                 f'🔄 Тип: Суточный\n'
                 f'💰 Стоимость: {format_price_kopeks(total_price)}\n\n'
                 f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-                f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>',
+                f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>',
                 reply_markup=get_daily_tariff_insufficient_balance_keyboard(tariff_id, db_user.language),
                 parse_mode='HTML',
             )
@@ -4579,7 +4580,7 @@ async def return_to_saved_tariff_cart(
                 f'📅 Период: {format_period(period)}\n'
                 f'💰 Стоимость: {format_price_kopeks(total_price)}\n\n'
                 f'💳 Ваш баланс: {format_price_kopeks(user_balance)}\n'
-                f'⚠️ Не хватает: <b>{format_price_kopeks(missing)}</b>',
+                f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: <b>{format_price_kopeks(missing)}</b>',
                 reply_markup=get_tariff_insufficient_balance_keyboard(tariff_id, period, db_user.language),
                 parse_mode='HTML',
             )

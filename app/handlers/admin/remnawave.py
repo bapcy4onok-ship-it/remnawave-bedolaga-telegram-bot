@@ -99,7 +99,7 @@ def _build_auto_sync_view(status: RemnaWaveAutoSyncStatus) -> tuple[str, types.I
         reason_text = reason_map.get(status.last_run_reason or '', '—')
         result_icon = '✅' if status.last_run_success else '❌'
         result_label = 'успешно' if status.last_run_success else 'с ошибками'
-        error_block = f'\n⚠️ Ошибка: {status.last_run_error}' if status.last_run_error else ''
+        error_block = f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Ошибка: {status.last_run_error}' if status.last_run_error else ''
         last_run_text = (
             f'{result_icon} {result_label}\n'
             f'• Старт: {started_text}\n'
@@ -108,14 +108,14 @@ def _build_auto_sync_view(status: RemnaWaveAutoSyncStatus) -> tuple[str, types.I
         )
     elif status.last_run_started_at:
         last_run_text = (
-            '⏳ Синхронизация началась, но еще не завершилась'
+            '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Синхронизация началась, но еще не завершилась'
             if status.is_running
             else f'ℹ️ Последний запуск: {format_datetime(status.last_run_started_at)}'
         )
     else:
         last_run_text = '—'
 
-    running_text = '⏳ Выполняется сейчас' if status.is_running else 'Ожидание'
+    running_text = '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Выполняется сейчас' if status.is_running else 'Ожидание'
     toggle_text = '❌ Отключить' if status.enabled else '✅ Включить'
 
     text = f"""🔄 <b>Автосинхронизация RemnaWave</b>
@@ -971,7 +971,7 @@ async def show_system_stats(callback: types.CallbackQuery, db_user: User, db: As
 
     users_status_text = ''
     for status, count in users_by_status.items():
-        status_emoji = {'ACTIVE': '✅', 'DISABLED': '❌', 'LIMITED': '⚠️', 'EXPIRED': '⏰'}.get(status, '❓')
+        status_emoji = {'ACTIVE': '✅', 'DISABLED': '❌', 'LIMITED': '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>', 'EXPIRED': '⏰'}.get(status, '❓')
         users_status_text += f'  {status_emoji} {status}: {count}\n'
 
     top_nodes_text = ''
@@ -1454,7 +1454,7 @@ async def show_node_statistics(callback: types.CallbackQuery, db_user: User, db:
 - Уведомления: {node.get('notify_percent') or '—'}
 - Множитель: {node.get('consumption_multiplier') or 1}
 
-⚠️ <b>Детальная статистика временно недоступна</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Детальная статистика временно недоступна</b>
 Возможные причины:
 • Проблемы с подключением к API
 • Нода недавно добавлена
@@ -1623,7 +1623,7 @@ async def show_squad_inbounds_selection(callback: types.CallbackQuery, db_user: 
         )
 
     if len(all_inbounds) > 15:
-        text += f'\n⚠️ Показано первые 15 из {len(all_inbounds)} инбаундов'
+        text += f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Показано первые 15 из {len(all_inbounds)} инбаундов'
 
     keyboard.extend(
         [
@@ -1987,7 +1987,7 @@ async def process_squad_name(message: types.Message, db_user: User, db: AsyncSes
         )
 
     if len(all_inbounds) > 15:
-        text += f'\n⚠️ Показано первые 15 из {len(all_inbounds)} инбаундов'
+        text += f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Показано первые 15 из {len(all_inbounds)} инбаундов'
 
     keyboard.extend(
         [
@@ -2168,7 +2168,7 @@ async def show_sync_options(callback: types.CallbackQuery, db_user: User, db: As
         finished_text = format_datetime(status.last_run_finished_at)
         last_result = f'{result_icon} {result_label} ({finished_text})'
     elif status.last_run_started_at:
-        last_result = f'⏳ Запущено {format_datetime(status.last_run_started_at)}'
+        last_result = f'<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Запущено {format_datetime(status.last_run_started_at)}'
 
     status_lines = [
         f'⚙️ Статус: {"✅ Включена" if status.enabled else "❌ Отключена"}',
@@ -2185,7 +2185,7 @@ async def show_sync_options(callback: types.CallbackQuery, db_user: User, db: As
         '• Деактивация подписок пользователей, отсутствующих в панели\n'
         '• Сохранение балансов пользователей\n'
         '• ⏱️ Время выполнения: 2-5 минут\n\n'
-        '⚠️ <b>Важно:</b>\n'
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Важно:</b>\n'
         '• Во время синхронизации не выполняйте другие операции\n'
         '• При полной синхронизации подписки пользователей, отсутствующих в панели, будут деактивированы\n'
         '• Рекомендуется делать полную синхронизацию ежедневно\n'
@@ -2359,7 +2359,7 @@ async def run_auto_sync_now(
 
     if not result.get('started'):
         await callback.message.edit_text(
-            '⚠️ <b>Синхронизация уже выполняется</b>\n\n' + base_text,
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Синхронизация уже выполняется</b>\n\n' + base_text,
             reply_markup=keyboard,
             parse_mode='HTML',
         )
@@ -2479,7 +2479,7 @@ async def sync_all_users(callback: types.CallbackQuery, db_user: User, db: Async
 • Деактивация подписок отсутствующих пользователей
 • Сохранение балансов
 
-⏳ Пожалуйста, подождите...
+<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Пожалуйста, подождите...
 """
 
     await callback.message.edit_text(progress_text, reply_markup=None)
@@ -2493,7 +2493,7 @@ async def sync_all_users(callback: types.CallbackQuery, db_user: User, db: Async
         status_emoji = '✅'
         status_text = 'успешно завершена'
     elif stats['errors'] < total_operations:
-        status_emoji = '⚠️'
+        status_emoji = '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>'
         status_text = 'завершена с предупреждениями'
     else:
         status_emoji = '❌'
@@ -2521,7 +2521,7 @@ async def sync_all_users(callback: types.CallbackQuery, db_user: User, db: Async
     if stats['errors'] > 0:
         text += """
 
-⚠️ <b>Внимание:</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание:</b>
 Некоторые операции завершились с ошибками.
 Проверьте логи для получения подробной информации.
 """
@@ -2572,8 +2572,11 @@ async def sync_users_to_panel(
         status_emoji = '✅'
         status_text = 'успешно завершена'
     else:
-        status_emoji = '⚠️' if (stats['created'] + stats['updated']) > 0 else '❌'
-        status_text = 'завершена с предупреждениями' if status_emoji == '⚠️' else 'завершена с ошибками'
+        has_partial_progress = (stats['created'] + stats['updated']) > 0
+        status_emoji = (
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>' if has_partial_progress else '❌'
+        )
+        status_text = 'завершена с предупреждениями' if has_partial_progress else 'завершена с ошибками'
 
     text = (
         f'{status_emoji} <b>Синхронизация в панель {status_text}</b>\n\n'
@@ -2667,7 +2670,7 @@ async def validate_subscriptions(callback: types.CallbackQuery, db_user: User, d
         status_emoji = '✅'
         status_text = 'успешно завершена'
     else:
-        status_emoji = '⚠️'
+        status_emoji = '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>'
         status_text = 'завершена с ошибками'
 
     text = f"""
@@ -2715,7 +2718,7 @@ async def cleanup_subscriptions(callback: types.CallbackQuery, db_user: User, db
         status_emoji = '✅'
         status_text = 'успешно завершена'
     else:
-        status_emoji = '⚠️'
+        status_emoji = '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>'
         status_text = 'завершена с ошибками'
 
     text = f"""
@@ -2752,9 +2755,9 @@ async def cleanup_subscriptions(callback: types.CallbackQuery, db_user: User, db
 async def force_cleanup_all_orphaned_users(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
     await callback.message.edit_text(
         '🗑️ Выполняется принудительная очистка всех пользователей, отсутствующих в панели...\n\n'
-        '⚠️ ВНИМАНИЕ: Это полностью удалит ВСЕ данные пользователей!\n'
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> ВНИМАНИЕ: Это полностью удалит ВСЕ данные пользователей!\n'
         '📊 Включая: транзакции, реферальные доходы, промокоды, серверы, балансы\n\n'
-        '⏳ Пожалуйста, подождите...',
+        '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Пожалуйста, подождите...',
         reply_markup=None,
     )
 
@@ -2765,7 +2768,7 @@ async def force_cleanup_all_orphaned_users(callback: types.CallbackQuery, db_use
         status_emoji = '✅'
         status_text = 'успешно завершена'
     else:
-        status_emoji = '⚠️'
+        status_emoji = '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>'
         status_text = 'завершена с ошибками'
 
     text = f"""
@@ -2860,7 +2863,7 @@ async def sync_users(callback: types.CallbackQuery, db_user: User, db: AsyncSess
         progress_text += '• Обновление информации о трафике\n'
         progress_text += '• Синхронизация подписок\n'
 
-    progress_text += '\n⏳ Пожалуйста, подождите...'
+    progress_text += '\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Пожалуйста, подождите...'
 
     await callback.message.edit_text(progress_text, reply_markup=None)
 
@@ -2877,7 +2880,7 @@ async def sync_users(callback: types.CallbackQuery, db_user: User, db: AsyncSess
         status_emoji = '✅'
         status_text = 'успешно завершена'
     elif stats['errors'] < total_operations:
-        status_emoji = '⚠️'
+        status_emoji = '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>'
         status_text = 'завершена с предупреждениями'
     else:
         status_emoji = '❌'

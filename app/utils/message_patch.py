@@ -216,11 +216,11 @@ def _get_language(message: Message) -> str | None:
 def _default_privacy_hint(language: str | None) -> str:
     if language and language.lower().startswith('en'):
         return (
-            '⚠️ Telegram blocked the contact request button because of your privacy settings. '
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Telegram blocked the contact request button because of your privacy settings. '
             'Please allow sharing your contact information or send the required details manually.'
         )
     return (
-        '⚠️ Telegram запретил кнопку запроса контакта из-за настроек приватности. '
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Telegram запретил кнопку запроса контакта из-за настроек приватности. '
         'Разрешите отправку контакта в настройках Telegram или отправьте данные вручную.'
     )
 

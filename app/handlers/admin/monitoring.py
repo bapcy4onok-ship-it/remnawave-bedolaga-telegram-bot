@@ -743,7 +743,7 @@ async def traffic_check_callback(callback: CallbackQuery):
 """
 
         if violations:
-            text += '\n⚠️ <b>Превышения дельты:</b>\n'
+            text += '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Превышения дельты:</b>\n'
             for v in violations[:10]:
                 name = html.escape(v.full_name or '') or v.user_uuid[:8]
                 text += f'• {name}: +{v.used_traffic_gb:.1f} ГБ\n'
@@ -1093,7 +1093,7 @@ async def nalogo_pending_callback(callback: CallbackQuery):
             await callback.answer('✅ Нет чеков на проверку', show_alert=True)
             return
 
-        text = f'⚠️ <b>Чеки требующие проверки: {len(receipts)}</b>\n\n'
+        text = f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Чеки требующие проверки: {len(receipts)}</b>\n\n'
         text += 'Проверьте в lknpd.nalog.ru созданы ли эти чеки.\n\n'
 
         buttons = []
@@ -1957,7 +1957,7 @@ async def edit_cooldown(callback: CallbackQuery, state: FSMContext):
         settings_message_id=callback.message.message_id,
     )
     await callback.answer()
-    await callback.message.answer('⏳ Введите кулдаун уведомлений в минутах (минимум 1):')
+    await callback.message.answer('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Введите кулдаун уведомлений в минутах (минимум 1):')
 
 
 @router.message(AdminStates.editing_traffic_setting)

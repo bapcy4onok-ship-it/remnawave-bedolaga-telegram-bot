@@ -306,7 +306,7 @@ async def check_mulenpay_payment_status(callback: types.CallbackQuery, db: Async
         if payment.is_paid:
             message_lines.append('\n✅ Платеж успешно завершен! Средства уже на балансе.')
         elif payment.status in {'created', 'processing'}:
-            message_lines.append('\n⏳ Платеж еще не завершен. Завершите оплату по ссылке и проверьте статус позже.')
+            message_lines.append('\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще не завершен. Завершите оплату по ссылке и проверьте статус позже.')
             if payment.payment_url:
                 message_lines.append(f'\n🔗 Ссылка на оплату: {payment.payment_url}')
         elif payment.status in {'canceled', 'error'}:

@@ -220,7 +220,7 @@ async def start_set_sla_minutes(callback: types.CallbackQuery, db_user: User, db
     await callback.message.edit_text(
         texts.t(
             'ADMIN_SUPPORT_SLA_SETUP_PROMPT',
-            '⏳ <b>Настройка SLA</b>\n\nВведите количество минут ожидания ответа (целое число > 0):',
+            '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> <b>Настройка SLA</b>\n\nВведите количество минут ожидания ответа (целое число > 0):',
         ),
         parse_mode='HTML',
         reply_markup=types.InlineKeyboardMarkup(

@@ -339,7 +339,7 @@ async def clear_rules_command(message: types.Message, db_user: User, db: AsyncSe
                 'Правила очищены командой администратором', telegram_id=db_user.telegram_id, full_name=db_user.full_name
             )
         else:
-            await message.reply('⚠️ <b>Нет правил для очистки</b>\n\nАктивные правила не найдены.')
+            await message.reply('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Нет правил для очистки</b>\n\nАктивные правила не найдены.')
 
     except Exception as e:
         logger.error('Ошибка при очистке правил командой', error=e)
@@ -399,7 +399,7 @@ async def admin_commands_help(message: types.Message, db_user: User, db: AsyncSe
 <b>📱 Панель управления:</b>
 Используйте кнопку "Админ панель" в главном меню для полного доступа ко всем функциям.
 
-<b>⚠️ Важно:</b>
+<b><tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Важно:</b>
 Все команды логируются и требуют админских прав.
 """
 

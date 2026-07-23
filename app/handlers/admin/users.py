@@ -1112,7 +1112,7 @@ async def confirm_user_delete(callback: types.CallbackQuery, db_user: User):
 
     await callback.message.edit_text(
         '🗑️ <b>Удаление пользователя</b>\n\n'
-        '⚠️ <b>ВНИМАНИЕ!</b>\n'
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>ВНИМАНИЕ!</b>\n'
         'Вы уверены, что хотите удалить этого пользователя?\n\n'
         'Это действие:\n'
         '• Пометит пользователя как удаленного\n'
@@ -2367,7 +2367,7 @@ async def process_send_user_message(
     except TelegramForbiddenError:
         await message.answer(
             texts.t(
-                'ADMIN_USER_SEND_MESSAGE_FORBIDDEN', '⚠️ Пользователь заблокировал бота или не может получить сообщения.'
+                'ADMIN_USER_SEND_MESSAGE_FORBIDDEN', '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Пользователь заблокировал бота или не может получить сообщения.'
             ),
             reply_markup=confirmation_keyboard,
         )
@@ -3414,7 +3414,7 @@ async def delete_user_subscription(callback: types.CallbackQuery, db_user: User,
     _sid = f'_s{subscription_id}'
 
     await callback.message.edit_text(
-        '🗑 <b>Удаление подписки</b>\n\n⚠️ Подписка будет полностью удалена из системы.\nЭто действие необратимо!',
+        '🗑 <b>Удаление подписки</b>\n\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Подписка будет полностью удалена из системы.\nЭто действие необратимо!',
         reply_markup=get_confirmation_keyboard(f'admin_sub_delete_confirm_{user_id}{_sid}', back_cb, db_user.language),
     )
     await callback.answer()
@@ -4205,7 +4205,7 @@ async def confirm_reset_devices(callback: types.CallbackQuery, db_user: User):
 
     await callback.message.edit_text(
         '🔄 <b>Сброс устройств пользователя</b>\n\n'
-        '⚠️ <b>ВНИМАНИЕ!</b>\n'
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>ВНИМАНИЕ!</b>\n'
         'Вы уверены, что хотите сбросить все HWID устройства этого пользователя?\n\n'
         'Это действие:\n'
         '• Удалит все привязанные устройства\n'
@@ -5853,7 +5853,7 @@ async def select_admin_tariff_change(callback: types.CallbackQuery, db_user: Use
     text += f'• Устройства: {tariff.device_limit}\n'
     text += f'• Трафик: {traffic_str}\n'
     text += f'• Серверы: {servers_count}\n\n'
-    text += '⚠️ Параметры подписки будут обновлены в соответствии с тарифом.\n'
+    text += '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Параметры подписки будут обновлены в соответствии с тарифом.\n'
     text += 'Дата окончания подписки не изменится.'
 
     keyboard = [

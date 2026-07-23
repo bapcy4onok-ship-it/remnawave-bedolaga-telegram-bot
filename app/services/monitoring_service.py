@@ -1404,7 +1404,7 @@ class MonitoringService:
                                 await self.bot.send_message(
                                     chat_id=user.telegram_id,
                                     text=(
-                                        '⚠️ <b>Автоплатёж приостановлен</b>\n\n'
+                                        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Автоплатёж приостановлен</b>\n\n'
                                         'Ваша подписка была создана до введения тарифов. '
                                         'Для работы автоплатежа необходимо выбрать тариф.\n\n'
                                         'Перейдите в раздел «Моя подписка» → «Продлить», чтобы выбрать тариф.'
@@ -1847,7 +1847,7 @@ class MonitoringService:
                 tariff_label = f' «{subscription.tariff.name}»'
             message = texts.t(
                 'SUBSCRIPTION_EXPIRING_PAID',
-                '\n⚠️ <b>Подписка{tariff_label} истекает через {days_text}!</b>\n\n'
+                '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Подписка{tariff_label} истекает через {days_text}!</b>\n\n'
                 'Ваша платная подписка истекает {end_date}.\n\n'
                 '💳 <b>Автоплатеж:</b> {autopay_status}\n\n'
                 '{action_text}\n',
@@ -2418,7 +2418,7 @@ class MonitoringService:
                     texts = get_texts(language)
                     message = texts.get(
                         'TRAFFIC_WARNING_ALERT',
-                        '⚠️ <b>Предупреждение о трафике</b>\n\n'
+                        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Предупреждение о трафике</b>\n\n'
                         'Использовано: {used:.1f} / {limit} ГБ ({percent:.0f}%)\n\n'
                         'Ваш лимит трафика почти исчерпан.',
                     )
@@ -2522,7 +2522,7 @@ class MonitoringService:
                     balance_rub = balance / 100
                     message = texts.get(
                         'LOW_BALANCE_ALERT',
-                        '⚠️ <b>Низкий баланс</b>\n\n'
+                        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Низкий баланс</b>\n\n'
                         'Ваш баланс: {balance} ₽\n'
                         'Порог уведомления: {threshold} ₽\n\n'
                         'Пополните баланс, чтобы автопродление подписки прошло успешно.',

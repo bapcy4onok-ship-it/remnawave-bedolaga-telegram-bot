@@ -616,7 +616,7 @@ class ReferralWithdrawalService:
 
         if stats['pending'] > 0:
             text += (
-                texts.t('REFERRAL_WITHDRAWAL_STATS_PENDING', '⏳ На рассмотрении: <b>{amount}</b>').format(
+                texts.t('REFERRAL_WITHDRAWAL_STATS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> На рассмотрении: <b>{amount}</b>').format(
                     amount=texts.format_price(stats['pending'])
                 )
                 + '\n'

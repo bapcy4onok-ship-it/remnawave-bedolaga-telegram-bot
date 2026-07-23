@@ -842,7 +842,7 @@ async def sync_contest(
         '',
         '📊 <b>СИНХРОНИЗАЦИЯ:</b>',
         f'   📝 Рефералов в периоде: <b>{stats.get("total_events", 0)}</b>',
-        f'   ⚠️ Отфильтровано (вне периода): <b>{stats.get("filtered_out_events", 0)}</b>',
+        f'   <tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Отфильтровано (вне периода): <b>{stats.get("filtered_out_events", 0)}</b>',
         f'   🔄 Обновлено сумм: <b>{stats.get("updated", 0)}</b>',
         f'   ⏭ Без изменений: <b>{stats.get("skipped", 0)}</b>',
         '',

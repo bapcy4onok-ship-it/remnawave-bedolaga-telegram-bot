@@ -366,7 +366,7 @@ async def view_withdrawal_request(callback: types.CallbackQuery, db_user: User, 
     analysis = json.loads(request.risk_analysis) if request.risk_analysis else {}
 
     status_text = {
-        WithdrawalRequestStatus.PENDING.value: '⏳ Ожидает',
+        WithdrawalRequestStatus.PENDING.value: '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Ожидает',
         WithdrawalRequestStatus.APPROVED.value: '✅ Одобрена',
         WithdrawalRequestStatus.REJECTED.value: '❌ Отклонена',
         WithdrawalRequestStatus.COMPLETED.value: '✅ Выполнена',
@@ -566,7 +566,7 @@ async def start_test_referral_earning(
 • <code>123456789 500</code> — начислит 500₽ пользователю 123456789
 • <code>987654321 1000</code> — начислит 1000₽ пользователю 987654321
 
-⚠️ Это создаст реальную запись ReferralEarning, как будто пользователь заработал с реферала.
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Это создаст реальную запись ReferralEarning, как будто пользователь заработал с реферала.
 """
 
     keyboard = types.InlineKeyboardMarkup(
@@ -1260,7 +1260,7 @@ async def request_log_file_upload(callback: types.CallbackQuery, db_user: User, 
 
 Файл будет проанализирован на наличие потерянных рефералов за ВСЕ время, записанное в логе.
 
-⚠️ <b>Важно:</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Важно:</b>
 • Файл должен быть текстовым (.log, .txt)
 • Максимальный размер: 50 MB
 • После анализа файл будет автоматически удалён

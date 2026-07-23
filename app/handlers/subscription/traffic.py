@@ -287,7 +287,7 @@ async def handle_reset_traffic(
     # Формируем текст о балансе
     balance_info = f'\n\n💰 На балансе: {texts.format_price(db_user.balance_kopeks)}'
     if not has_enough_balance:
-        balance_info += f'\n⚠️ Не хватает: {texts.format_price(missing_kopeks)}'
+        balance_info += f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Не хватает: {texts.format_price(missing_kopeks)}'
 
     await callback.message.edit_text(
         f'🔄 <b>Сброс трафика</b>\n\n'
@@ -338,7 +338,7 @@ async def confirm_reset_traffic(
         message_text = texts.t(
             'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
             (
-                '⚠️ <b>Недостаточно средств</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                 'Стоимость услуги: {required}\n'
                 'На балансе: {balance}\n'
                 'Не хватает: {missing}\n\n'
@@ -458,7 +458,7 @@ async def get_traffic_packages_info() -> str:
         return '\n'.join(info_lines)
 
     except Exception as e:
-        return f'⚠️ Ошибка получения информации: {e}'
+        return f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Ошибка получения информации: {e}'
 
 
 async def select_traffic(callback: types.CallbackQuery, state: FSMContext, db_user: User):
@@ -600,7 +600,7 @@ async def add_traffic(callback: types.CallbackQuery, db_user: User, db: AsyncSes
         message_text = texts.t(
             'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
             (
-                '⚠️ <b>Недостаточно средств</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                 'Стоимость услуги: {required}\n'
                 'На балансе: {balance}\n'
                 'Не хватает: {missing}\n\n'
@@ -836,7 +836,7 @@ async def confirm_switch_traffic(
             message_text = texts.t(
                 'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
                 (
-                    '⚠️ <b>Недостаточно средств</b>\n\n'
+                    '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                     'Стоимость услуги: {required}\n'
                     'На балансе: {balance}\n'
                     'Не хватает: {missing}\n\n'

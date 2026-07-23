@@ -139,7 +139,7 @@ async def create_backup_handler(callback: types.CallbackQuery, db_user: User, db
     await callback.answer('🔄 Создание бекапа запущено...')
 
     progress_msg = await callback.message.edit_text(
-        '🔄 <b>Создание бекапа...</b>\n\n⏳ Экспортируем данные из базы...\nЭто может занять несколько минут.',
+        '🔄 <b>Создание бекапа...</b>\n\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Экспортируем данные из базы...\nЭто может занять несколько минут.',
         parse_mode='HTML',
     )
 
@@ -228,7 +228,7 @@ async def manage_backup_file(callback: types.CallbackQuery, db_user: User, db: A
 """
 
     if backup_info.get('error'):
-        text += f'\n⚠️ <b>Ошибка:</b> {backup_info["error"]}'
+        text += f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Ошибка:</b> {backup_info["error"]}'
 
     await callback.message.edit_text(text, parse_mode='HTML', reply_markup=get_backup_manage_keyboard(filename))
     await callback.answer()
@@ -242,7 +242,7 @@ async def delete_backup_confirm(callback: types.CallbackQuery, db_user: User, db
     text = '🗑️ <b>Удаление бекапа</b>\n\n'
     text += 'Вы уверены, что хотите удалить бекап?\n\n'
     text += f'📄 <code>{filename}</code>\n\n'
-    text += '⚠️ <b>Это действие нельзя отменить!</b>'
+    text += '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Это действие нельзя отменить!</b>'
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -315,7 +315,7 @@ async def restore_backup_start(callback: types.CallbackQuery, db_user: User, db:
 
 📎 Отправьте файл бекапа (.json, .json.gz или .tar.gz)
 
-⚠️ <b>ВАЖНО:</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>ВАЖНО:</b>
 • Файл должен быть создан этой системой бекапов
 • Процесс может занять несколько минут
 • Рекомендуется создать бекап перед восстановлением
@@ -354,7 +354,7 @@ async def restore_backup_execute(callback: types.CallbackQuery, db_user: User, d
     action_text = 'очисткой и восстановлением' if clear_existing else 'восстановлением'
     progress_msg = await callback.message.edit_text(
         f'📥 <b>Восстановление из бекапа...</b>\n\n'
-        f'⏳ Работаем с {action_text} данных...\n'
+        f'<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Работаем с {action_text} данных...\n'
         f'📄 Файл: <code>{filename}</code>\n\n'
         f'Это может занять несколько минут.',
         parse_mode='HTML',
@@ -423,7 +423,7 @@ async def handle_backup_file_upload(message: types.Message, db_user: User, db: A
 📄 <b>Имя:</b> <code>{document.file_name}</code>
 💾 <b>Размер:</b> {document.file_size / 1024 / 1024:.2f} MB
 
-⚠️ <b>ВНИМАНИЕ!</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>ВНИМАНИЕ!</b>
 Процесс восстановления изменит данные в базе.
 Рекомендуется создать бекап перед восстановлением.
 

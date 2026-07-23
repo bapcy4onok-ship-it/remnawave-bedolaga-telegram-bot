@@ -338,7 +338,7 @@ async def show_detailed_referral_list(callback: types.CallbackQuery, db_user: Us
     for i, referral in enumerate(referrals_data['referrals'], 1):
         status_emoji = '🟢' if referral['status'] == 'active' else '🔴'
 
-        topup_emoji = '💰' if referral['has_made_first_topup'] else '⏳'
+        topup_emoji = '💰' if referral['has_made_first_topup'] else '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji>'
 
         text += (
             texts.t(
@@ -779,7 +779,7 @@ async def process_payment_details(message: types.Message, db_user: User, db: Asy
         )
         + '\n\n'
     )
-    text += texts.t('REFERRAL_WITHDRAWAL_CONFIRM_WARNING', '⚠️ После отправки заявка будет рассмотрена администрацией')
+    text += texts.t('REFERRAL_WITHDRAWAL_CONFIRM_WARNING', '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> После отправки заявка будет рассмотрена администрацией')
 
     keyboard = types.InlineKeyboardMarkup(
         inline_keyboard=[
@@ -1076,7 +1076,7 @@ async def show_partner_status(callback: types.CallbackQuery, db_user: User, db: 
     elif db_user.partner_status == PartnerStatus.PENDING.value:
         text = texts.t(
             'REFERRAL_PARTNER_PENDING_TEXT',
-            '⏳ <b>Заявка на партнёрство на рассмотрении</b>\n\nМы уведомим вас о решении.',
+            '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> <b>Заявка на партнёрство на рассмотрении</b>\n\nМы уведомим вас о решении.',
         )
         if application and application.created_at:
             text += '\n\n' + texts.t('REFERRAL_PARTNER_APPLIED_AT', '📅 Подана: {date}').format(

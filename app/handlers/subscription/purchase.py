@@ -267,10 +267,10 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
             warning_text = ''
         elif days_left == 1:
             time_left_text = texts.t('SUBSCRIPTION_TIME_LEFT_DAYS', '{days} дн.').format(days=days_left)
-            warning_text = texts.t('SUBSCRIPTION_WARNING_TOMORROW', '\n⚠️ истекает завтра!')
+            warning_text = texts.t('SUBSCRIPTION_WARNING_TOMORROW', '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает завтра!')
         elif hours_left > 0:
             time_left_text = texts.t('SUBSCRIPTION_TIME_LEFT_HOURS', '{hours} ч.').format(hours=hours_left)
-            warning_text = texts.t('SUBSCRIPTION_WARNING_TODAY', '\n⚠️ истекает сегодня!')
+            warning_text = texts.t('SUBSCRIPTION_WARNING_TODAY', '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает сегодня!')
         else:
             minutes_left = (delta.seconds % 3600) // 60
             time_left_text = texts.t('SUBSCRIPTION_TIME_LEFT_MINUTES', '{minutes} мин.').format(minutes=minutes_left)
@@ -977,7 +977,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
             missing_label = settings.format_price(error.missing_amount, round_kopeks=False)
             message = texts.t(
                 'TRIAL_PAYMENT_INSUFFICIENT_FUNDS',
-                '⚠️ Недостаточно средств для активации триала.\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Недостаточно средств для активации триала.\n'
                 'Необходимо: {required}\nНа балансе: {balance}\n'
                 'Не хватает: {missing}\n\nПополните баланс и попробуйте снова.',
             ).format(
@@ -1266,7 +1266,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                 parse_mode='HTML',
             )
         else:
-            trial_success_text = f"{texts.TRIAL_ACTIVATED}\n\n⚠️ Ссылка генерируется, попробуйте перейти в раздел 'Моя подписка' через несколько секунд."
+            trial_success_text = f"{texts.TRIAL_ACTIVATED}\n\n<tg-emoji emoji-id='6244595016287654616'>⚠️</tg-emoji> Ссылка генерируется, попробуйте перейти в раздел 'Моя подписка' через несколько секунд."
             trial_success_text += payment_note
             await callback.message.edit_text(
                 trial_success_text,
@@ -1712,7 +1712,7 @@ async def handle_extend_subscription(
             '📦 <b>Выберите тариф для продления</b>\n\n'
             'Ваша текущая подписка была создана до введения тарифов.\n'
             'Для продления необходимо выбрать один из доступных тарифов.\n\n'
-            '⚠️ Ваша текущая подписка продолжит действовать до окончания срока.',
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Ваша текущая подписка продолжит действовать до окончания срока.',
             reply_markup=types.InlineKeyboardMarkup(
                 inline_keyboard=[
                     [types.InlineKeyboardButton(text='📦 Выбрать тариф', callback_data='tariff_switch')],
@@ -2413,7 +2413,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
             message_text = texts.t(
                 'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
                 (
-                    '⚠️ <b>Недостаточно средств</b>\n\n'
+                    '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                     'Стоимость услуги: {required}\n'
                     'На балансе: {balance}\n'
                     'Не хватает: {missing}\n\n'
@@ -3479,7 +3479,7 @@ async def handle_trial_pay_with_balance(callback: types.CallbackQuery, db_user: 
                 parse_mode='HTML',
             )
         else:
-            trial_success_text = f"{texts.TRIAL_ACTIVATED}\n\n⚠️ Ссылка генерируется, попробуйте перейти в раздел 'Моя подписка' через несколько секунд."
+            trial_success_text = f"{texts.TRIAL_ACTIVATED}\n\n<tg-emoji emoji-id='6244595016287654616'>⚠️</tg-emoji> Ссылка генерируется, попробуйте перейти в раздел 'Моя подписка' через несколько секунд."
             trial_success_text += payment_note
 
             await callback.message.edit_text(

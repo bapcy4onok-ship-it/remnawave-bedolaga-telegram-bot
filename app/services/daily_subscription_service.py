@@ -359,7 +359,7 @@ class DailySubscriptionService:
         if settings.is_multi_tariff_enabled() and hasattr(subscription, 'tariff') and subscription.tariff:
             tariff_label = f' «{subscription.tariff.name}»'
         message = (
-            f'⚠️ <b>Подписка{tariff_label} приостановлена</b>\n\n'
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Подписка{tariff_label} приостановлена</b>\n\n'
             f'Недостаточно средств для суточной оплаты.\n\n'
             f'Требуется: {required_rubles:.2f} ₽\n'
             f'Баланс: {balance_rubles:.2f} ₽\n\n'

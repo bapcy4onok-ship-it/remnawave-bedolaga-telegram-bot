@@ -136,7 +136,7 @@ async def start_subscription_revoke(
         texts.t(
             'SUBSCRIPTION_REVOKE_WARNING',
             (
-                '⚠️ <b>Перевыпуск подписки</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Перевыпуск подписки</b>\n\n'
                 'Это действие:\n'
                 '• Сгенерирует новую ссылку подключения\n'
                 '• Сбросит все подключённые устройства\n'
@@ -337,7 +337,7 @@ async def start_multi_revoke(
         texts.t(
             'SUBSCRIPTION_REVOKE_WARNING',
             (
-                '⚠️ <b>Перевыпуск подписки</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Перевыпуск подписки</b>\n\n'
                 'Это действие:\n'
                 '• Сгенерирует новую ссылку подключения\n'
                 '• Сбросит все подключённые устройства\n'

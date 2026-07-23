@@ -564,7 +564,8 @@ class PricingEngine:
         - 'period' → base tariff price
         - 'devices' → extra device cost
         Promo-offer discount applied on the discounted subtotal.
-        Device cost is monthly × months_in_period.
+        Device cost is monthly rate scaled by the period's own price ratio
+        (base[P]/base[30]), so devices get the same bulk discount as the period.
         """
         months = calculate_months_from_days(period_days)
 
@@ -581,7 +582,7 @@ class PricingEngine:
                     if custom_price is not None:
                         base_price = int(custom_price)
 
-        # --- Extra devices (monthly × months) ---
+        # --- Extra devices (monthly rate × period price ratio) ---
         device_price_per_unit = (
             tariff.device_price_kopeks if tariff.device_price_kopeks is not None else settings.PRICE_PER_DEVICE
         )
@@ -590,11 +591,12 @@ class PricingEngine:
         ref_month_price = int((tariff.period_prices or {}).get('30', 0) or 0)
         if is_daily and period_days <= 1:
             devices_price = extra_devices * device_price_per_unit
-        elif period_days < 30 and ref_month_price > 0 and base_price > 0:
-            # Период короче месяца: доп.устройство стоит ту же долю месячной цены,
-            # что и сам период от месяца (base[P]/base[30]). Напр. 14д при base 50/90 → 50,
-            # а не 90 (целый месяц) и не 42 (прорейт по дням).
-            devices_price = extra_devices * device_price_per_unit * base_price // ref_month_price
+        elif ref_month_price > 0 and base_price > 0:
+            # Устройство дисконтируется той же пропорцией, что и период
+            # (base[P]/base[30]): 14д при base 50/90 → 25 (наценка), 365д при
+            # 990/90 → 495 (скидка). Округление за устройство — до рубля.
+            per_device = device_price_per_unit * base_price // ref_month_price
+            devices_price = extra_devices * ((per_device + 50) // 100 * 100)
         elif period_days < 30:
             # Фоллбэк, если нет 30-дн. эталона: пропорционально дням.
             devices_price = extra_devices * device_price_per_unit * period_days // 30

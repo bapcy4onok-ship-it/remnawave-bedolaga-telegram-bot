@@ -3814,6 +3814,18 @@ def get_ticket_notification_keyboard(
             )
         keyboard.append(block_row)
 
+    # «Главное меню» — самым низом, только в личке (fsm_enabled): в группе
+    # меню бота персонально и открыть его там нельзя.
+    if fsm_enabled:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=texts.t('TICKET_NOTIFY_MAIN_MENU', '🏠 ГЛАВНОЕ МЕНЮ'),
+                    callback_data='ticket_notify_main_menu',
+                )
+            ]
+        )
+
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 

@@ -1713,12 +1713,12 @@ async def check_simple_pal24_payment_status(
         payment = status_info['payment']
 
         status_labels = {
-            'NEW': ('⏳', 'Ожидает оплаты'),
+            'NEW': ('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji>', 'Ожидает оплаты'),
             'PROCESS': ('⌛', 'Обрабатывается'),
             'SUCCESS': ('✅', 'Оплачен'),
             'FAIL': ('❌', 'Отменен'),
-            'UNDERPAID': ('⚠️', 'Недоплата'),
-            'OVERPAID': ('⚠️', 'Переплата'),
+            'UNDERPAID': ('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>', 'Недоплата'),
+            'OVERPAID': ('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>', 'Переплата'),
         }
 
         emoji, status_text = status_labels.get(payment.status, ('❓', 'Неизвестно'))
@@ -1751,7 +1751,7 @@ async def check_simple_pal24_payment_status(
         elif payment.status in {'NEW', 'PROCESS'}:
             message_lines += [
                 '',
-                '⏳ Платеж еще не завершен. Оплатите счет и проверьте статус позже.',
+                '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще не завершен. Оплатите счет и проверьте статус позже.',
             ]
             if sbp_link:
                 message_lines += ['', f'🏦 СБП: {sbp_link}']
@@ -1885,7 +1885,7 @@ async def check_simple_mulenpay_payment_status(
     if payment.is_paid:
         message_lines.append('\n✅ Платеж успешно завершен! Средства уже зачислены.')
     elif payment.status in {'created', 'processing'}:
-        message_lines.append('\n⏳ Платеж еще не завершен. Завершите оплату и проверьте статус позже.')
+        message_lines.append('\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще не завершен. Завершите оплату и проверьте статус позже.')
 
     keyboard = types.InlineKeyboardMarkup(
         inline_keyboard=[
@@ -1926,7 +1926,7 @@ async def check_simple_cryptobot_payment_status(
         return
 
     status_labels = {
-        'active': ('⏳', 'Ожидает оплаты'),
+        'active': ('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji>', 'Ожидает оплаты'),
         'paid': ('✅', 'Оплачен'),
         'expired': ('❌', 'Истек'),
     }
@@ -1955,7 +1955,7 @@ async def check_simple_cryptobot_payment_status(
     if payment.status == 'paid':
         message_lines.append('\n✅ Платеж подтвержден. Средства уже зачислены.')
     elif payment.status == 'active':
-        message_lines.append('\n⏳ Платеж еще ожидает подтверждения. Оплатите счет и проверьте статус позже.')
+        message_lines.append('\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще ожидает подтверждения. Оплатите счет и проверьте статус позже.')
 
     keyboard = types.InlineKeyboardMarkup(
         inline_keyboard=[
@@ -1996,10 +1996,10 @@ async def check_simple_heleket_payment_status(
         return
 
     status_labels = {
-        'check': ('⏳', 'Ожидает оплаты'),
+        'check': ('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji>', 'Ожидает оплаты'),
         'paid': ('✅', 'Оплачен'),
         'paid_over': ('✅', 'Оплачен (переплата)'),
-        'wrong_amount': ('⚠️', 'Неверная сумма'),
+        'wrong_amount': ('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>', 'Неверная сумма'),
         'cancel': ('❌', 'Отменен'),
         'fail': ('❌', 'Ошибка'),
         'process': ('⌛', 'Обрабатывается'),
@@ -2035,7 +2035,7 @@ async def check_simple_heleket_payment_status(
     if payment.is_paid:
         message_lines.append('\n✅ Платеж успешно завершен! Средства уже зачислены.')
     elif payment.status in {'check', 'process', 'confirm_check'}:
-        message_lines.append('\n⏳ Платеж еще обрабатывается. Завершите оплату и проверьте статус позже.')
+        message_lines.append('\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще обрабатывается. Завершите оплату и проверьте статус позже.')
         if payment.payment_url:
             message_lines.append(f'\n🔗 Ссылка на оплату: {payment.payment_url}')
     elif payment.status in {'fail', 'cancel', 'wrong_amount'}:
@@ -2104,7 +2104,7 @@ async def check_simple_wata_payment_status(
     if payment.is_paid:
         message_lines.append('\n✅ Платеж успешно завершен! Средства уже зачислены.')
     elif payment.status in {'Opened', 'Closed'}:
-        message_lines.append('\n⏳ Платеж еще не завершен. Завершите оплату и проверьте статус позже.')
+        message_lines.append('\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще не завершен. Завершите оплату и проверьте статус позже.')
 
     keyboard = types.InlineKeyboardMarkup(
         inline_keyboard=[

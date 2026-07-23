@@ -83,7 +83,7 @@ async def process_stars_payment_amount(message: types.Message, db_user: User, am
     texts = get_texts(db_user.language)
 
     if not settings.TELEGRAM_STARS_ENABLED:
-        await message.answer('⚠️ Оплата Stars временно недоступна')
+        await message.answer('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Оплата Stars временно недоступна')
         return
 
     try:
@@ -140,4 +140,4 @@ async def process_stars_payment_amount(message: types.Message, db_user: User, am
 
     except Exception as e:
         logger.error('Ошибка создания Stars invoice', error=e)
-        await message.answer('⚠️ Ошибка создания платежа')
+        await message.answer('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Ошибка создания платежа')

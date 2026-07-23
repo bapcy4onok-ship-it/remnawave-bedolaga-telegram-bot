@@ -1378,7 +1378,7 @@ async def process_send_user_search(
     message_id = message_info.get('message_id')
 
     if not chat_id or not message_id:
-        placeholder = await message.answer('⏳ Обновляем список пользователей...')
+        placeholder = await message.answer('<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Обновляем список пользователей...')
         chat_id = placeholder.chat.id
         message_id = placeholder.message_id
 
@@ -1707,7 +1707,7 @@ async def show_selected_user_details(
             if not offer.claimed_at:
                 status_label = texts.t(
                     'ADMIN_PROMO_OFFER_SEND_USER_OFFER_STATUS_PENDING',
-                    '⏳ Не принято',
+                    '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Не принято',
                 )
             lines.append(
                 texts.t(

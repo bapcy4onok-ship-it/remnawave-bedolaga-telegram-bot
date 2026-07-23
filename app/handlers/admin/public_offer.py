@@ -50,7 +50,7 @@ async def _build_overview(
 
     status_text = texts.t(
         'ADMIN_PUBLIC_OFFER_STATUS_DISABLED',
-        '⚠️ Показ оферты выключен или текст отсутствует.',
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Показ оферты выключен или текст отсутствует.',
     )
     if offer and offer.is_enabled and has_content:
         status_text = texts.t(
@@ -60,7 +60,7 @@ async def _build_overview(
     elif offer and offer.is_enabled:
         status_text = texts.t(
             'ADMIN_PUBLIC_OFFER_STATUS_ENABLED_EMPTY',
-            '⚠️ Оферта включена, но текст пуст — пользователи её не увидят.',
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Оферта включена, но текст пуст — пользователи её не увидят.',
         )
 
     updated_at = _format_timestamp(getattr(offer, 'updated_at', None))
@@ -468,7 +468,7 @@ async def view_public_offer(
     if truncated:
         note = texts.t(
             'ADMIN_PUBLIC_OFFER_VIEW_TRUNCATED',
-            '\n\n⚠️ Текст сокращён для отображения. Полную версию увидят пользователи в меню.',
+            '\n\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Текст сокращён для отображения. Полную версию увидят пользователи в меню.',
         )
 
     keyboard = types.InlineKeyboardMarkup(

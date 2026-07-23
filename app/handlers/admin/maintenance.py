@@ -69,7 +69,7 @@ async def show_maintenance_panel(callback: types.CallbackQuery, db_user: User, d
 
     failures_info = ''
     if status_info['consecutive_failures'] > 0:
-        failures_info = f'\n⚠️ <b>Неудачных проверок подряд:</b> {status_info["consecutive_failures"]}'
+        failures_info = f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Неудачных проверок подряд:</b> {status_info["consecutive_failures"]}'
 
     panel_info = f'\n🌐 <b>Панель Remnawave:</b> {panel_status["description"]}'
     if panel_status.get('response_time'):

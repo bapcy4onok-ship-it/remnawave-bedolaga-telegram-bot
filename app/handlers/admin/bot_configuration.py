@@ -1467,7 +1467,7 @@ def _render_setting_text(key: str) -> str:
     if example:
         lines.append(f'💡 Пример: {example}')
     if warning:
-        lines.append(f'⚠️ Важно: {warning}')
+        lines.append(f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Важно: {warning}')
     if dependencies:
         lines.append(f'🔗 Связанные: {dependencies}')
 
@@ -2524,20 +2524,20 @@ async def handle_edit_setting(
         return
 
     if bot_configuration_service.is_read_only(key):
-        await message.answer('⚠️ Эта настройка доступна только для чтения.')
+        await message.answer('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Эта настройка доступна только для чтения.')
         await state.clear()
         return
 
     try:
         value = bot_configuration_service.parse_user_value(key, message.text or '')
     except ValueError as error:
-        await message.answer(f'⚠️ {error}')
+        await message.answer(f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> {error}')
         return
 
     try:
         await bot_configuration_service.set_value(db, key, value)
     except ReadOnlySettingError:
-        await message.answer('⚠️ Эта настройка доступна только для чтения.')
+        await message.answer('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Эта настройка доступна только для чтения.')
         await state.clear()
         return
     await db.commit()
@@ -2575,20 +2575,20 @@ async def handle_direct_setting_input(
         return
 
     if bot_configuration_service.is_read_only(key):
-        await message.answer('⚠️ Эта настройка доступна только для чтения.')
+        await message.answer('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Эта настройка доступна только для чтения.')
         await state.clear()
         return
 
     try:
         value = bot_configuration_service.parse_user_value(key, message.text or '')
     except ValueError as error:
-        await message.answer(f'⚠️ {error}')
+        await message.answer(f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> {error}')
         return
 
     try:
         await bot_configuration_service.set_value(db, key, value)
     except ReadOnlySettingError:
-        await message.answer('⚠️ Эта настройка доступна только для чтения.')
+        await message.answer('<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Эта настройка доступна только для чтения.')
         await state.clear()
         return
     await db.commit()
@@ -2793,7 +2793,7 @@ async def show_remna_config_menu(callback: types.CallbackQuery, db_user: User, d
             if current_name:
                 text += f'✅ Текущий: <b>{html.escape(current_name)}</b>\n\n'
             else:
-                text += f'⚠️ Текущий UUID не найден: <code>{html.escape(str(current_uuid))}</code>\n\n'
+                text += f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Текущий UUID не найден: <code>{html.escape(str(current_uuid))}</code>\n\n'
         else:
             text += 'ℹ️ Конфиг не выбран (гайд-режим отключён)\n\n'
 

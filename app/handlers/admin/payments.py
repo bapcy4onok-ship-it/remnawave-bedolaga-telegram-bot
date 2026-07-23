@@ -67,7 +67,7 @@ def _status_info(
 
     if record.method == PaymentMethod.PAL24:
         mapping = {
-            'new': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'new': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'process': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_PROCESSING', '⌛ Processing')),
             'success': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'fail': ('❌', texts.t('ADMIN_PAYMENT_STATUS_FAILED', '❌ Failed')),
@@ -78,7 +78,7 @@ def _status_info(
 
     if record.method == PaymentMethod.MULENPAY:
         mapping = {
-            'created': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'created': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'processing': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_PROCESSING', '⌛ Processing')),
             'hold': ('🔒', texts.t('ADMIN_PAYMENT_STATUS_ON_HOLD', '🔒 Hold')),
             'success': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
@@ -90,8 +90,8 @@ def _status_info(
 
     if record.method == PaymentMethod.WATA:
         mapping = {
-            'opened': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
-            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'opened': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
+            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'processing': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_PROCESSING', '⌛ Processing')),
             'paid': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'closed': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
@@ -103,7 +103,7 @@ def _status_info(
 
     if record.method == PaymentMethod.PLATEGA:
         mapping = {
-            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'inprogress': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_PROCESSING', '⌛ Processing')),
             'confirmed': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'failed': ('❌', texts.t('ADMIN_PAYMENT_STATUS_FAILED', '❌ Failed')),
@@ -115,7 +115,7 @@ def _status_info(
 
     if record.method == PaymentMethod.HELEKET:
         if status in {'pending', 'created', 'waiting', 'check', 'processing'}:
-            return '⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')
+            return '⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')
         if status in {'paid', 'paid_over'}:
             return '✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')
         if status in {'cancel', 'canceled', 'fail', 'failed', 'expired'}:
@@ -124,7 +124,7 @@ def _status_info(
 
     if record.method == PaymentMethod.YOOKASSA:
         mapping = {
-            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'waiting_for_capture': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_PROCESSING', '⌛ Processing')),
             'succeeded': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'canceled': ('❌', texts.t('ADMIN_PAYMENT_STATUS_CANCELED', '❌ Cancelled')),
@@ -133,7 +133,7 @@ def _status_info(
 
     if record.method == PaymentMethod.CRYPTOBOT:
         mapping = {
-            'active': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'active': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'paid': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'expired': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_EXPIRED', '⌛ Expired')),
         }
@@ -142,11 +142,11 @@ def _status_info(
     if record.method == PaymentMethod.TELEGRAM_STARS:
         if record.is_paid:
             return '✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')
-        return '⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')
+        return '⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')
 
     if record.method == PaymentMethod.FREEKASSA:
         mapping = {
-            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'success': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'paid': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'canceled': ('❌', texts.t('ADMIN_PAYMENT_STATUS_CANCELED', '❌ Cancelled')),
@@ -156,8 +156,8 @@ def _status_info(
 
     if record.method == PaymentMethod.KASSA_AI:
         mapping = {
-            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
-            'created': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '⏳ Pending')),
+            'pending': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
+            'created': ('⏳', texts.t('ADMIN_PAYMENT_STATUS_PENDING', '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Pending')),
             'processing': ('⌛', texts.t('ADMIN_PAYMENT_STATUS_PROCESSING', '⌛ Processing')),
             'success': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
             'paid': ('✅', texts.t('ADMIN_PAYMENT_STATUS_PAID', '✅ Paid')),
@@ -831,7 +831,7 @@ async def export_payments(
         document=BufferedInputFile(file_bytes, filename=filename),
         caption=texts.t(
             'ADMIN_PAYMENTS_EXPORT_CAPTION',
-            '📥 Экспорт платежей\n\n📊 Всего записей: {count}\n💰 Оплачено: {paid}\n⏳ Ожидают: {pending}',
+            '📥 Экспорт платежей\n\n📊 Всего записей: {count}\n💰 Оплачено: {paid}\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Ожидают: {pending}',
         ).format(
             count=len(export_data),
             paid=sum(1 for r in export_data if r['is_paid']),

@@ -97,7 +97,7 @@ async def handle_add_countries(callback: types.CallbackQuery, db_user: User, db:
             '➕ - будет добавлена (платно)\n'
             '➖ - будет отключена (бесплатно)\n'
             '⚪ - не выбрана\n\n'
-            '⚠️ <b>Важно:</b> Повторное подключение отключенных стран будет платным!'
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Важно:</b> Повторное подключение отключенных стран будет платным!'
         ),
     ).format(
         current_count=len(current_countries),
@@ -337,7 +337,7 @@ async def apply_countries_changes(callback: types.CallbackQuery, db_user: User, 
         message_text = texts.t(
             'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
             (
-                '⚠️ <b>Недостаточно средств</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                 'Стоимость услуги: {required}\n'
                 'На балансе: {balance}\n'
                 'Не хватает: {missing}\n\n'
@@ -878,7 +878,7 @@ async def confirm_add_countries_to_subscription(
         message_text = texts.t(
             'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
             (
-                '⚠️ <b>Недостаточно средств</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                 'Стоимость услуги: {required}\n'
                 'На балансе: {balance}\n'
                 'Не хватает: {missing}\n\n'

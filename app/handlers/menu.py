@@ -36,6 +36,12 @@ from app.services.subscription_checkout_service import (
 from app.services.support_settings_service import SupportSettingsService
 from app.services.user_cart_service import user_cart_service
 from app.utils.display_mode import is_visible_in_bot
+from app.utils.message_patch import (
+    LOGO_PATH,
+    _cache_logo_file_id,
+    caption_exceeds_telegram_limit,
+    get_logo_media,
+)
 from app.utils.photo_message import edit_or_answer_photo
 from app.utils.pricing_utils import format_period_description
 from app.utils.promo_offer import (
@@ -150,7 +156,7 @@ def _build_group_discount_lines(group: PromoGroup, texts, language: str) -> list
         lines.append(
             texts.t(
                 'PROMO_GROUP_PERIOD_DISCOUNTS_HEADER',
-                '⏳ Скидки за длительный период:',
+                '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Скидки за длительный период:',
             )
         )
 
@@ -1166,21 +1172,8 @@ async def process_language_change(
     await callback.answer(texts.t('LANGUAGE_SELECTED', '🌐 Язык интерфейса обновлен.'))
 
 
-async def handle_back_to_menu(callback: types.CallbackQuery, state: FSMContext, db_user: User, db: AsyncSession):
-    if db_user is None:
-        # Пользователь не найден, используем язык по умолчанию
-        texts = get_texts(settings.DEFAULT_LANGUAGE)
-        await callback.answer(
-            texts.t(
-                'USER_NOT_FOUND_ERROR',
-                'Ошибка: пользователь не найден.',
-            ),
-            show_alert=True,
-        )
-        return
-
-    await state.clear()
-
+async def _build_main_menu_view(db_user: User, db: AsyncSession) -> tuple[str, types.InlineKeyboardMarkup]:
+    """Собрать текст и клавиатуру главного меню (без отправки)."""
     texts = get_texts(db_user.language)
 
     # Multi-tariff aware: check if user has ANY active subscription
@@ -1229,12 +1222,73 @@ async def handle_back_to_menu(callback: types.CallbackQuery, state: FSMContext, 
         custom_buttons=custom_buttons,
     )
 
+    return menu_text, keyboard
+
+
+async def handle_back_to_menu(callback: types.CallbackQuery, state: FSMContext, db_user: User, db: AsyncSession):
+    if db_user is None:
+        # Пользователь не найден, используем язык по умолчанию
+        texts = get_texts(settings.DEFAULT_LANGUAGE)
+        await callback.answer(
+            texts.t(
+                'USER_NOT_FOUND_ERROR',
+                'Ошибка: пользователь не найден.',
+            ),
+            show_alert=True,
+        )
+        return
+
+    await state.clear()
+
+    menu_text, keyboard = await _build_main_menu_view(db_user, db)
+
     await edit_or_answer_photo(
         callback=callback,
         caption=menu_text,
         keyboard=keyboard,
         parse_mode='HTML',
     )
+    await callback.answer()
+
+
+async def handle_ticket_notify_main_menu(
+    callback: types.CallbackQuery, state: FSMContext, db_user: User, db: AsyncSession
+):
+    """Кнопка «Главное меню» в уведомлении о тикете.
+
+    Присылает меню НОВЫМ сообщением, не редактируя уведомление, —
+    иначе текст тикета был бы затёрт.
+    """
+    if db_user is None:
+        texts = get_texts(settings.DEFAULT_LANGUAGE)
+        await callback.answer(
+            texts.t(
+                'USER_NOT_FOUND_ERROR',
+                'Ошибка: пользователь не найден.',
+            ),
+            show_alert=True,
+        )
+        return
+
+    await state.clear()
+
+    menu_text, keyboard = await _build_main_menu_view(db_user, db)
+
+    sent = False
+    if settings.ENABLE_LOGO_MODE and LOGO_PATH.exists() and not caption_exceeds_telegram_limit(menu_text):
+        try:
+            result = await callback.message.answer_photo(
+                photo=get_logo_media(),
+                caption=menu_text,
+                reply_markup=keyboard,
+                parse_mode='HTML',
+            )
+            _cache_logo_file_id(result)
+            sent = True
+        except Exception as e:
+            logger.warning('Не удалось отправить меню с логотипом, отправляем текстом', error=e)
+    if not sent:
+        await callback.message.answer(menu_text, reply_markup=keyboard, parse_mode='HTML')
     await callback.answer()
 
 
@@ -1259,7 +1313,7 @@ def _get_subscription_status(user: User, texts, is_daily_tariff: bool = False) -
         return texts.t('SUB_STATUS_DISABLED', '⚫ Отключена')
 
     if actual_status == 'limited':
-        return texts.t('SUB_STATUS_LIMITED', '⚠️ Трафик исчерпан')
+        return texts.t('SUB_STATUS_LIMITED', '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Трафик исчерпан')
 
     if actual_status == 'expired':
         return texts.t(
@@ -1283,11 +1337,11 @@ def _get_subscription_status(user: User, texts, is_daily_tariff: bool = False) -
         if days_left == 1:
             return texts.t(
                 'SUB_STATUS_TRIAL_TOMORROW',
-                '🎁 Тестовая подписка\n⚠️ истекает завтра!',
+                '🎁 Тестовая подписка\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает завтра!',
             )
         return texts.t(
             'SUB_STATUS_TRIAL_TODAY',
-            '🎁 Тестовая подписка\n⚠️ истекает сегодня!',
+            '🎁 Тестовая подписка\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает сегодня!',
         )
 
     if actual_status == 'active':
@@ -1306,16 +1360,16 @@ def _get_subscription_status(user: User, texts, is_daily_tariff: bool = False) -
         if days_left > 1:
             return texts.t(
                 'SUB_STATUS_ACTIVE_FEW_DAYS',
-                '💎 Активна\n⚠️ истекает через {days} дн.',
+                '💎 Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает через {days} дн.',
             ).format(days=days_left)
         if days_left == 1:
             return texts.t(
                 'SUB_STATUS_ACTIVE_TOMORROW',
-                '💎 Активна\n⚠️ истекает завтра!',
+                '💎 Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает завтра!',
             )
         return texts.t(
             'SUB_STATUS_ACTIVE_TODAY',
-            '💎 Активна\n⚠️ истекает сегодня!',
+            '💎 Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает сегодня!',
         )
 
     return texts.t('SUB_STATUS_UNKNOWN', '❓ Неизвестно')
@@ -1675,6 +1729,8 @@ async def handle_activate_button(callback: types.CallbackQuery, db_user: User, d
 
 def register_handlers(dp: Dispatcher):
     dp.callback_query.register(handle_back_to_menu, F.data == 'back_to_menu')
+
+    dp.callback_query.register(handle_ticket_notify_main_menu, F.data == 'ticket_notify_main_menu')
 
     dp.callback_query.register(
         handle_profile_unavailable,

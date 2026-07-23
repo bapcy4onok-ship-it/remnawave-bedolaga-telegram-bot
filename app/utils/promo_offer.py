@@ -157,7 +157,7 @@ async def build_promo_offer_timer_line(
 
     template = texts.t(
         'SUBSCRIPTION_PROMO_DISCOUNT_TIMER',
-        '⏳ Discount active for {time_left}\n<code>{bar}</code>',
+        '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Discount active for {time_left}\n<code>{bar}</code>',
     )
     return template.format(bar=bar, time_left=time_left_text)
 
@@ -274,7 +274,7 @@ async def build_test_access_hint(
     )
     timer_template = texts.t(
         'MAIN_MENU_TEST_ACCESS_TIMER',
-        '⏳ Access active for {time_left}\n<code>{bar}</code>',
+        '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Access active for {time_left}\n<code>{bar}</code>',
     )
 
     header = header_template.format(servers=_escape_format_braces(servers_display))

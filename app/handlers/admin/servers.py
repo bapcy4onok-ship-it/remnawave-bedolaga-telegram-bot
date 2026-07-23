@@ -634,7 +634,7 @@ async def delete_server_confirm(callback: types.CallbackQuery, db_user: User, db
 Вы действительно хотите удалить сервер:
 <b>{html.escape(server.display_name)}</b>
 
-⚠️ <b>Внимание!</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b>
 Сервер можно удалить только если к нему нет активных подключений.
 
 Это действие нельзя отменить!

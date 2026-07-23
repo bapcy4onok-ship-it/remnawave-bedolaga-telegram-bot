@@ -305,7 +305,7 @@ async def check_wata_payment_status(
     if payment.is_paid:
         message_lines.append('\n✅ Платеж успешно завершен! Средства уже на балансе.')
     elif payment.status in {'Opened', 'Closed'}:
-        message_lines.append('\n⏳ Платеж еще не завершен. Завершите оплату по ссылке и проверьте статус позже.')
+        message_lines.append('\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Платеж еще не завершен. Завершите оплату по ссылке и проверьте статус позже.')
 
     await callback.message.answer('\n'.join(message_lines), parse_mode='HTML')
     await callback.answer()

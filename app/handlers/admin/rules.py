@@ -74,7 +74,7 @@ async def view_current_rules(callback: types.CallbackQuery, db_user: User, db: A
         is_valid, error_msg = validate_html_tags(current_rules)
         warning = ''
         if not is_valid:
-            warning = f'\n\n⚠️ <b>Внимание:</b> В правилах найдена ошибка HTML: {error_msg}'
+            warning = f'\n\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание:</b> В правилах найдена ошибка HTML: {error_msg}'
 
         await callback.message.edit_text(
             f'📋 <b>Текущие правила сервиса</b>\n\n{current_rules}{warning}',
@@ -161,14 +161,14 @@ async def process_rules_edit(message: types.Message, db_user: User, state: FSMCo
 
     try:
         preview_text = f'📋 <b>Предварительный просмотр новых правил:</b>\n\n{new_rules}\n\n'
-        preview_text += '⚠️ <b>Внимание!</b> Новые правила будут показываться всем пользователям.\n\n'
+        preview_text += '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b> Новые правила будут показываться всем пользователям.\n\n'
         preview_text += 'Сохранить изменения?'
 
         if len(preview_text) > 4000:
             preview_text = (
                 '📋 <b>Предварительный просмотр новых правил:</b>\n\n'
                 f'{_safe_preview(new_rules, 500)}\n\n'
-                f'⚠️ <b>Внимание!</b> Новые правила будут показываться всем пользователям.\n\n'
+                f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b> Новые правила будут показываться всем пользователям.\n\n'
                 f'Текст правил: {len(new_rules)} символов\n'
                 f'Сохранить изменения?'
             )
@@ -190,7 +190,7 @@ async def process_rules_edit(message: types.Message, db_user: User, state: FSMCo
     except Exception as e:
         logger.error('Ошибка при показе превью правил', error=e)
         await message.answer(
-            '⚠️ <b>Подтверждение сохранения правил</b>\n\n'
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Подтверждение сохранения правил</b>\n\n'
             f'Новые правила готовы к сохранению ({len(new_rules)} символов).\n'
             f'HTML теги проверены и корректны.\n\n'
             f'Сохранить изменения?',
@@ -281,7 +281,7 @@ async def save_rules(callback: types.CallbackQuery, db_user: User, state: FSMCon
 async def clear_rules_confirmation(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
     await callback.message.edit_text(
         '🗑️ <b>Очистка правил сервиса</b>\n\n'
-        '⚠️ <b>ВНИМАНИЕ!</b> Вы собираетесь полностью удалить все правила сервиса.\n\n'
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>ВНИМАНИЕ!</b> Вы собираетесь полностью удалить все правила сервиса.\n\n'
         'После очистки пользователи будут видеть стандартные правила по умолчанию.\n\n'
         'Это действие нельзя отменить. Продолжить?',
         reply_markup=types.InlineKeyboardMarkup(

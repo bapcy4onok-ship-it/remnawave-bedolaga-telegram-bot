@@ -569,7 +569,7 @@ async def handle_potential_referral_code(message: types.Message, state: FSMConte
         await message.answer(
             texts.t(
                 'PROMO_RATE_LIMITED',
-                '⏳ Слишком много попыток. Попробуйте через {cooldown} сек.',
+                '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Слишком много попыток. Попробуйте через {cooldown} сек.',
             ).format(cooldown=cooldown)
         )
         return True
@@ -1645,7 +1645,7 @@ async def process_referral_code_input(message: types.Message, state: FSMContext,
         await message.answer(
             texts.t(
                 'PROMO_RATE_LIMITED',
-                '⏳ Слишком много попыток. Попробуйте через {cooldown} сек.',
+                '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Слишком много попыток. Попробуйте через {cooldown} сек.',
             ).format(cooldown=cooldown)
         )
         return

@@ -20,7 +20,7 @@ router = Router(name='admin_overpay_certificate')
 ALLOWED_EXTENSIONS = ('.p12', '.pfx')
 
 ENV_LOCK_NOTE = (
-    '⚠️ OVERPAY_P12_PATH или OVERPAY_P12_PASSPHRASE заданы через переменные окружения — значения из БД не применяются.'
+    '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> OVERPAY_P12_PATH или OVERPAY_P12_PASSPHRASE заданы через переменные окружения — значения из БД не применяются.'
 )
 
 
@@ -50,7 +50,7 @@ def _status_view() -> tuple[str, InlineKeyboardMarkup]:
         lines.append(f'Субъект: <code>{html.escape(status["subject"])}</code>')
         lines.append(f'Действует до: <code>{status["not_valid_after"]}</code>')
     else:
-        lines.append('Статус: ⚠️ файл найден, но не читается с текущим паролем')
+        lines.append('Статус: <tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> файл найден, но не читается с текущим паролем')
 
     if status['uploaded']:
         lines.append(f'Путь: <code>{html.escape(status["path"])}</code>')
@@ -206,7 +206,7 @@ async def process_certificate_passphrase(message: Message, state: FSMContext, **
     ]
     if metadata['warning']:
         lines.append('')
-        lines.append(f'⚠️ {metadata["warning"]}')
+        lines.append(f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> {metadata["warning"]}')
 
     await message.answer('\n'.join(lines), reply_markup=_back_keyboard())
 

@@ -240,7 +240,7 @@ def _format_traffic_reset_mode(mode: str | None) -> str:
     }
     if mode is None:
         return f'🌐 Глобальная настройка ({settings.DEFAULT_TRAFFIC_RESET_STRATEGY})'
-    return mode_labels.get(mode, f'⚠️ Неизвестно ({mode})')
+    return mode_labels.get(mode, f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Неизвестно ({mode})')
 
 
 def _format_traffic_topup_packages(tariff: Tariff) -> str:
@@ -365,7 +365,7 @@ async def show_tariffs_list(
     # Проверяем режим продаж
     if not settings.is_tariffs_mode():
         await callback.message.edit_text(
-            '⚠️ <b>Режим тарифов отключен</b>\n\n'
+            '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Режим тарифов отключен</b>\n\n'
             'Для использования тарифов установите:\n'
             '<code>SALES_MODE=tariffs</code>\n\n'
             'Текущий режим: <code>classic</code>',
@@ -2167,7 +2167,7 @@ async def confirm_delete_tariff(
         await callback.message.edit_text(
             f'🗑️ <b>Удаление тарифа</b>\n\n'
             f'Невозможно удалить тариф <b>{html.escape(tariff.name)}</b>.\n\n'
-            f'⚠️ <b>Активных подписок:</b> {active_count} (всего: {total_count})\n'
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Активных подписок:</b> {active_count} (всего: {total_count})\n'
             f'Сначала деактивируйте тариф и дождитесь окончания всех активных подписок, '
             f'либо переведите подписки на другой тариф.',
             reply_markup=InlineKeyboardMarkup(
@@ -2185,7 +2185,7 @@ async def confirm_delete_tariff(
     warning = ''
     if subs_count > 0:
         warning = (
-            f'\n\n⚠️ <b>Внимание!</b> На этом тарифе {subs_count} неактивных подписок.\nОни потеряют привязку к тарифу.'
+            f'\n\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b> На этом тарифе {subs_count} неактивных подписок.\nОни потеряют привязку к тарифу.'
         )
 
     await callback.message.edit_text(
@@ -2394,7 +2394,7 @@ async def toggle_tariff_squad(
     propagate_result = await SubscriptionService().propagate_tariff_squads(db, tariff.id, list(current_squads))
     if propagate_result.failed_ids:
         await callback.message.answer(
-            f'⚠️ {len(propagate_result.failed_ids)} из {propagate_result.total} подписок не синхронизированы с RemnaWave',
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> {len(propagate_result.failed_ids)} из {propagate_result.total} подписок не синхронизированы с RemnaWave',
         )
 
 
@@ -2457,7 +2457,7 @@ async def clear_tariff_squads(
     propagate_result = await SubscriptionService().propagate_tariff_squads(db, tariff.id, [])
     if propagate_result.failed_ids:
         await callback.message.answer(
-            f'⚠️ {len(propagate_result.failed_ids)} из {propagate_result.total} подписок не синхронизированы с RemnaWave',
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> {len(propagate_result.failed_ids)} из {propagate_result.total} подписок не синхронизированы с RemnaWave',
         )
 
 
@@ -2521,7 +2521,7 @@ async def select_all_tariff_squads(
     propagate_result = await SubscriptionService().propagate_tariff_squads(db, tariff.id, all_uuids)
     if propagate_result.failed_ids:
         await callback.message.answer(
-            f'⚠️ {len(propagate_result.failed_ids)} из {propagate_result.total} подписок не синхронизированы с RemnaWave',
+            f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> {len(propagate_result.failed_ids)} из {propagate_result.total} подписок не синхронизированы с RemnaWave',
         )
 
 

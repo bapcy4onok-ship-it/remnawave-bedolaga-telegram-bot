@@ -839,7 +839,7 @@ async def process_discount_hours(message: types.Message, db_user: User, state: F
         summary_text += f'📊 <b>Использований:</b> {promocode.max_uses}\n'
 
         if promocode.valid_until:
-            summary_text += f'⏳ <b>Промокод действует до:</b> {format_datetime(promocode.valid_until)}\n'
+            summary_text += f'<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> <b>Промокод действует до:</b> {format_datetime(promocode.valid_until)}\n'
 
         await message.answer(
             summary_text,
@@ -964,7 +964,7 @@ async def confirm_delete_promocode(callback: types.CallbackQuery, db_user: User,
         return
 
     text = f"""
-⚠️ <b>Подтверждение удаления</b>
+<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Подтверждение удаления</b>
 
 Вы действительно хотите удалить промокод <code>{promo.code}</code>?
 
@@ -972,7 +972,7 @@ async def confirm_delete_promocode(callback: types.CallbackQuery, db_user: User,
 • Использований: {promo.current_uses}/{promo.max_uses}
 • Статус: {'Активен' if promo.is_active else 'Неактивен'}
 
-<b>⚠️ Внимание:</b> Это действие нельзя отменить!
+<b><tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Внимание:</b> Это действие нельзя отменить!
 
 ID: {promo_id}
 """

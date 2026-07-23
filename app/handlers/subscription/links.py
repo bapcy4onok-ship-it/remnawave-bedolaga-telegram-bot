@@ -210,7 +210,7 @@ async def handle_connect_subscription(
             await callback.message.edit_text(
                 texts.t(
                     'GUIDE_CONFIG_NOT_SET',
-                    '⚠️ <b>Конфигурация не настроена</b>\n\n'
+                    '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Конфигурация не настроена</b>\n\n'
                     'Администратор ещё не настроил конфигурацию приложений.\n'
                     'Обратитесь к администратору.',
                 ),

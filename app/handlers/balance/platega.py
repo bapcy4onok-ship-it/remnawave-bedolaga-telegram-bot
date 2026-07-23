@@ -284,7 +284,7 @@ async def process_platega_payment_amount(
         await message.answer(
             texts.t(
                 'PLATEGA_METHOD_SELECTION_REQUIRED',
-                '⚠️ Выберите способ оплаты Platega перед вводом суммы',
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Выберите способ оплаты Platega перед вводом суммы',
             )
         )
         await state.set_state(BalanceStates.waiting_for_platega_method)

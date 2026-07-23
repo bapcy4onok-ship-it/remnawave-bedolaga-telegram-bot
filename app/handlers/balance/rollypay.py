@@ -100,7 +100,7 @@ async def _create_rollypay_payment_and_respond(
             [
                 InlineKeyboardButton(
                     text=texts.t('BACK_BUTTON', '\u25c0\ufe0f Назад'),
-                    callback_data='menu_balance',
+                    callback_data='balance_topup',
                 )
             ],
         ]

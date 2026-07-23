@@ -390,7 +390,7 @@ async def confirm_change_devices(
             message_text = texts.t(
                 'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
                 (
-                    '⚠️ <b>Недостаточно средств</b>\n\n'
+                    '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                     'Стоимость услуги: {required}\n'
                     'На балансе: {balance}\n'
                     'Не хватает: {missing}\n\n'
@@ -476,7 +476,7 @@ async def confirm_change_devices(
                         devices_warning = texts.t(
                             'DEVICE_CHANGE_RESET_WARNING',
                             (
-                                '\n⚠️ <b>Внимание!</b>\n'
+                                '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Внимание!</b>\n'
                                 'У вас подключено {connected} устройств.\n'
                                 'При уменьшении лимита до {new} все устройства будут сброшены.\n'
                                 'Вам нужно будет заново подключить нужные устройства.\n'
@@ -1121,7 +1121,7 @@ async def process_device_rename(message: types.Message, db_user: User, db: Async
             await message.answer(
                 texts.t(
                     'DEVICE_RENAME_TOO_LONG',
-                    '⚠️ Имя слишком длинное, сократили до {max_len} символов.',
+                    '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Имя слишком длинное, сократили до {max_len} символов.',
                 ).format(max_len=ALIAS_MAX_LENGTH)
             )
         saved = await upsert_alias(db, db_user.id, hwid, new_alias)
@@ -1416,7 +1416,7 @@ async def handle_all_devices_reset_from_management(
                         texts.t(
                             'DEVICE_RESET_PARTIAL_MESSAGE',
                             (
-                                '⚠️ <b>Частичный сброс устройств</b>\n\n'
+                                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Частичный сброс устройств</b>\n\n'
                                 '✅ Удалено: {success} устройств\n'
                                 '❌ Не удалось удалить: {failed} устройств\n\n'
                                 'Попробуйте еще раз или обратитесь в поддержку.'
@@ -1582,7 +1582,7 @@ async def confirm_add_devices(callback: types.CallbackQuery, db_user: User, db: 
         message_text = texts.t(
             'ADDON_INSUFFICIENT_FUNDS_MESSAGE',
             (
-                '⚠️ <b>Недостаточно средств</b>\n\n'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Недостаточно средств</b>\n\n'
                 'Стоимость услуги: {required}\n'
                 'На балансе: {balance}\n'
                 'Не хватает: {missing}\n\n'
