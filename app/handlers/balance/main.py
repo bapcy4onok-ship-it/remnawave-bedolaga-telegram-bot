@@ -289,13 +289,19 @@ async def show_balance_history(callback: types.CallbackQuery, db_user: User, db:
     text = '📊 <b>История операций</b>\n\n'
 
     for transaction in unique_transactions:
-        is_credit = transaction.type in CREDIT_TRANSACTION_TYPES
-        emoji = '💰' if is_credit else '💸'
-        amount_text = (
-            f'+{texts.format_price(transaction.amount_kopeks)}'
-            if is_credit
-            else f'-{texts.format_price(abs(transaction.amount_kopeks))}'
-        )
+        if transaction.type == TransactionType.DONATION.value:
+            # Пожертвование не двигает баланс ни вверх, ни вниз — показываем
+            # сумму без знака (так же нейтрально, как в кабинете).
+            emoji = '💜'
+            amount_text = texts.format_price(abs(transaction.amount_kopeks))
+        else:
+            is_credit = transaction.type in CREDIT_TRANSACTION_TYPES
+            emoji = '💰' if is_credit else '💸'
+            amount_text = (
+                f'+{texts.format_price(transaction.amount_kopeks)}'
+                if is_credit
+                else f'-{texts.format_price(abs(transaction.amount_kopeks))}'
+            )
 
         text += f'{emoji} {amount_text}\n'
         text += f'📝 {html.escape(transaction.description or "")}\n'
@@ -672,6 +678,10 @@ async def handle_topup_amount_callback(
 
 
 def register_balance_handlers(dp: Dispatcher):
+    from .donation import register_donation_handlers
+
+    register_donation_handlers(dp)
+
     dp.callback_query.register(show_balance_menu, F.data == 'menu_balance')
 
     dp.callback_query.register(show_balance_history, F.data == 'balance_history')

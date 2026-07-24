@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     TEST_EMAIL: str = ''  # e.g., test@example.com
     TEST_EMAIL_PASSWORD: str = ''  # Password for test account
 
+    # Пожертвования «Поддержать проект»: платёж через обычные платёжные системы,
+    # который не зачисляется на баланс. False — кнопка исчезает из меню бота.
+    DONATIONS_ENABLED: bool = True
+
     SUPPORT_USERNAME: str = '@support'
     SUPPORT_MENU_ENABLED: bool = True
     SUPPORT_SYSTEM_MODE: str = 'both'  # one of: tickets, contact, both

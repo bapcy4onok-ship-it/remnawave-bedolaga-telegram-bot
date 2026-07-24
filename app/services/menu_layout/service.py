@@ -776,6 +776,11 @@ class MenuLayoutService:
             if not settings.is_language_selection_enabled():
                 return False
 
+        # donations_enabled — кнопка «Поддержать проект»
+        if conditions.get('donations_enabled') is True:
+            if not settings.DONATIONS_ENABLED:
+                return False
+
         # happ_enabled
         if conditions.get('happ_enabled') is True:
             if not settings.is_happ_download_button_enabled():

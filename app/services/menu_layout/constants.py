@@ -77,6 +77,12 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
             'max_per_row': 2,
         },
         {
+            'id': 'donate_row',
+            'buttons': ['donate'],
+            'conditions': {'donations_enabled': True},
+            'max_per_row': 1,
+        },
+        {
             'id': 'language_row',
             'buttons': ['language'],
             'conditions': {'language_selection_enabled': True},
@@ -247,6 +253,16 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
             'conditions': None,
             'dynamic_text': False,
         },
+        'donate': {
+            'type': 'builtin',
+            'builtin_id': 'donate',
+            'text': {'ru': '💜 Поддержать проект', 'en': '💜 Support the project'},
+            'action': 'menu_donate',
+            'enabled': True,
+            'visibility': 'all',
+            'conditions': {'donations_enabled': True},
+            'dynamic_text': False,
+        },
         'language': {
             'type': 'builtin',
             'builtin_id': 'language',
@@ -383,6 +399,13 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
         'supports_dynamic_text': False,
     },
     {
+        'id': 'donate',
+        'default_text': {'ru': '💜 Поддержать проект', 'en': '💜 Support the project'},
+        'callback_data': 'menu_donate',
+        'default_conditions': {'donations_enabled': True},
+        'supports_dynamic_text': False,
+    },
+    {
         'id': 'language',
         'default_text': {'ru': '🌐 Язык', 'en': '🌐 Language'},
         'callback_data': 'menu_language',
@@ -472,6 +495,13 @@ AVAILABLE_CALLBACKS: list[dict[str, Any]] = [
         'category': 'balance',
         'icon': '💳',
         'text': {'ru': '💳 Пополнить', 'en': '💳 Top up'},
+    },
+    {
+        'callback_data': 'menu_donate',
+        'name': 'Поддержать проект (пожертвование)',
+        'category': 'balance',
+        'icon': '💜',
+        'text': {'ru': '💜 Поддержать проект', 'en': '💜 Support the project'},
     },
     # Подписка
     {

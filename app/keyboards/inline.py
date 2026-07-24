@@ -793,6 +793,18 @@ def get_main_menu_keyboard(
         row = paired_buttons[i : i + 2]
         keyboard.append(row)
 
+    # «Поддержать проект» — отдельной строкой в самом низу (как в кабинете это
+    # отдельная плавающая кнопка, не конкурирующая с покупкой).
+    if settings.DONATIONS_ENABLED:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=texts.t('MENU_DONATE', '💜 Поддержать проект'),
+                    callback_data='menu_donate',
+                )
+            ]
+        )
+
     if settings.DEBUG:
         logger.debug('DEBUG KEYBOARD: админ кнопка', is_admin=is_admin)
 
@@ -1593,13 +1605,13 @@ def get_balance_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMark
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def _apply_payment_name_overrides(keyboard: list[list[InlineKeyboardButton]]) -> None:
+def _apply_payment_name_overrides(keyboard: list[list[InlineKeyboardButton]], prefix: str = 'topup') -> None:
     """Replace payment-method button labels with cabinet-set display names.
 
     Bot keyboards build labels from locale strings / ``*_DISPLAY_NAME`` settings,
     which ignore the per-method overrides operators set in the cabinet
     (``PaymentMethodConfig.display_name``). Here we decode the method_id from each
-    ``topup_*`` callback and, when an override exists, show it — so bot button
+    ``<prefix>_*`` callback and, when an override exists, show it — so bot button
     labels stay in sync with the cabinet. No override -> the original label is kept.
     """
     from app.services.payment_method_config_service import get_display_name_override
@@ -1607,11 +1619,11 @@ def _apply_payment_name_overrides(keyboard: list[list[InlineKeyboardButton]]) ->
     for row in keyboard:
         for idx, button in enumerate(row):
             data = button.callback_data or ''
-            if data.startswith('topup_amount|'):
+            if data.startswith(f'{prefix}_amount|'):
                 parts = data.split('|')
                 method = parts[1] if len(parts) > 1 else ''
-            elif data.startswith('topup_'):
-                method = data[len('topup_') :]
+            elif data.startswith(f'{prefix}_'):
+                method = data[len(prefix) + 1 :]
             else:
                 continue
             override = get_display_name_override(method) if method else None
@@ -1619,7 +1631,21 @@ def _apply_payment_name_overrides(keyboard: list[list[InlineKeyboardButton]]) ->
                 row[idx] = button.model_copy(update={'text': override})
 
 
-def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMarkup:
+def get_payment_methods_keyboard(
+    amount_kopeks: int,
+    language: str = DEFAULT_LANGUAGE,
+    *,
+    callback_prefix: str = 'topup',
+    back_callback: str = 'menu_balance',
+    include_support_topup: bool = True,
+    excluded_methods: frozenset[str] = frozenset(),
+) -> InlineKeyboardMarkup:
+    """Клавиатура со всеми включёнными способами оплаты.
+
+    Донаты («Поддержать проект») переиспользуют тот же список с
+    ``callback_prefix='donate'``, чтобы способы оплаты в боте были одни и те же
+    и для пополнения, и для пожертвования (см. ``handlers/balance/donation.py``).
+    """
     texts = get_texts(language)
     keyboard = []
     has_direct_payment_methods = False
@@ -1628,8 +1654,8 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
 
     def _build_callback(method: str) -> str:
         if amount_kopeks > 0:
-            return f'topup_amount|{method}|{amount_kopeks}'
-        return f'topup_{method}'
+            return f'{callback_prefix}_amount|{method}|{amount_kopeks}'
+        return f'{callback_prefix}_{method}'
 
     if settings.TELEGRAM_STARS_ENABLED:
         keyboard.append(
@@ -2167,7 +2193,31 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
         )
         has_direct_payment_methods = True
 
-    if settings.is_support_topup_enabled():
+    if excluded_methods:
+        # Фильтруем по методу из callback, а не по тексту кнопки: список выше
+        # строится десятками веток, и точечные проверки в каждой размазали бы
+        # исключения (донаты, например, не поддерживают Tribute).
+        prefix = f'{callback_prefix}_'
+        filtered: list[list[InlineKeyboardButton]] = []
+        for row in keyboard:
+            kept = []
+            for button in row:
+                data = button.callback_data or ''
+                if data.startswith(f'{callback_prefix}_amount|'):
+                    method = data.split('|')[1]
+                elif data.startswith(prefix):
+                    method = data[len(prefix) :]
+                else:
+                    method = ''
+                if method and method in excluded_methods:
+                    continue
+                kept.append(button)
+            if kept:
+                filtered.append(kept)
+        keyboard = filtered
+        has_direct_payment_methods = bool(keyboard)
+
+    if include_support_topup and settings.is_support_topup_enabled():
         keyboard.append(
             [
                 InlineKeyboardButton(
@@ -2185,7 +2235,7 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
                 )
             ]
         )
-    elif not has_direct_payment_methods and settings.is_support_topup_enabled():
+    elif not has_direct_payment_methods and include_support_topup and settings.is_support_topup_enabled():
         keyboard.insert(
             0,
             [
@@ -2196,9 +2246,9 @@ def get_payment_methods_keyboard(amount_kopeks: int, language: str = DEFAULT_LAN
             ],
         )
 
-    keyboard.append([InlineKeyboardButton(text=texts.BACK, callback_data='menu_balance')])
+    keyboard.append([InlineKeyboardButton(text=texts.BACK, callback_data=back_callback)])
 
-    _apply_payment_name_overrides(keyboard)
+    _apply_payment_name_overrides(keyboard, callback_prefix)
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 

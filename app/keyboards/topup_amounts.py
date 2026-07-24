@@ -74,6 +74,7 @@ async def get_topup_amount_keyboard(
     back_callback: str = 'menu_balance',
     *,
     min_amount_kopeks: int | None = None,
+    callback_prefix: str = 'topup_amount',
 ) -> InlineKeyboardMarkup:
     amounts: list[int] = []
     try:
@@ -94,7 +95,7 @@ async def get_topup_amount_keyboard(
         row.append(
             InlineKeyboardButton(
                 text=format_quick_amount(amount),
-                callback_data=f'topup_amount|{method}|{amount}',
+                callback_data=f'{callback_prefix}|{method}|{amount}',
             )
         )
         if len(row) == 2:

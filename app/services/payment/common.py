@@ -414,9 +414,8 @@ def _extract_guest_purchase_token(metadata: dict[str, Any] | None) -> str | None
 # Donation fulfillment ("Support the project") — shared across all providers
 # ---------------------------------------------------------------------------
 
-# Mirrors payment_service._GETTER_OVERRIDES (kept local to avoid a circular
-# import). Maps a provider model_name to its local-payment getter when it
-# differs from the standard get_{model_name}_payment_by_id pattern.
+# Maps a provider model_name to its local-payment getter when it differs from
+# the standard get_{model_name}_payment_by_id pattern.
 _PAYMENT_GETTER_OVERRIDES: dict[str, str] = {
     'mulenpay': 'get_mulenpay_payment_by_local_id',
 }
