@@ -951,7 +951,7 @@ class AdminNotificationService:
             method_display = html.escape(str(payment_method)) if payment_method else '—'
 
             lines = [
-                '💜 <b>Новое пожертвование!</b>',
+                '❤️ <b>Новое пожертвование!</b>',
                 '',
                 f'💰 Сумма: <b>{settings.format_price(amount_kopeks)}</b>',
                 f'👤 Донор: {donor_display}',

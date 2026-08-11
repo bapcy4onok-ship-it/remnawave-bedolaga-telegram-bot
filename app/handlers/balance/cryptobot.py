@@ -215,7 +215,7 @@ async def process_cryptobot_payment_amount(
             f'4. Деньги поступят на баланс автоматически\n\n'
             f'🔒 Оплата проходит через защищенную систему CryptoBot\n'
             f'⚡ Поддерживаемые активы: USDT, TON, BTC, ETH\n\n'
-            f'❓ Если возникнут проблемы, обратитесь в {settings.get_support_contact_display_html()}',
+            f'<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку',
             reply_markup=keyboard,
             parse_mode='HTML',
         )

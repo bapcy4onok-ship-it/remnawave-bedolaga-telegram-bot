@@ -224,7 +224,7 @@ async def process_yookassa_payment_amount(
             f'4. Деньги поступят на баланс автоматически\n\n'
             f'🔒 Оплата происходит через защищенную систему YooKassa\n'
             f'✅ Принимаем карты: Visa, MasterCard, МИР\n\n'
-            f'❓ Если возникнут проблемы, обратитесь в {settings.get_support_contact_display_html()}',
+            f'<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку',
             reply_markup=keyboard,
             parse_mode='HTML',
         )
@@ -460,7 +460,7 @@ async def process_yookassa_sbp_payment_amount(
         message_text += (
             f'🔒 Оплата происходит через защищенную систему YooKassa\n'
             f'✅ Принимаем СБП от всех банков-участников\n\n'
-            f'❓ Если возникнут проблемы, обратитесь в {settings.get_support_contact_display_html()}'
+            f'<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
         )
 
         # Отправляем сообщение с инструкциями и клавиатурой

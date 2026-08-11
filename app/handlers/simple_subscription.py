@@ -1087,7 +1087,7 @@ async def handle_simple_subscription_payment_method(
             message_text += (
                 f'🔒 Оплата происходит через защищенную систему YooKassa\n'
                 f'✅ Принимаем карты: Visa, MasterCard, МИР\n\n'
-                f'❓ Если возникнут проблемы, обратитесь в {settings.get_support_contact_display_html()}'
+                f'<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
             )
 
             # Отправляем сообщение с инструкциями и клавиатурой
@@ -1204,7 +1204,7 @@ async def handle_simple_subscription_payment_method(
                 '2. Выберите актив и следуйте подсказкам\n'
                 '3. Подтвердите перевод\n'
                 '4. Средства зачислятся автоматически\n\n'
-                f'❓ Если возникнут проблемы, обратитесь в {settings.get_support_contact_display_html()}'
+                f'<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
             )
 
             await callback.message.edit_text(
@@ -1315,7 +1315,7 @@ async def handle_simple_subscription_payment_method(
                     '3. Подтвердите перевод',
                     '4. Средства зачислятся автоматически',
                     '',
-                    f'❓ Если возникнут проблемы, обратитесь в {settings.get_support_contact_display_html()}',
+                    f'<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку',
                 ]
             )
 
@@ -1401,7 +1401,7 @@ async def handle_simple_subscription_payment_method(
                     '2. Следуйте подсказкам платежной системы\n'
                     '3. Подтвердите перевод\n'
                     '4. Средства зачислятся автоматически\n\n'
-                    '❓ Если возникнут проблемы, обратитесь в {support}'
+                    '<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
                 ),
             )
 
@@ -1563,7 +1563,7 @@ async def handle_simple_subscription_payment_method(
                     '💰 Сумма: {amount}\n'
                     '🆔 ID счета: {bill_id}\n\n'
                     '📱 <b>Инструкция:</b>\n{steps}\n\n'
-                    '❓ Если возникнут проблемы, обратитесь в {support}'
+                    '<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
                 ),
             )
 
@@ -1667,7 +1667,7 @@ async def handle_simple_subscription_payment_method(
                     '2. Следуйте подсказкам платежной системы\n'
                     '3. Подтвердите перевод\n'
                     '4. Средства зачислятся автоматически\n\n'
-                    '❓ Если возникнут проблемы, обратитесь в {support}'
+                    '<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
                 ),
             )
 

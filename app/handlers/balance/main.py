@@ -292,7 +292,7 @@ async def show_balance_history(callback: types.CallbackQuery, db_user: User, db:
         if transaction.type == TransactionType.DONATION.value:
             # Пожертвование не двигает баланс ни вверх, ни вниз — показываем
             # сумму без знака (так же нейтрально, как в кабинете).
-            emoji = '💜'
+            emoji = '❤️'
             amount_text = texts.format_price(abs(transaction.amount_kopeks))
         else:
             is_credit = transaction.type in CREDIT_TRANSACTION_TYPES

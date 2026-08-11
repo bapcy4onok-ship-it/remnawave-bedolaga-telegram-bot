@@ -799,7 +799,7 @@ def get_main_menu_keyboard(
         keyboard.append(
             [
                 InlineKeyboardButton(
-                    text=texts.t('MENU_DONATE', '💜 Поддержать проект'),
+                    text=texts.t('MENU_DONATE', '❤️ Поддержать проект'),
                     callback_data='menu_donate',
                 )
             ]
@@ -2768,7 +2768,9 @@ def get_change_devices_keyboard(
             action_text = ' (текущее)'
             price_text = ''
         elif devices_count > current_devices:
-            emoji = '➕'
+            # Раньше тут были ➕/➖ — сбивали пользователей (читались как «добавить ещё N»,
+            # а не «выбрать N устройств»). Нейтральный ⚪, как в клавиатуре выбора при покупке.
+            emoji = '⚪'
 
             current_chargeable = max(0, current_devices - default_device_limit)
             new_chargeable = max(0, devices_count - default_device_limit)
@@ -2791,7 +2793,7 @@ def get_change_devices_keyboard(
                 price_text = ' (бесплатно)'
                 action_text = ''
         else:
-            emoji = '➖'
+            emoji = '⚪'
             action_text = ''
             price_text = ' (без возврата)'
 

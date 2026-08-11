@@ -569,7 +569,7 @@ async def try_fulfill_donation(
         await db.commit()
 
         logger.info(
-            '💜 Пожертвование записано',
+            '❤️ Пожертвование записано',
             provider=provider_name,
             external_id=external_id,
             amount_kopeks=payment_amount_kopeks,
@@ -631,7 +631,7 @@ async def _notify_donation(
         texts = get_texts(getattr(user, 'language', None) or 'ru')
         message = texts.t(
             'DONATION_THANK_YOU',
-            '💜 <b>Спасибо за поддержку проекта!</b>\n\nВаше пожертвование на сумму {amount} получено. '
+            '❤️ <b>Спасибо за поддержку проекта!</b>\n\nВаше пожертвование на сумму {amount} получено. '
             'Оно не зачисляется на баланс — это ваш вклад в развитие проекта. Спасибо! 🙏',
         ).format(amount=settings.format_price(amount_kopeks))
         await bot.send_message(chat_id=telegram_id, text=message, parse_mode='HTML')

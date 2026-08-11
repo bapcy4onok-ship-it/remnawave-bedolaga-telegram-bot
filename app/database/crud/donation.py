@@ -85,7 +85,7 @@ async def create_donation(
     await db.refresh(donation)
 
     logger.info(
-        '💜 Создана запись пожертвования',
+        '❤️ Создана запись пожертвования',
         donation_id=donation.id,
         amount_kopeks=amount_kopeks,
         user_id=donation.user_id,

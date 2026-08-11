@@ -125,9 +125,9 @@ async def show_donation_menu(callback: types.CallbackQuery, db_user: User, db: A
 
     text = texts.t(
         'DONATION_MENU_TEXT',
-        '💜 <b>Поддержать проект</b>\n\n'
+        '❤️ <b>Поддержать проект</b>\n\n'
         'Проект живёт и развивается на средства пользователей: серверы, каналы связи, поддержка.\n\n'
-        '⚠️ Это <b>пожертвование</b> — сумма не зачисляется на баланс, а идёт на развитие проекта.\n\n'
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Это <b>пожертвование</b> — сумма не зачисляется на баланс, а идёт на развитие проекта и усиление инфраструктуры.\n\n'
         'Выберите способ пожертвования:',
     )
 
@@ -163,9 +163,9 @@ async def start_donation_amount(callback: types.CallbackQuery, db_user: User, db
 
     text = texts.t(
         'DONATION_AMOUNT_PROMPT',
-        '💜 <b>Сумма пожертвования</b>\n\n'
+        '❤️ <b>Сумма пожертвования</b>\n\n'
         'Выберите сумму или введите свою (в рублях) — от {min_amount} до {max_amount}.\n\n'
-        '⚠️ Сумма не зачисляется на баланс — это поддержка проекта.',
+        '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Сумма не зачисляется на баланс — это поддержка проекта.',
     ).format(
         min_amount=texts.format_price(min_amount),
         max_amount=texts.format_price(max_amount),
@@ -341,7 +341,7 @@ async def _create_donation_and_respond(
         return
 
     lines = [
-        texts.t('DONATION_PAY_TITLE', '💜 <b>Поддержка проекта</b>'),
+        texts.t('DONATION_PAY_TITLE', '❤️ <b>Поддержка проекта</b>'),
         '',
         # round_kopeks=False: у Stars сумма подгоняется под целое число звёзд и
         # может быть с копейками — показываем ровно то, что запишется в донаты.
@@ -368,7 +368,7 @@ async def _create_donation_and_respond(
         inline_keyboard=[
             [
                 types.InlineKeyboardButton(
-                    text=texts.t('DONATION_PAY_BUTTON', '💜 Поддержать'),
+                    text=texts.t('DONATION_PAY_BUTTON', '❤️ Поддержать'),
                     url=payment_url,
                 )
             ],
@@ -397,7 +397,7 @@ async def _create_donation_and_respond(
     await state.clear()
 
     logger.info(
-        '💜 Создан донат-платёж',
+        '❤️ Создан донат-платёж',
         user_id=db_user.id,
         method=provider_method,
         amount_kopeks=amount_kopeks,

@@ -256,7 +256,7 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
         'donate': {
             'type': 'builtin',
             'builtin_id': 'donate',
-            'text': {'ru': '💜 Поддержать проект', 'en': '💜 Support the project'},
+            'text': {'ru': '❤️ Поддержать проект', 'en': '❤️ Support the project'},
             'action': 'menu_donate',
             'enabled': True,
             'visibility': 'all',
@@ -400,7 +400,7 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
     },
     {
         'id': 'donate',
-        'default_text': {'ru': '💜 Поддержать проект', 'en': '💜 Support the project'},
+        'default_text': {'ru': '❤️ Поддержать проект', 'en': '❤️ Support the project'},
         'callback_data': 'menu_donate',
         'default_conditions': {'donations_enabled': True},
         'supports_dynamic_text': False,
@@ -500,8 +500,8 @@ AVAILABLE_CALLBACKS: list[dict[str, Any]] = [
         'callback_data': 'menu_donate',
         'name': 'Поддержать проект (пожертвование)',
         'category': 'balance',
-        'icon': '💜',
-        'text': {'ru': '💜 Поддержать проект', 'en': '💜 Support the project'},
+        'icon': '❤️',
+        'text': {'ru': '❤️ Поддержать проект', 'en': '❤️ Support the project'},
     },
     # Подписка
     {

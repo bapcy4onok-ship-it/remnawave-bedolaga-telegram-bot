@@ -221,6 +221,13 @@ async def handle_change_devices(
         period_hint_days,
     )
 
+    # Потолок устройств — как в get_change_devices_keyboard: тариф важнее глобальной настройки
+    tariff_max_devices = getattr(tariff, 'max_device_limit', None) if tariff else None
+    if tariff_max_devices and tariff_max_devices > 0:
+        max_devices = tariff_max_devices
+    else:
+        max_devices = settings.MAX_DEVICES_LIMIT if settings.MAX_DEVICES_LIMIT > 0 else 100
+
     # Для тарифов показываем цену из тарифа
     if tariff:
         price_per_device = tariff_device_price
@@ -232,11 +239,12 @@ async def handle_change_devices(
                 'Текущий лимит: {current_devices} устройств\n'
                 'Цена за доп. устройство: {price}/мес\n'
                 'Выберите новое количество устройств:\n\n'
-                '💡 <b>Важно:</b>\n'
-                '• При увеличении - доплата пропорционально оставшемуся времени\n'
-                '• При уменьшении - возврат средств не производится'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Важно:</b>\n\n'
+                '• При увеличении — доплата пропорционально оставшемуся времени\n'
+                '• При уменьшении — возврат средств не производится\n'
+                '• Максимальное количество устройств — {max_devices}'
             ),
-        ).format(current_devices=current_devices, price=price_text)
+        ).format(current_devices=current_devices, price=price_text, max_devices=max_devices)
     else:
         prompt_text = texts.t(
             'CHANGE_DEVICES_PROMPT',
@@ -244,11 +252,12 @@ async def handle_change_devices(
                 '📱 <b>Изменение количества устройств</b>\n\n'
                 'Текущий лимит: {current_devices} устройств\n'
                 'Выберите новое количество устройств:\n\n'
-                '💡 <b>Важно:</b>\n'
-                '• При увеличении - доплата пропорционально оставшемуся времени\n'
-                '• При уменьшении - возврат средств не производится'
+                '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Важно:</b>\n\n'
+                '• При увеличении — доплата пропорционально оставшемуся времени\n'
+                '• При уменьшении — возврат средств не производится\n'
+                '• Максимальное количество устройств — {max_devices}'
             ),
-        ).format(current_devices=current_devices)
+        ).format(current_devices=current_devices, max_devices=max_devices)
 
     # В мульти-тарифе кнопка "назад" ведёт к детальному виду подписки
     back_cb = f'sm:{sub_id}' if settings.is_multi_tariff_enabled() and sub_id else 'subscription_settings'
@@ -935,7 +944,7 @@ async def show_devices_page(
     devices_text += texts.t(
         'DEVICE_MANAGEMENT_ACTIONS',
         (
-            '\n💡 <b>Действия:</b>\n'
+            '\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Действия:</b>\n\n'
             '• ✏️ — переименовать устройство (видно только вам)\n'
             '• 🔄 — сбросить устройство\n'
             '• Или сбросьте все устройства сразу'

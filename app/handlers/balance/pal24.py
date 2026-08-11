@@ -179,7 +179,7 @@ async def _send_pal24_payment_message(
                 '💰 Сумма: {amount}\n'
                 '🆔 ID счета: {bill_id}\n\n'
                 '📱 <b>Инструкция:</b>\n{steps}\n\n'
-                '❓ Если возникнут проблемы, обратитесь в {support}'
+                '<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
             ),
         )
 
