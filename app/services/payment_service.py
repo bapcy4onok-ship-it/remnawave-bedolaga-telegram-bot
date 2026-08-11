@@ -33,6 +33,7 @@ from app.services.payment import (
 )
 from app.services.payment.antilopay import AntilopayPaymentMixin
 from app.services.payment.aurapay import AuraPayPaymentMixin
+from app.services.payment.cispay import CisPayPaymentMixin
 from app.services.payment.cloudpayments import CloudPaymentsPaymentMixin
 from app.services.payment.common import patch_payment_metadata
 from app.services.payment.donut import DonutPaymentMixin
@@ -664,6 +665,48 @@ async def link_lava_payment_to_transaction(*args, **kwargs):
     return await lava_crud.link_lava_payment_to_transaction(*args, **kwargs)
 
 
+async def create_cispay_payment(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.create_cispay_payment(*args, **kwargs)
+
+
+async def get_cispay_payment_by_order_id(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.get_cispay_payment_by_order_id(*args, **kwargs)
+
+
+async def get_cispay_payment_by_invoice_id(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.get_cispay_payment_by_invoice_id(*args, **kwargs)
+
+
+async def get_cispay_payment_by_id(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.get_cispay_payment_by_id(*args, **kwargs)
+
+
+async def get_cispay_payment_by_id_for_update(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.get_cispay_payment_by_id_for_update(*args, **kwargs)
+
+
+async def update_cispay_payment_status(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.update_cispay_payment_status(*args, **kwargs)
+
+
+async def link_cispay_payment_to_transaction(*args, **kwargs):
+    cispay_crud = import_module('app.database.crud.cispay')
+    return await cispay_crud.link_cispay_payment_to_transaction(*args, **kwargs)
+
+
+# Mapping from model_name to getter function name for providers
+# where it differs from the standard get_{model_name}_payment_by_id pattern.
+_GETTER_OVERRIDES: dict[str, str] = {
+    'mulenpay': 'get_mulenpay_payment_by_local_id',
+}
+
+
 def _split_guest_payment_method(payment_method: str) -> tuple[str, str | None]:
     """Разбивает метод гостевого платежа на базовый шлюз + под-опцию.
 
@@ -711,6 +754,7 @@ class PaymentService(
     JupiterPaymentMixin,
     DonutPaymentMixin,
     LavaPaymentMixin,
+    CisPayPaymentMixin,
 ):
     """Основной интерфейс платежей, делегирующий работу специализированным mixin-ам."""
 
@@ -1357,6 +1401,29 @@ class PaymentService(
                     'payment_url': result.get('payment_url'),
                     'payment_id': result.get('order_id'),
                     'provider': 'lava',
+                }
+            return None
+
+        # --- cisPay -----------------------------------------------------------
+        if _base == 'cispay':
+            if not settings.is_cispay_enabled():
+                logger.warning('cisPay is not enabled, cannot create guest payment')
+                return None
+
+            result = await self.create_cispay_payment(
+                db=db,
+                user_id=None,
+                amount_kopeks=amount_kopeks,
+                description=description,
+                return_url=return_url,
+                payment_method_type=_option,
+            )
+            if result:
+                await _patch_guest_metadata(result['local_payment_id'], 'cispay')
+                return {
+                    'payment_url': result.get('payment_url'),
+                    'payment_id': result.get('order_id'),
+                    'provider': 'cispay',
                 }
             return None
 

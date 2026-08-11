@@ -1,7 +1,7 @@
 """donations: durable registry for «Support the project» donations
 
-Revision ID: 0096
-Revises: 0095
+Revision ID: 0106
+Revises: 0105
 Create Date: 2026-07-23
 
 Adds the ``donations`` table. Donations are payments made through the regular
@@ -16,8 +16,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = '0096'
-down_revision: Union[str, None] = '0095'
+revision: str = '0106'
+down_revision: Union[str, None] = '0105'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
