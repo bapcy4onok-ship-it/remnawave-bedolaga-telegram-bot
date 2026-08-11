@@ -905,7 +905,7 @@
   "AUTOPAY_STATUS_CARD_ACTIVE": "✅ Enabled — automatic card charge scheduled",
   "AUTOPAY_STATUS_NO_CARD": "✅ Enabled — subscription will renew automatically",
   "AUTOPAY_STATUS_OFF": "❌ Disabled — don't forget to renew manually!",
-  "AUTOPAY_ACTION_CHECK_BALANCE": "💰 Your current balance: {balance}",
+  "AUTOPAY_ACTION_CHECK_BALANCE": "💰 Make sure you have enough balance: {balance}",
   "AUTOPAY_ACTION_ENABLE": "💡 Enable autopay or renew your subscription manually",
   "AUTOPAY_ACTION_RENEW": "💡 Renew your subscription manually",
   "AUTOPAY_SUCCESS": "\n✅ <b>Autopay completed</b>\n\nYour subscription was automatically renewed for {days} days.\nCharged from balance: {amount}\n",
@@ -1086,7 +1086,7 @@
   "INFO_PAGE_EMPTY": "Content for this page has not been added yet.",
   "INFO_PAGE_NOT_AVAILABLE": "This page is temporarily unavailable.",
   "INFO_SECTION_NOT_AVAILABLE": "This section is temporarily unavailable.",
-  "INSUFFICIENT_BALANCE": "❌ Insufficient balance. Top up {amount} and try again.",
+  "INSUFFICIENT_BALANCE": "❌ Insufficient balance.\n\nTop up {amount} and try again.",
   "INVALID_AMOUNT": "❌ Invalid amount",
   "LANGUAGE_PROMPT": "🌐 Choose the interface language:",
   "LANGUAGE_SELECTED": "🌐 Interface language set: <b>English</b>",
@@ -1282,7 +1282,7 @@
   "PLATEGA_AMOUNT_TOO_HIGH": "Maximum amount for Platega: {amount}",
   "PLATEGA_PAYMENT_ERROR": "❌ Failed to create Platega payment. Please try again later or contact support.",
   "PLATEGA_PAYMENT_INSTRUCTIONS": "💳 <b>Payment via Platega ({method})</b>\n\n💰 Amount: {amount}\n🆔 Transaction ID: {transaction}\n\n📱 <b>Instructions:</b>\n1. Tap the ‘Pay’ button\n2. Follow the payment provider instructions\n3. Confirm the transfer\n4. Funds will be credited automatically\n\n<tg-emoji emoji-id=\"5283202325500927617\">❓</tg-emoji> If you have issues, contact support",
-  "PLATEGA_PAY_BUTTON": "💳 Pay via {method}",
+  "PLATEGA_PAY_BUTTON": "Pay via {method}",
   "PLATEGA_PAYMENT_ALREADY_CONFIRMED": "✅ Payment already credited",
   "PLATEGA_PAYMENT_STATUS": "Current payment status: {status}",
   "PAY_NOW_BUTTON": "💳 Pay",
@@ -1304,7 +1304,7 @@
   "PROMOCODE_ENTER": "🎫 Enter promo code",
   "PROMOCODE_EXPIRED": "❌ Promo code has expired",
   "PROMOCODE_INVALID": "❌ Invalid promo code",
-  "PROMOCODE_SUCCESS": "🎉 Promo code applied! {description}",
+  "PROMOCODE_SUCCESS": "🎉 Promo code applied!",
   "PROMOCODE_USED": "ℹ️ Promo code has already been used",
   "PROMOCODE_ACTIVE_DISCOUNT_EXISTS": "❌ You already have an active discount. Use it before activating a new one.",
   "PROMO_GROUPS_INFO_CURRENT_LEVEL": "🏆 Current level: {name}",
@@ -2139,5 +2139,6 @@
   "LAVA_RECURRING_NOTIFY_CANCELLED": "ℹ️ Lava auto-renewal has been cancelled.",
   "LAVA_RECURRING_NOTIFY_CONFIRMED": "✅ Subscription renewed by Lava auto-payment.",
   "LAVA_RECURRING_NOTIFY_FAILED": "⚠️ Lava auto-renewal payment failed.",
-  "LAVA_RECURRING_PAY_BUTTON": "💳 Pay"
+  "LAVA_RECURRING_PAY_BUTTON": "💳 Pay",
+  "TICKET_NOTIFY_MAIN_MENU": "🏠 Main menu"
 }
