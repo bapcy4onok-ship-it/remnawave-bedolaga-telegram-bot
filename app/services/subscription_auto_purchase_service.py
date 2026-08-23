@@ -1811,8 +1811,8 @@ async def _auto_add_devices(
                 'AUTO_PURCHASE_DEVICES_SUCCESS',
                 (
                     '✅ <b>Устройства добавлены автоматически!</b>\n\n'
-                    '📱 Добавлено: {devices_to_add} устройств\n'
-                    '📊 Новый лимит: {new_limit} устройств\n'
+                    '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Добавлено: {devices_to_add} устройств\n'
+                    '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Новый лимит: {new_limit} устройств\n'
                     '💰 Списано: {price}'
                 ),
             ).format(
@@ -2168,7 +2168,7 @@ async def _auto_add_traffic(
                 (
                     '✅ <b>Трафик добавлен автоматически!</b>\n\n'
                     '📈 Добавлено: {traffic_gb} ГБ\n'
-                    '📊 Новый лимит: {new_limit} ГБ\n'
+                    '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Новый лимит: {new_limit} ГБ\n'
                     '💰 Списано: {price}'
                 ),
             ).format(

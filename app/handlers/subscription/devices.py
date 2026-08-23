@@ -234,7 +234,7 @@ async def handle_change_devices(
         prompt_text = texts.t(
             'CHANGE_DEVICES_PROMPT_TARIFF',
             (
-                '📱 <b>Изменение количества устройств</b>\n\n'
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Изменение количества устройств</b>\n\n'
                 'Текущий лимит: {current_devices} устройств\n'
                 'Цена за доп. устройство: {price}/мес\n'
                 'Выберите новое количество устройств:\n\n'
@@ -248,7 +248,7 @@ async def handle_change_devices(
         prompt_text = texts.t(
             'CHANGE_DEVICES_PROMPT',
             (
-                '📱 <b>Изменение количества устройств</b>\n\n'
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Изменение количества устройств</b>\n\n'
                 'Текущий лимит: {current_devices} устройств\n'
                 'Выберите новое количество устройств:\n\n'
                 '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Важно:</b>\n\n'
@@ -500,7 +500,7 @@ async def confirm_change_devices(
     confirm_text = texts.t(
         'DEVICE_CHANGE_CONFIRMATION',
         (
-            '📱 <b>Подтверждение изменения</b>\n\n'
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Подтверждение изменения</b>\n\n'
             'Текущее количество: {current} устройств\n'
             'Новое количество: {new} устройств\n\n'
             'Действие: {action}\n'
@@ -773,7 +773,7 @@ async def execute_change_devices(
             )
             success_text += texts.t(
                 'DEVICE_CHANGE_RESULT_LINE',
-                '📱 Было: {old} → Стало: {new}\n',
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Было: {old} → Стало: {new}\n',
             ).format(old=current_devices, new=new_devices_count)
             if price > 0:
                 success_text += texts.t(
@@ -787,7 +787,7 @@ async def execute_change_devices(
             )
             success_text += texts.t(
                 'DEVICE_CHANGE_RESULT_LINE',
-                '📱 Было: {old} → Стало: {new}\n',
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Было: {old} → Стало: {new}\n',
             ).format(old=current_devices, new=new_devices_count)
             if devices_reset_count > 0:
                 success_text += texts.t(
@@ -917,7 +917,7 @@ async def show_devices_page(
         'DEVICE_MANAGEMENT_OVERVIEW',
         (
             '🔄 <b>Управление устройствами</b>\n\n'
-            '📊 Всего подключено: {total} устройств\n'
+            '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Всего подключено: {total} устройств\n'
             '📄 Страница {page} из {pages}\n\n'
         ),
     ).format(total=len(devices_list), page=pagination.page, pages=pagination.total_pages)
@@ -1171,7 +1171,7 @@ async def process_device_rename(message: types.Message, db_user: User, db: Async
         back_cb = f'sm:{sub_id}' if settings.is_multi_tariff_enabled() and sub_id else 'subscription_settings'
 
         await message.answer(
-            texts.t('DEVICE_RENAME_OPEN_LIST', '📱 Откройте список устройств, чтобы продолжить'),
+            texts.t('DEVICE_RENAME_OPEN_LIST', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Откройте список устройств, чтобы продолжить'),
             reply_markup=get_devices_management_keyboard(
                 pagination.items, pagination, db_user.language, back_callback=back_cb
             ),
@@ -1410,7 +1410,7 @@ async def handle_all_devices_reset_from_management(
                             (
                                 '✅ <b>Все устройства успешно сброшены!</b>\n\n'
                                 '🔄 Сброшено: {count} устройств\n'
-                                '📱 Теперь вы можете заново подключить свои устройства\n\n'
+                                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Теперь вы можете заново подключить свои устройства\n\n'
                                 "💡 Используйте ссылку из раздела 'Моя подписка' для повторного подключения"
                             ),
                         ).format(count=success_count),
@@ -1803,7 +1803,7 @@ async def handle_device_guide(callback: types.CallbackQuery, db_user: User, db: 
     guide_text = (
         texts.t(
             'SUBSCRIPTION_DEVICE_GUIDE_TITLE',
-            '📱 <b>Настройка для {device_name}</b>',
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Настройка для {device_name}</b>',
         ).format(device_name=html_mod.escape(get_device_name(device_type, db_user.language)))
         + '\n\n'
         + link_section
@@ -1880,7 +1880,7 @@ async def handle_app_selection(callback: types.CallbackQuery, db_user: User, db:
     app_text = (
         texts.t(
             'SUBSCRIPTION_APPS_TITLE',
-            '📱 <b>Приложения для {device_name}</b>',
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Приложения для {device_name}</b>',
         ).format(device_name=html_mod.escape(get_device_name(device_type, db_user.language)))
         + '\n\n'
         + texts.t('SUBSCRIPTION_APPS_PROMPT', 'Выберите приложение для подключения:')
@@ -1945,7 +1945,7 @@ async def handle_specific_app_guide(
     guide_text = (
         texts.t(
             'SUBSCRIPTION_SPECIFIC_APP_TITLE',
-            '📱 <b>{app_name} - {device_name}</b>',
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>{app_name} - {device_name}</b>',
         ).format(
             app_name=html_mod.escape(app.get('name', '')),
             device_name=html_mod.escape(get_device_name(device_type, db_user.language)),
@@ -1985,7 +1985,7 @@ async def show_device_connection_help(
         return
 
     help_text = f"""
-📱 <b>Как подключить устройство заново</b>
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Как подключить устройство заново</b>
 
 После сброса устройства вам нужно:
 

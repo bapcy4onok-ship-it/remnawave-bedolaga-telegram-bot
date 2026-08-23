@@ -312,19 +312,25 @@ class TributeService:
                     logger.warning('Пользователь не найден для уведомления Tribute', user_id=user_id)
                     break
 
-                # Сначала отправляем стандартное уведомление
-                payment_service = PaymentService(self.bot)
-                keyboard = await payment_service.build_topup_success_keyboard(user)
+                # Сначала отправляем стандартное уведомление. Своё try/except: человек мог
+                # заблокировать бота, и падение отправки не должно уносить с собой пост-хук
+                # ниже — он списывает надбавку донат-апселла и возвращает к сохранённой
+                # корзине. Так же изолированы уведомления у severpay и yookassa.
+                try:
+                    payment_service = PaymentService(self.bot)
+                    keyboard = await payment_service.build_topup_success_keyboard(user)
 
-                text = (
-                    f'✅ **Платеж успешно получен!**\n\n'
-                    f'💰 Сумма: {int(amount_rubles)} ₽\n'
-                    f'💳 Способ оплаты: Tribute\n'
-                    f'🎉 Средства зачислены на баланс!\n\n'
-                    f'Спасибо за оплату! 🙏'
-                )
+                    text = (
+                        f'✅ **Платеж успешно получен!**\n\n'
+                        f'💰 Сумма: {int(amount_rubles)} ₽\n'
+                        f'💳 Способ оплаты: Tribute\n'
+                        f'🎉 Средства зачислены на баланс!\n\n'
+                        f'Спасибо за оплату! 🙏'
+                    )
 
-                await self.bot.send_message(user_id, text, reply_markup=keyboard, parse_mode='Markdown')
+                    await self.bot.send_message(user_id, text, reply_markup=keyboard, parse_mode='Markdown')
+                except Exception as notify_error:
+                    logger.error('Не удалось отправить уведомление Tribute', user_id=user_id, error=notify_error)
 
                 # Проверяем наличие сохраненной корзины для возврата к оформлению подписки
                 from app.services.payment.common import send_cart_notification_after_topup

@@ -8,7 +8,7 @@ _CYCLE_ORDER = (DISPLAY_MODE_BOTH, DISPLAY_MODE_BOT, DISPLAY_MODE_WEB)
 
 _DISPLAY_MODE_LABELS = {
     DISPLAY_MODE_BOT: '🤖 Только бот',
-    DISPLAY_MODE_WEB: '🌐 Только веб',
+    DISPLAY_MODE_WEB: '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Только веб',
     DISPLAY_MODE_BOTH: '🔁 Бот и веб',
 }
 

@@ -1216,7 +1216,7 @@
   "LOADING": "<tg-emoji emoji-id=\"5269539162654010758\">⏳</tg-emoji> Загрузка...",
   "MAINTENANCE_MODE_ACTIVE": "\n🔧 Технические работы!\n\nСервис временно недоступен. Ведутся технические работы по улучшению качества обслуживания.\n\n⏰ Ориентировочное время завершения: неизвестно\n🔄 Попробуйте позже\n\nПриносим извинения за временные неудобства.\n",
   "MAINTENANCE_MODE_API_ERROR": "\n🔧 Технические работы!\n\nСервис временно недоступен из-за проблем с подключением к серверам.\n\n⏰ Мы работаем над восстановлением. Попробуйте через несколько минут.\n\n🔄 Последняя проверка: {last_check}\n",
-  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n    \n📱 <b>Подписка:</b> {subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Не забудьте продлить подписку после пополнения баланса или подключите автоплатёж!\nВыберите действие:\n",
+  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n    \n📱 <b>Подписка:</b> {subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Не забудьте продлить подписку после пополнения баланса или подключите автоплатёж!\n\nВыберите действие:\n",
   "MAIN_MENU_ACTION_PROMPT": "Выберите действие:",
   "MAIN_MENU_BUTTON": "🏠 Главное меню",
   "MAIN_MENU_RICH_BALANCE": "💰 Баланс: {balance}",
@@ -1574,7 +1574,7 @@
   "SKIP_BUTTON": "⏭️ Пропустить",
   "STARS_PAYMENT_ENROLLMENT_ERROR": "❌ Произошла ошибка при зачислении средств. Обратитесь в поддержку, платеж будет проверен вручную.",
   "STARS_PAYMENT_PROCESSING_ERROR": "❌ Техническая ошибка при обработке платежа. Обратитесь в поддержку для решения проблемы.",
-  "STARS_PAYMENT_SUCCESS": "🎉 <b>Платеж успешно обработан!</b>\n\n⭐ Потрачено звезд: {stars_spent}\n💰 Зачислено на баланс: {amount} ₽\n🆔 ID транзакции: {transaction_id}...\n\nСпасибо за пополнение! 🚀",
+  "STARS_PAYMENT_SUCCESS": "🎉 <b>Платеж успешно обработан!</b>\n\n⭐ Потрачено звезд: {stars_spent}\n💰 Сумма платежа: {amount} ₽\n🆔 ID транзакции: {transaction_id}...\n\nСпасибо за пополнение! 🚀",
   "STARS_PAYMENT_USER_NOT_FOUND": "❌ Ошибка: пользователь не найден. Обратитесь в поддержку.",
   "STARS_PRECHECK_INVALID_PAYLOAD": "Ошибка валидации платежа. Попробуйте еще раз.",
   "STARS_PRECHECK_TECHNICAL_ERROR": "Техническая ошибка. Попробуйте позже.",
@@ -2139,5 +2139,14 @@
   "LAVA_RECURRING_NOTIFY_CANCELLED": "ℹ️ Автопродление Lava отменено.",
   "LAVA_RECURRING_NOTIFY_CONFIRMED": "✅ Подписка продлена автосписанием Lava.",
   "LAVA_RECURRING_NOTIFY_FAILED": "⚠️ Не удалось списать оплату по автопродлению Lava.",
-  "LAVA_RECURRING_PAY_BUTTON": "💳 Оплатить"
+  "LAVA_RECURRING_PAY_BUTTON": "💳 Оплатить",
+  "DONATION_UPSELL_PROMPT": "<b>Поддержать проект и добавить {tip}?</b> <tg-emoji emoji-id=\"5192879906295397710\">💝</tg-emoji>\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Не зачисляются на баланс, а идут на увеличение мощностей и скорости соединения.\n\nПополнение: <b>{topup}</b>\nПоддержка: <b>+{tip}</b>\nК оплате: <b>{total}</b>",
+  "DONATION_UPSELL_PAYMENT_NOTE": "❤️ Счёт на <b>{total}</b>: {topup} — на баланс, {tip} — поддержка проекта.",
+  "DONATION_UPSELL_ACCEPT": "❤️ Поддержать",
+  "DONATION_UPSELL_DECLINE": "Не поддержать",
+  "DONATION_UPSELL_CUSTOM": "💰 Пожертвовать иную сумму",
+  "DONATION_UPSELL_CUSTOM_PROMPT": "💰 <b>Сумма поддержки</b>\n\nВыберите сумму кнопкой или введите свою в рублях — она добавится к платежу.\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Эта сумма не зачисляется на баланс.",
+  "DONATION_UPSELL_EXPIRED": "Сессия оплаты истекла, начните пополнение заново.",
+  "DONATION_UPSELL_TIP_TOO_BIG": "❌ Для этого способа оплаты можно добавить не больше {amount}.",
+  "DONATION_UPSELL_THANK_YOU": "❤️ <b>Спасибо за поддержку!</b>\n\n{amount} из вашего платежа пошли на развитие проекта — на мощности и скорость соединения. На баланс зачислено {credited}. Спасибо! 🙏"
 }

@@ -125,7 +125,7 @@ async def process_stars_payment_amount(message: types.Message, db_user: User, am
             f'<b>Оплата через Telegram Stars</b>\n\n'
             f'💰 Сумма: {texts.format_price(amount_kopeks)}\n'
             f'⭐ К оплате: {stars_amount} звезд\n'
-            f'📊 Курс: {stars_rate}₽ за звезду\n\n'
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Курс: {stars_rate}₽ за звезду\n\n'
             f'Нажмите кнопку ниже для оплаты:',
             reply_markup=keyboard,
             parse_mode='HTML',

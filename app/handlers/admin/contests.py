@@ -262,7 +262,7 @@ async def show_contest_details(
 
     if leaderboard:
         lines.append('')
-        lines.append(texts.t('ADMIN_CONTEST_LEADERBOARD_TITLE', '📊 Топ участников:'))
+        lines.append(texts.t('ADMIN_CONTEST_LEADERBOARD_TITLE', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Топ участников:'))
         for idx, (name, score, _, is_virtual) in enumerate(leaderboard, start=1):
             virt_mark = ' 👻' if is_virtual else ''
             lines.append(f'{idx}. {html.escape(name)}{virt_mark} — {score}')
@@ -441,7 +441,7 @@ async def show_leaderboard(
         return
 
     lines = [
-        texts.t('ADMIN_CONTEST_LEADERBOARD_TITLE', '📊 Топ участников:'),
+        texts.t('ADMIN_CONTEST_LEADERBOARD_TITLE', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Топ участников:'),
     ]
     for idx, (name, score, _, is_virtual) in enumerate(leaderboard, start=1):
         virt_mark = ' 👻' if is_virtual else ''
@@ -748,7 +748,7 @@ async def show_detailed_stats_page(
     offset = (page - 1) * PAGE_SIZE
     page_participants = participants[offset : offset + PAGE_SIZE]
 
-    lines = [f'📊 По участникам (страница {page}/{total_pages}):']
+    lines = [f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> По участникам (страница {page}/{total_pages}):']
     for p in page_participants:
         lines.extend(
             [
@@ -829,7 +829,7 @@ async def sync_contest(
     lines = [
         '✅ <b>Синхронизация завершена!</b>',
         '',
-        f'📊 <b>Конкурс:</b> {html.escape(contest.title)}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Конкурс:</b> {html.escape(contest.title)}',
         f'📅 <b>Период:</b> {contest.start_at.strftime("%d.%m.%Y")} - {contest.end_at.strftime("%d.%m.%Y")}',
         '🔍 <b>Фильтр транзакций:</b>',
         f'   <code>{start_str}</code>',
@@ -838,9 +838,9 @@ async def sync_contest(
         '🧹 <b>ОЧИСТКА:</b>',
         f'   🗑 Удалено невалидных событий: <b>{cleanup_stats.get("deleted", 0)}</b>',
         f'   ✅ Осталось валидных событий: <b>{cleanup_stats.get("remaining", 0)}</b>',
-        f'   📊 Было событий до очистки: <b>{cleanup_stats.get("total_before", 0)}</b>',
+        f'   <tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Было событий до очистки: <b>{cleanup_stats.get("total_before", 0)}</b>',
         '',
-        '📊 <b>СИНХРОНИЗАЦИЯ:</b>',
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>СИНХРОНИЗАЦИЯ:</b>',
         f'   📝 Рефералов в периоде: <b>{stats.get("total_events", 0)}</b>',
         f'   <tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Отфильтровано (вне периода): <b>{stats.get("filtered_out_events", 0)}</b>',
         f'   🔄 Обновлено сумм: <b>{stats.get("updated", 0)}</b>',
@@ -928,13 +928,13 @@ async def debug_contest_transactions(
     lines = [
         '🔍 <b>Отладка транзакций конкурса</b>',
         '',
-        f'📊 <b>Конкурс:</b> {html.escape(contest.title)}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Конкурс:</b> {html.escape(contest.title)}',
         '📅 <b>Период фильтрации:</b>',
         f'   Начало: <code>{debug_data.get("contest_start")}</code>',
         f'   Конец: <code>{debug_data.get("contest_end")}</code>',
         f'👥 <b>Рефералов в периоде:</b> {debug_data.get("referral_count", 0)}',
         f'⚠️ <b>Отфильтровано (вне периода):</b> {debug_data.get("filtered_out", 0)}',
-        f'📊 <b>Всего событий в БД:</b> {debug_data.get("total_all_events", 0)}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Всего событий в БД:</b> {debug_data.get("total_all_events", 0)}',
         '',
         '<b>💰 СУММЫ:</b>',
         f'   📥 Пополнения баланса: <b>{deposit_total}</b> руб.',
@@ -1318,7 +1318,7 @@ async def process_mass_virtual_referrals(
     text = f"""
 ✅ <b>Массовка создана!</b>
 
-📊 <b>Результат:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результат:</b>
 • Создано призраков: {len(created)}
 • Рефералов у каждого: {referrals_count}
 • Всего виртуальных рефералов: {len(created) * referrals_count}

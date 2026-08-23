@@ -131,7 +131,7 @@ class BotConfigurationService:
     CATEGORY_TITLES: dict[str, str] = {
         'CORE': '🤖 Основные настройки',
         'SUPPORT': '💬 Поддержка и тикеты',
-        'LOCALIZATION': '🌍 Языки интерфейса',
+        'LOCALIZATION': '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Языки интерфейса',
         'CHANNEL': '📣 Обязательная подписка',
         'TIMEZONE': '🗂 Timezone',
         'PAYMENT': '💳 Общие платежные настройки',
@@ -166,7 +166,7 @@ class BotConfigurationService:
         'SIMPLE_SUBSCRIPTION': '⚡ Простая покупка',
         'PERIODS': '📆 Периоды подписок',
         'SUBSCRIPTION_PRICES': '💵 Стоимость тарифов',
-        'TRAFFIC': '📊 Трафик',
+        'TRAFFIC': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик',
         'TRAFFIC_PACKAGES': '📦 Пакеты трафика',
         'TRIAL': '🎁 Пробный период',
         'REFERRAL': '👥 Реферальная программа',
@@ -178,22 +178,22 @@ class BotConfigurationService:
         'INTERFACE_BRANDING': '🖼️ Брендинг',
         'INTERFACE_SUBSCRIPTION': '🔗 Ссылка на подписку',
         'CONNECT_BUTTON': '🚀 Кнопка подключения',
-        'MINIAPP': '📱 Mini App',
+        'MINIAPP': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Mini App',
         'HAPP': '🅷 Happ',
         'SKIP': '⚡ Быстрый старт',
-        'ADDITIONAL': '📱 Дополнительные приложения',
+        'ADDITIONAL': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Дополнительные приложения',
         'DATABASE': '💾 База данных',
         'POSTGRES': '🐘 PostgreSQL',
         'SQLITE': '🧱 SQLite',
         'REDIS': '🧠 Redis',
-        'REMNAWAVE': '🌐 RemnaWave API',
-        'SERVER_STATUS': '📊 Статус серверов',
+        'REMNAWAVE': '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> RemnaWave API',
+        'SERVER_STATUS': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус серверов',
         'MONITORING': '📈 Мониторинг',
         'MAINTENANCE': '🔧 Обслуживание',
         'BACKUP': '💾 Резервные копии',
         'VERSION': '🔄 Проверка версий',
         'WEB_API': '⚡ Web API',
-        'WEBHOOK': '🌐 Webhook',
+        'WEBHOOK': '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Webhook',
         'WEBHOOK_NOTIFICATIONS': '📢 Уведомления от вебхуков',
         'LOG': '📝 Логирование',
         'DEBUG': '🧪 Режим разработки',
@@ -443,6 +443,9 @@ class BotConfigurationService:
     }
 
     CATEGORY_PREFIX_OVERRIDES: dict[str, str] = {
+        # Без этого DONATION_UPSELL_* уехали бы в отдельную категорию DONATION,
+        # рядом с почти одноимённой DONATIONS (где живёт DONATIONS_ENABLED).
+        'DONATION_UPSELL': 'DONATIONS',
         'SUPPORT_': 'SUPPORT',
         'ADMIN_NOTIFICATIONS': 'ADMIN_NOTIFICATIONS',
         'ADMIN_REPORTS': 'ADMIN_REPORTS',
@@ -558,9 +561,9 @@ class BotConfigurationService:
         ],
         'SERVER_STATUS_MODE': [
             ChoiceOption('disabled', '🚫 Отключено'),
-            ChoiceOption('external_link', '🌐 Внешняя ссылка'),
+            ChoiceOption('external_link', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Внешняя ссылка'),
             ChoiceOption('external_link_miniapp', '🧭 Mini App ссылка'),
-            ChoiceOption('xray', '📊 XRay Checker'),
+            ChoiceOption('xray', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> XRay Checker'),
         ],
         'YOOKASSA_PAYMENT_MODE': [
             ChoiceOption('full_payment', '💳 Полная оплата'),
@@ -614,7 +617,7 @@ class BotConfigurationService:
         'TRIAL_DISABLED_FOR': [
             ChoiceOption('none', '✅ Включён для всех'),
             ChoiceOption('email', '📧 Отключён для Email'),
-            ChoiceOption('telegram', '📱 Отключён для Telegram'),
+            ChoiceOption('telegram', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Отключён для Telegram'),
             ChoiceOption('all', '🚫 Отключён для всех'),
         ],
         'TELEGRAM_WIDGET_SIZE': [
@@ -624,27 +627,27 @@ class BotConfigurationService:
         ],
         'PRIVACY_POLICY_DISPLAY_MODE': [
             ChoiceOption('bot', '🤖 Только бот'),
-            ChoiceOption('web', '🌐 Только веб'),
+            ChoiceOption('web', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Только веб'),
             ChoiceOption('both', '🔁 Бот и веб'),
         ],
         'PUBLIC_OFFER_DISPLAY_MODE': [
             ChoiceOption('bot', '🤖 Только бот'),
-            ChoiceOption('web', '🌐 Только веб'),
+            ChoiceOption('web', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Только веб'),
             ChoiceOption('both', '🔁 Бот и веб'),
         ],
         'RECURRENT_PAYMENTS_DISPLAY_MODE': [
             ChoiceOption('bot', '🤖 Только бот'),
-            ChoiceOption('web', '🌐 Только веб'),
+            ChoiceOption('web', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Только веб'),
             ChoiceOption('both', '🔁 Бот и веб'),
         ],
         'SERVICE_RULES_DISPLAY_MODE': [
             ChoiceOption('bot', '🤖 Только бот'),
-            ChoiceOption('web', '🌐 Только веб'),
+            ChoiceOption('web', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Только веб'),
             ChoiceOption('both', '🔁 Бот и веб'),
         ],
         'FAQ_DISPLAY_MODE': [
             ChoiceOption('bot', '🤖 Только бот'),
-            ChoiceOption('web', '🌐 Только веб'),
+            ChoiceOption('web', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Только веб'),
             ChoiceOption('both', '🔁 Бот и веб'),
         ],
     }

@@ -75,6 +75,12 @@ class TopUpRequest(BaseModel):
     purpose: Literal['donation'] | None = Field(
         None, description='Set to "donation" to record the payment as a donation (not credited to balance)'
     )
+    # Донат-апселл: надбавка к платежу в пользу проекта. Сервер прибавляет её к
+    # amount_kopeks (провайдеру уходит сумма с надбавкой) и создаёт «обещание»,
+    # которое вебхук исполнит после зачисления. 0 + donation_upsell_shown=True —
+    # пользователь отказался (нужно для cooldown и воронки).
+    donation_tip_kopeks: int | None = Field(None, ge=0, le=5_000_000, description='Donation add-on in kopeks')
+    donation_upsell_shown: bool | None = Field(None, description='True if the upsell dialog was shown')
 
 
 class TopUpResponse(BaseModel):
@@ -95,6 +101,9 @@ class StarsInvoiceRequest(BaseModel):
     purpose: Literal['donation'] | None = Field(
         None, description='Set to "donation" to record the payment as a donation (not credited to balance)'
     )
+    # См. TopUpRequest: надбавка донат-апселла и факт показа предложения.
+    donation_tip_kopeks: int | None = Field(None, ge=0, le=5_000_000, description='Donation add-on in kopeks')
+    donation_upsell_shown: bool | None = Field(None, description='True if the upsell dialog was shown')
 
 
 class StarsInvoiceResponse(BaseModel):
@@ -168,3 +177,13 @@ class SavedCardsListResponse(BaseModel):
 
     cards: list[SavedCardResponse]
     recurrent_enabled: bool = False
+
+
+class DonationUpsellResponse(BaseModel):
+    """Настройки донат-апселла для текущего пользователя."""
+
+    available: bool
+    tip_kopeks: int
+    presets_kopeks: list[int]
+    min_topup_kopeks: int
+    max_tip_kopeks: int

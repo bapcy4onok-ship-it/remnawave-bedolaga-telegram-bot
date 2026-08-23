@@ -1031,7 +1031,7 @@
   "LOADING": "<tg-emoji emoji-id=\"5269539162654010758\">⏳</tg-emoji>加载中...",
   "MAINTENANCE_MODE_ACTIVE": "\n🔧正在进行技术维护！\n\n服务暂时不可用。我们正在进行技术工作以提高服务质量。\n\n⏰预计完成时间：未知\n🔄请稍后再试\n\n对于暂时的不便，我们深表歉意。\n",
   "MAINTENANCE_MODE_API_ERROR": "\n🔧正在进行技术维护！\n\n由于连接服务器出现问题，服务暂时不可用。\n\n⏰我们正在努力恢复。请几分钟后再试。\n\n🔄最后检查时间：{last_check}\n",
-  "MAIN_MENU": "👤<b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n  \n📱<b>订阅：</b>{subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> 充值余额后别忘了续订订阅，或开启自动续费！\n请选择操作：\n",
+  "MAIN_MENU": "👤<b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n  \n📱<b>订阅：</b>{subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> 充值余额后别忘了续订订阅，或开启自动续费！\n\n请选择操作：\n",
   "MAIN_MENU_ACTION_PROMPT": "请选择操作：",
   "MAIN_MENU_BUTTON": "🏠主菜单",
   "MAIN_MENU_RICH_BALANCE": "💰 余额：{balance}",
@@ -1379,7 +1379,7 @@
   "SKIP_BUTTON": "⏭️跳过",
   "STARS_PAYMENT_ENROLLMENT_ERROR": "❌资金存入时发生错误。请联系支持，付款将手动检查。",
   "STARS_PAYMENT_PROCESSING_ERROR": "❌处理付款时发生技术错误。请联系支持解决问题。",
-  "STARS_PAYMENT_SUCCESS": "🎉<b>付款已成功处理！</b>\n\n⭐已花费Stars：{stars_spent}\n💰已存入余额：{amount}₽\n🆔交易ID：{transaction_id}...\n\n感谢您的充值！🚀",
+  "STARS_PAYMENT_SUCCESS": "🎉<b>付款已成功处理！</b>\n\n⭐已花费Stars：{stars_spent}\n💰付款金额：{amount}₽\n🆔交易ID：{transaction_id}...\n\n感谢您的充值！🚀",
   "STARS_PAYMENT_USER_NOT_FOUND": "❌错误：未找到用户。请联系支持。",
   "STARS_PRECHECK_INVALID_PAYLOAD": "付款验证失败。请重试。",
   "STARS_PRECHECK_TECHNICAL_ERROR": "技术错误。请稍后再试。",
@@ -2139,5 +2139,14 @@
   "LAVA_RECURRING_NOTIFY_CANCELLED": "ℹ️ 已取消 Lava 自动续订。",
   "LAVA_RECURRING_NOTIFY_CONFIRMED": "✅ 订阅已通过 Lava 自动扣款续订。",
   "LAVA_RECURRING_NOTIFY_FAILED": "⚠️ Lava 自动续订扣款失败。",
-  "LAVA_RECURRING_PAY_BUTTON": "💳 支付"
+  "LAVA_RECURRING_PAY_BUTTON": "💳 支付",
+  "DONATION_UPSELL_PROMPT": "<b>支持项目并增加 {tip}？</b> <tg-emoji emoji-id=\"5192879906295397710\">💝</tg-emoji>\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> 这笔金额不会计入余额，而是用于提升服务器容量和连接速度。\n\n充值：<b>{topup}</b>\n支持：<b>+{tip}</b>\n应付：<b>{total}</b>",
+  "DONATION_UPSELL_PAYMENT_NOTE": "❤️ 账单金额 <b>{total}</b>：{topup} 计入余额，{tip} 用于支持项目。",
+  "DONATION_UPSELL_ACCEPT": "❤️ 支持",
+  "DONATION_UPSELL_DECLINE": "不支持",
+  "DONATION_UPSELL_CUSTOM": "💰 捐赠其他金额",
+  "DONATION_UPSELL_CUSTOM_PROMPT": "💰 <b>支持金额</b>\n\n点击按钮选择金额，或输入自定义金额（卢布）——它将添加到本次付款中。\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> 该金额不会计入余额。",
+  "DONATION_UPSELL_EXPIRED": "支付会话已过期，请重新开始充值。",
+  "DONATION_UPSELL_TIP_TOO_BIG": "❌ 此支付方式最多可添加 {amount}。",
+  "DONATION_UPSELL_THANK_YOU": "❤️ <b>感谢您的支持！</b>\n\n您本次付款中的 {amount} 用于项目发展——服务器容量与连接速度。{credited} 已计入您的余额。谢谢！🙏"
 }

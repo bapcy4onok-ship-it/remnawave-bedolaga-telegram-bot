@@ -1086,7 +1086,7 @@ async def show_poll_stats(
     texts = get_texts(db_user.language)
 
     reward_sum = settings.format_price(stats['reward_sum_kopeks'])
-    lines = [texts.t('ADMIN_POLLS_STATS_HEADER', '📊 <b>Статистика опроса</b>'), '']
+    lines = [texts.t('ADMIN_POLLS_STATS_HEADER', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статистика опроса</b>'), '']
     lines.append(
         texts.t(
             'ADMIN_POLLS_STATS_OVERVIEW',

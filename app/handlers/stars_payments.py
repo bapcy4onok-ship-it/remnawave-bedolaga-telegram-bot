@@ -343,7 +343,7 @@ async def _handle_trial_payment(
             f'🎉 <b>Пробная подписка активирована!</b>\n\n'
             f'⭐ Потрачено: {stars_amount} Stars\n'
             f'📅 Период: {settings.TRIAL_DURATION_DAYS} дней\n'
-            f'📱 Устройств: {Texts.format_device_limit(subscription.device_limit)}\n\n'
+            f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройств: {Texts.format_device_limit(subscription.device_limit)}\n\n'
             f'Используйте меню для подключения к VPN.',
             parse_mode='HTML',
         )
@@ -650,9 +650,12 @@ async def handle_successful_payment(message: types.Message, db: AsyncSession, st
             await message.answer(
                 texts.t(
                     'STARS_PAYMENT_SUCCESS',
+                    # «Сумма платежа», а не «зачислено»: при согласии на донат-надбавку
+                    # платёж больше того, что осело на балансе (надбавку списывает
+                    # пост-хук, а благодарность за неё называет остаток отдельно).
                     '🎉 <b>Платеж успешно обработан!</b>\n\n'
                     '⭐ Потрачено звезд: {stars_spent}\n'
-                    '💰 Зачислено на баланс: {amount} ₽\n'
+                    '💰 Сумма платежа: {amount} ₽\n'
                     '🆔 ID транзакции: {transaction_id}...\n\n'
                     'Спасибо за пополнение! 🚀',
                 ).format(

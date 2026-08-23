@@ -368,7 +368,7 @@ async def process_platega_payment_amount(
             '💳 <b>Оплата через Platega ({method})</b>\n\n'
             '💰 Сумма: {amount}\n'
             '🆔 ID транзакции: {transaction}\n\n'
-            '📱 <b>Инструкция:</b>\n'
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
             '1. Нажмите кнопку «Оплатить»\n'
             '2. Следуйте подсказкам платёжной системы\n'
             '3. Подтвердите перевод\n'

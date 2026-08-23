@@ -70,9 +70,9 @@ def _format_subscription_line(sub, idx: int) -> str:
     end_date = sub.end_date.strftime('%d.%m.%Y') if sub.end_date else '—'
 
     parts = [f'{emoji} <b>{idx}. {tariff_name}</b>{label}']
-    parts.append(f'   📊 Трафик: {traffic}')
+    parts.append(f'   <tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic}')
     if devices:
-        parts.append(f'   📱 Устройства: {devices}')
+        parts.append(f'   <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {devices}')
     parts.append(f'   📅 До: {end_date}')
 
     return '\n'.join(parts)
@@ -220,8 +220,8 @@ async def show_subscription_detail(
     text = (
         f'📋 <b>{tariff_name}</b>\n\n'
         f'Статус: {status}\n'
-        f'📊 Трафик: {traffic}\n'
-        f'📱 Устройства: {Texts.format_device_limit(subscription.device_limit)}\n'
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic}\n'
+        f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {Texts.format_device_limit(subscription.device_limit)}\n'
         f'📅 До: {end_date}\n'
     )
 
@@ -330,7 +330,7 @@ async def handle_subscription_devices(
         can_buy_devices = settings.is_devices_selection_enabled()
 
     current_devices = Texts.format_device_limit(subscription.device_limit)
-    text = f'📱 <b>Устройства</b>\n\nТекущий лимит: {current_devices} устройств\n\nВыберите действие:'
+    text = f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Устройства</b>\n\nТекущий лимит: {current_devices} устройств\n\nВыберите действие:'
 
     keyboard = []
     if can_buy_devices:

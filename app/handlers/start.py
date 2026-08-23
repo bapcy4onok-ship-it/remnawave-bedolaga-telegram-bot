@@ -799,7 +799,7 @@ async def _apply_campaign_bonus_if_needed(
         traffic_text = texts.format_traffic(result.subscription_traffic_gb or 0)
         return texts.t(
             'CAMPAIGN_BONUS_TARIFF',
-            "🎁 Вам выдан тариф '{tariff_name}' на {days} дней!\n📊 Трафик: {traffic}\n📱 Устройств: {devices}",
+            "🎁 Вам выдан тариф '{tariff_name}' на {days} дней!\n<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Трафик: {traffic}\n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Устройств: {devices}",
         ).format(
             tariff_name=result.tariff_name or 'Подарочный',
             days=result.tariff_duration_days,
@@ -936,7 +936,7 @@ async def handle_potential_referral_code(message: types.Message, state: FSMConte
 
 
 def _get_language_prompt_text() -> str:
-    return '🌐 Выберите язык / Choose your language:'
+    return '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Выберите язык / Choose your language:'
 
 
 async def _prompt_language_selection(message: types.Message, state: FSMContext) -> None:
@@ -1644,7 +1644,7 @@ async def process_language_selection(
 
     try:
         await callback.message.edit_text(
-            texts.t('LANGUAGE_SELECTED', '🌐 Язык интерфейса обновлен.'),
+            texts.t('LANGUAGE_SELECTED', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Язык интерфейса обновлен.'),
         )
     except Exception as error:
         logger.warning('⚠️ LANGUAGE: Не удалось обновить сообщение выбора языка', error=error)
@@ -2740,17 +2740,10 @@ def _get_subscription_status_simple(texts):
 
 
 def _insert_random_message(base_text: str, random_message: str, action_prompt: str) -> str:
-    if not random_message:
-        return base_text
+    """См. app.handlers.menu._insert_random_message — та же нормализация отступов."""
+    from app.handlers.menu import _insert_random_message as insert_block
 
-    prompt = action_prompt or ''
-    if prompt and prompt in base_text:
-        parts = base_text.split(prompt, 1)
-        if len(parts) == 2:
-            return f'{parts[0]}\n{random_message}\n\n{prompt}{parts[1]}'
-        return base_text.replace(prompt, f'\n{random_message}\n\n{prompt}', 1)
-
-    return f'{base_text}\n\n{random_message}'
+    return insert_block(base_text, random_message, action_prompt)
 
 
 def get_referral_code_keyboard(language: str):

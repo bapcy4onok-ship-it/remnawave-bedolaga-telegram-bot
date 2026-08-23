@@ -92,8 +92,8 @@ TRIAL_ENTRIES: tuple[SettingEntry, ...] = (
     SettingEntry(
         key='TRIAL_DEVICE_LIMIT',
         section='trial',
-        label_ru='📱 Лимит устройств',
-        label_en='📱 Device limit',
+        label_ru='<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Лимит устройств',
+        label_en='<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Device limit',
         action='input',
     ),
     SettingEntry(
@@ -155,8 +155,8 @@ CORE_PRICING_ENTRIES: tuple[SettingEntry, ...] = (
     SettingEntry(
         key='DEFAULT_DEVICE_LIMIT',
         section='core',
-        label_ru='📱 Устройств по умолчанию',
-        label_en='📱 Default device limit',
+        label_ru='<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройств по умолчанию',
+        label_en='<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Default device limit',
         action='input',
     ),
     SettingEntry(
@@ -346,7 +346,7 @@ def _format_trial_summary(lang_code: str) -> str:
         price_note = f', 💳 {settings.format_price(settings.get_trial_activation_price())}'
 
     traffic_label = _format_traffic_label(traffic, lang_code, short=True)
-    devices_label = f'{devices}📱' if lang_code == 'ru' else f'{devices}📱'
+    devices_label = f'{devices}<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>' if lang_code == 'ru' else f'{devices}<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>'
     days_suffix = 'д' if lang_code == 'ru' else 'd'
     return f'{duration}{days_suffix}, {traffic_label}, {devices_label}{price_note}'
 
@@ -363,7 +363,7 @@ def _format_core_summary(lang_code: str) -> str:
     else:
         traffic_mode = '⚙️ selectable'
     traffic_label = _format_traffic_label(traffic_limit, lang_code, short=True)
-    return f'{base_price}, {device_limit} 📱, {traffic_label}, {traffic_mode}'
+    return f'{base_price}, {device_limit} <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>, {traffic_label}, {traffic_mode}'
 
 
 def _get_period_items(lang_code: str) -> list[PriceItem]:

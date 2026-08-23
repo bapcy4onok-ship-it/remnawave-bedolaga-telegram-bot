@@ -270,11 +270,11 @@ async def view_admin_ticket(
     header += f'🆔 {id_label}: <code>{telegram_id_display}</code>\n'
     if username_value:
         safe_username = html.escape(username_value)
-        header += f'📱 Username: @{safe_username}\n'
+        header += f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Username: @{safe_username}\n'
     else:
-        header += '📱 Username: отсутствует\n'
+        header += '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Username: отсутствует\n'
     header += f'📝 Заголовок: {html.escape(ticket.title)}\n'
-    header += f'📊 Статус: {ticket.status_emoji} {status_text}\n'
+    header += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {ticket.status_emoji} {status_text}\n'
     header += f'📅 Создан: {ticket.created_at.strftime("%d.%m.%Y %H:%M")}\n\n'
 
     if ticket.is_user_reply_blocked:
@@ -850,20 +850,20 @@ async def handle_admin_block_duration_input(message: types.Message, state: FSMCo
             ticket_text = f'🎫 Тикет #{updated.id}\n\n'
             ticket_text += f'👤 Пользователь: {user_name}\n'
             ticket_text += f'📝 Заголовок: {html.escape(updated.title)}\n'
-            ticket_text += f'📊 Статус: {updated.status_emoji} {status_text}\n'
+            ticket_text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {updated.status_emoji} {status_text}\n'
             ticket_text += f'📅 Создан: {updated.created_at.strftime("%d.%m.%Y %H:%M")}\n'
             ticket_text += f'🔄 Обновлен: {updated.updated_at.strftime("%d.%m.%Y %H:%M")}\n'
             if updated.user and updated.user.telegram_id:
                 ticket_text += f'🆔 Telegram ID: <code>{updated.user.telegram_id}</code>\n'
                 if updated.user.username:
                     safe_username = html.escape(updated.user.username)
-                    ticket_text += f'📱 Username: @{safe_username}\n'
+                    ticket_text += f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Username: @{safe_username}\n'
                     ticket_text += (
                         f'🔗 ЛС: <a href="tg://resolve?domain={safe_username}">'
                         f'tg://resolve?domain={safe_username}</a>\n'
                     )
                 else:
-                    ticket_text += '📱 Username: отсутствует\n'
+                    ticket_text += '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Username: отсутствует\n'
                     chat_link = f'tg://user?id={int(updated.user.telegram_id)}'
                     ticket_text += f'🔗 Чат по ID: <a href="{chat_link}">{chat_link}</a>\n'
             elif updated.user:

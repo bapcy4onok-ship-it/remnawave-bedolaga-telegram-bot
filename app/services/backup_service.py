@@ -558,7 +558,7 @@ class BackupService:
             message = (
                 f'✅ Бекап успешно создан!\n'
                 f'📁 Файл: {filename}\n'
-                f'📊 Таблиц: {overview.get("tables_count", 0)}\n'
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Таблиц: {overview.get("tables_count", 0)}\n'
                 f'📈 Записей: {overview.get("total_records", 0):,}\n'
                 f'💾 Размер: {size_mb:.2f} MB'
             )
@@ -948,7 +948,7 @@ class BackupService:
 
             message = (
                 f'✅ Восстановление завершено!\n'
-                f'📊 Таблиц: {metadata.get("tables_count", 0)}\n'
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Таблиц: {metadata.get("tables_count", 0)}\n'
                 f'📈 Записей: {metadata.get("total_records", 0):,}\n'
                 f'📅 Дата бекапа: {metadata.get("timestamp", "неизвестно")}'
             )
@@ -2089,7 +2089,7 @@ class BackupService:
             if file_path:
                 notification_text += f'\n📁 <code>{Path(file_path).name}</code>'
 
-            notification_text += f'\n\n⏰ <i>{datetime.now(UTC).strftime("%d.%m.%Y %H:%M:%S")}</i>'
+            notification_text += f'\n\n<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{datetime.now(UTC).strftime("%d.%m.%Y %H:%M:%S")}</i>'
 
             try:
                 from app.services.admin_notification_service import AdminNotificationService, NotificationCategory
@@ -2125,7 +2125,7 @@ class BackupService:
             caption = '📦 <b>Резервная копия</b>\n\n'
             if temp_zip_path:
                 caption += '🔐 <b>Архив защищён паролем</b>\n\n'
-            caption += f'⏰ <i>{datetime.now(UTC).strftime("%d.%m.%Y %H:%M:%S")}</i>'
+            caption += f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{datetime.now(UTC).strftime("%d.%m.%Y %H:%M:%S")}</i>'
 
             send_kwargs = {
                 'chat_id': chat_id,

@@ -283,7 +283,7 @@ class BanNotificationService:
             return False, f'Пользователь не найден: {user_identifier}', None
 
         # Формируем сообщение из настроек (заметно выделяем)
-        network_info = f'├ 🌐 Сеть: <b>{network_type}</b>\n' if network_type else ''
+        network_info = f'├ <tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Сеть: <b>{network_type}</b>\n' if network_type else ''
         node_info = f'🖥 <b>Нода:</b> <code>{node_name}</code>' if node_name else ''
 
         logger.info('WiFi notification', node_name=repr(node_name), node_info=repr(node_info))
@@ -361,7 +361,7 @@ class BanNotificationService:
             return False, f'Пользователь не найден: {user_identifier}', None
 
         # Формируем сообщение из настроек (заметно выделяем)
-        network_info = f'├ 🌐 Сеть: <b>{network_type}</b>\n' if network_type else ''
+        network_info = f'├ <tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Сеть: <b>{network_type}</b>\n' if network_type else ''
         node_info = f'🖥 <b>Нода:</b> <code>{node_name}</code>' if node_name else ''
 
         # Безопасное форматирование

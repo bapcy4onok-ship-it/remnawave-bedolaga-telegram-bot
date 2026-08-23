@@ -372,14 +372,38 @@ async def send_cart_notification_after_topup(
     ``notify_email=False`` — вызывающий уже уведомил юзера сам и хочет только
     авто-действия (ручное пополнение с выключенным уведомлением). Провайдеры
     оставляют значение по умолчанию.
+
+    Первым делом исполняет обещание донат-апселла, если оно есть.
     """
+    # Донат-апселл: пользователь согласился добавить к платежу сумму в пользу
+    # проекта. Зачислено было всё (включая надбавку) — списываем её здесь и
+    # записываем пожертвование. Делаем до всего остального: письмо о пополнении
+    # ниже показывает user.balance_kopeks, а автопокупка корзины тратит баланс —
+    # обоим нужен уже уменьшенный остаток.
+    donation_tip_kopeks = 0
+    try:
+        from app.services.donation_upsell_service import try_apply_donation_pledge
+
+        donation_tip_kopeks = await try_apply_donation_pledge(db, user, amount_kopeks, bot=bot)
+    except Exception as upsell_error:  # pragma: no cover — надбавка не должна ломать пополнение
+        logger.error(
+            'Ошибка применения донат-апселла после пополнения',
+            user_id=getattr(user, 'id', None),
+            error=upsell_error,
+            exc_info=True,
+        )
+
+    # Платёж был на «пополнение + надбавка», но на балансе осталось только пополнение.
+    # В письме показываем именно его, иначе «зачислено 1010 ₽» спорило бы с «баланс 1000 ₽».
+    credited_to_balance_kopeks = max(0, amount_kopeks - donation_tip_kopeks)
+
     # Единственная общая точка после зачисления во ВСЕХ провайдерах — поэтому
     # email/WS-канал для юзеров без Telegram подключён здесь, а не в 18+
     # webhook-обработчиках. Уходит до автопокупки, чтобы уведомления пришли в
     # хронологическом порядке «пополнение → подписка» (#2952). Для
     # telegram-юзеров это no-op — им сообщение уже отправил провайдер.
     if notify_email:
-        await notify_email_user_topup(user, amount_kopeks)
+        await notify_email_user_topup(user, credited_to_balance_kopeks)
 
     from app.services.subscription_auto_purchase_service import (
         auto_purchase_saved_cart_after_topup,

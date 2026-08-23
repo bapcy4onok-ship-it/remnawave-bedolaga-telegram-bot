@@ -677,7 +677,23 @@ async def process_referral_registration(db: AsyncSession, new_user_id: int, refe
         return False
 
 
-async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_kopeks: int, bot: Bot = None):
+async def process_referral_topup(
+    db: AsyncSession,
+    user_id: int,
+    topup_amount_kopeks: int,
+    bot: Bot = None,
+    *,
+    exclude_donation_tip: bool = True,
+):
+    """Реферальные начисления с пополнения баланса.
+
+    ``exclude_donation_tip`` — вычесть надбавку донат-апселла, которая физически
+    входит в платёж, но на баланс пользователю не попадает. По умолчанию включено:
+    почти все вызовы идут с зачисления баланса, где пост-хук спишет надбавку сразу
+    после нас. Выключать только там, где надбавки заведомо нет и списания не будет,
+    — на прямой покупке подписки (YooKassa, Stars): там баланс не меняется, обещание
+    остаётся ждать своей оплаты, и вычитание было бы кражей комиссии у реферера.
+    """
     try:
         user = await get_user_by_id(db, user_id)
         if not user or not user.referred_by_id:
@@ -690,6 +706,21 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
                 'Реферер не найден, комиссия не начислена', referred_by_id=user.referred_by_id, user_id=user_id
             )
             return False
+
+        donation_tip_kopeks = 0
+        if exclude_donation_tip:
+            # Надбавка «поддержать проект» лежит внутри платежа, но на баланс не попадёт:
+            # её спишет пост-хук сразу после нас (donation_upsell_service.try_apply_donation_pledge).
+            # Считать с неё процент — платить рефереру с чужого пожертвования. Порог
+            # REFERRAL_MINIMUM_TOPUP_KOPEKS по той же причине считается от чистой суммы:
+            # надбавка не должна протаскивать реферала через минимум первого пополнения.
+            from app.services.donation_upsell_service import peek_pending_tip_kopeks
+
+            donation_tip_kopeks = await peek_pending_tip_kopeks(
+                db, user_id=user.id, credited_amount_kopeks=topup_amount_kopeks
+            )
+            if donation_tip_kopeks > 0:
+                topup_amount_kopeks = max(0, topup_amount_kopeks - donation_tip_kopeks)
 
         campaign_id = await get_user_campaign_id(db, user.id)
         prior_reward_payments = await get_referral_reward_payment_count(db, referrer.id, user.id)
@@ -704,6 +735,7 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
             user_id=user_id,
             referrer_id=referrer.id,
             topup_amount_kopeks=topup_amount_kopeks,
+            donation_tip_kopeks=donation_tip_kopeks,
             campaign_id=campaign_id,
             commission_percent=commission_percent,
             has_made_first_topup=user.has_made_first_topup,
@@ -757,7 +789,7 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
                                 f'{settings.format_price(topup_amount_kopeks)}\n\n'
                                 f'🎁 Ваша комиссия ({commission_percent}%): '
                                 f'{settings.format_price(commission_amount)}\n\n'
-                                f'💎 Средства зачислены на ваш баланс.'
+                                f'<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Средства зачислены на ваш баланс.'
                             )
                             await send_referral_notification(
                                 bot,
@@ -813,7 +845,7 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
                             f'🎉 <b>Бонус получен!</b>\n\n'
                             f'За первое пополнение вы получили бонус '
                             f'{settings.format_price(settings.REFERRAL_FIRST_TOPUP_BONUS_KOPEKS)}!\n\n'
-                            f'💎 Средства зачислены на ваш баланс.'
+                            f'<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Средства зачислены на ваш баланс.'
                         )
                         await send_referral_notification(
                             bot,
@@ -932,7 +964,7 @@ async def process_referral_topup(db: AsyncSession, user_id: int, topup_amount_ko
                         f'{settings.format_price(topup_amount_kopeks)}\n\n'
                         f'🎁 Ваша комиссия ({commission_percent}%): '
                         f'{settings.format_price(commission_amount)}\n\n'
-                        f'💎 Средства зачислены на ваш баланс.'
+                        f'<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Средства зачислены на ваш баланс.'
                     )
                     await send_referral_notification(
                         bot,
@@ -1013,7 +1045,7 @@ async def process_referral_purchase(
                     f'{settings.format_price(purchase_amount_kopeks)}\n\n'
                     f'🎁 Ваша комиссия ({commission_percent}%): '
                     f'{settings.format_price(commission_amount)}\n\n'
-                    f'💎 Средства зачислены на ваш баланс.'
+                    f'<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Средства зачислены на ваш баланс.'
                 )
                 await send_referral_notification(
                     bot,

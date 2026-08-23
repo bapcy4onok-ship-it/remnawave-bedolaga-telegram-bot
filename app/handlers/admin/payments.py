@@ -467,7 +467,7 @@ def _build_payment_details_text(record: PendingPayment, *, texts, language: str)
             lines.append(texts.t('ADMIN_PAYMENT_HAS_LINK', '🔗 Payment link is available above.'))
         if getattr(payment, 'status', None):
             lines.append(
-                f'📊 {texts.t("ADMIN_PAYMENT_GATEWAY_STATUS", "Gateway status")}: {html.escape(str(payment.status))}'
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {texts.t("ADMIN_PAYMENT_GATEWAY_STATUS", "Gateway status")}: {html.escape(str(payment.status))}'
             )
 
     if record.method == PaymentMethod.TELEGRAM_STARS:
@@ -833,7 +833,7 @@ async def export_payments(
         document=BufferedInputFile(file_bytes, filename=filename),
         caption=texts.t(
             'ADMIN_PAYMENTS_EXPORT_CAPTION',
-            '📥 Экспорт платежей\n\n📊 Всего записей: {count}\n💰 Оплачено: {paid}\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Ожидают: {pending}',
+            '📥 Экспорт платежей\n\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Всего записей: {count}\n💰 Оплачено: {paid}\n<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Ожидают: {pending}',
         ).format(
             count=len(export_data),
             paid=sum(1 for r in export_data if r['is_paid']),

@@ -435,6 +435,22 @@ def require_permission(*permissions: str):
             details=details,
         )
         await db.commit()
+
+        # Сторож на выгрузку базы: считает по свежезаписанному аудиту, поэтому
+        # вызывается после commit. Обёрнут целиком, включая импорт: тревога — вещь
+        # второстепенная и не имеет права ронять обычный запрос модератора.
+        # При сбое откатываем сессию, иначе маршрут дальше упрётся в PendingRollbackError.
+        try:
+            from app.services.moderator_activity_alert_service import check_users_read_activity
+
+            await check_users_read_activity(db, user, ','.join(permissions))
+        except Exception as alert_error:
+            logger.warning('Сторож активности модератора не отработал', error=str(alert_error))
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
         return user
 
     return dependency

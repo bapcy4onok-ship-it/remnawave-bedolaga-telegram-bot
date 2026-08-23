@@ -11,7 +11,7 @@ from app.database.models import PromoOfferTemplate
 
 UPDATED_TEMPLATE_MESSAGES = {
     'extend_discount': (
-        '💎 Экономия {discount_percent}% при продлении\n\n'
+        '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Экономия {discount_percent}% при продлении\n\n'
         'Скидка суммируется с промогруппой и действует один раз.\n'
         'Срок действия предложения — {valid_hours} ч.\n'
         'После активации скидка действует {active_discount_hours} ч.'
@@ -27,7 +27,7 @@ UPDATED_TEMPLATE_MESSAGES = {
 
 LEGACY_TEMPLATE_MESSAGES = {
     'extend_discount': (
-        '💎 <b>Экономия {discount_percent}% при продлении</b>\n\n'
+        '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> <b>Экономия {discount_percent}% при продлении</b>\n\n'
         'Активируйте предложение и получите дополнительную скидку на оплату продления. '
         'Она суммируется с вашими промогрупповыми скидками и действует один раз.\n'
         'Срок действия предложения — {valid_hours} ч.\n'

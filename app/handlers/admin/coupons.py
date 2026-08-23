@@ -67,16 +67,16 @@ def _format_batch_card(batch: CouponBatch, counts: dict[str, int]) -> str:
             f'(итого {settings.format_price(total_kopeks)})\n'
         )
 
-    text += f'\n📊 <b>Статусы:</b>\n✅ Активных: {active}\n🎫 Погашено: {redeemed}\n⛔ Отозвано: {revoked}\n\n'
+    text += f'\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статусы:</b>\n✅ Активных: {active}\n🎫 Погашено: {redeemed}\n⛔ Отозвано: {revoked}\n\n'
 
     max_per_user = getattr(batch, 'max_per_user', 0) or 0
     if max_per_user > 0:
         text += f'👤 На пользователя: не более {max_per_user} шт.\n'
 
     if batch.valid_until:
-        text += f'⏰ Действует до: {format_datetime(batch.valid_until)}\n'
+        text += f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Действует до: {format_datetime(batch.valid_until)}\n'
     else:
-        text += '⏰ Действует: бессрочно\n'
+        text += '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Действует: бессрочно\n'
 
     text += f'📅 Создана: {format_datetime(batch.created_at)}\n'
 
@@ -156,7 +156,7 @@ async def _render_coupons_menu(
         f'🎟 <b>Купоны</b>\n\n'
         f'Оптовая продажа подписок через партнёров: партия одноразовых ссылок '
         f'на тариф, каждая выдаёт или продлевает подписку на N дней.\n\n'
-        f'📊 Партий: {total_count}'
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Партий: {total_count}'
     )
     if total_pages > 1:
         text += f' (стр. {page}/{total_pages})'
@@ -315,7 +315,7 @@ async def process_coupon_batch_price(message: types.Message, db_user: User, stat
 
     await state.update_data(coupon_price_kopeks=int(round(rubles * 100)))
     await message.answer(
-        '⏰ Введите срок действия купонов в днях (0 — бессрочно):',
+        '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Введите срок действия купонов в днях (0 — бессрочно):',
         reply_markup=_CANCEL_KEYBOARD,
     )
     await state.set_state(AdminStates.creating_coupon_batch_expiry)
@@ -353,7 +353,7 @@ async def process_coupon_batch_per_user(message: types.Message, db_user: User, s
     expiry_days = data.get('coupon_expiry_days', 0)
     price_kopeks = data.get('coupon_price_kopeks', 0)
     price_line = f'💰 Опт: {settings.format_price(price_kopeks)}/шт\n' if price_kopeks > 0 else ''
-    expiry_line = f'⏰ Срок: {expiry_days} дн.\n' if expiry_days > 0 else '⏰ Срок: бессрочно\n'
+    expiry_line = f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Срок: {expiry_days} дн.\n' if expiry_days > 0 else '⏰ Срок: бессрочно\n'
     per_user_line = (
         f'👤 На пользователя: {max_per_user} шт.\n' if max_per_user > 0 else '👤 На пользователя: без ограничения\n'
     )

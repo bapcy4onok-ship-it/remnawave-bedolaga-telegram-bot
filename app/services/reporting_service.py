@@ -259,9 +259,9 @@ class ReportingService:
 
         lines: list[str] = []
         header = (
-            f'📊 <b>Отчет за {period_range.label}</b>'
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Отчет за {period_range.label}</b>'
             if period == ReportPeriod.DAILY
-            else f'📊 <b>Отчет за период {period_range.label}</b>'
+            else f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Отчет за период {period_range.label}</b>'
         )
         lines += [header, '']
 
@@ -281,7 +281,7 @@ class ReportingService:
 
         # Подписки
         lines += [
-            '💎 <b>Подписки</b>',
+            '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> <b>Подписки</b>',
             f'• Активные триалы сейчас: {totals["active_trials"]}',
             f'• Активные платные сейчас: {totals["active_paid"]}',
             '',

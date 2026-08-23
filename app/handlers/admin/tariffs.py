@@ -251,7 +251,7 @@ def _format_traffic_reset_mode(mode: str | None) -> str:
         'NO_RESET': '🚫 Никогда',
     }
     if mode is None:
-        return f'🌐 Глобальная настройка ({settings.DEFAULT_TRAFFIC_RESET_STRATEGY})'
+        return f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Глобальная настройка ({settings.DEFAULT_TRAFFIC_RESET_STRATEGY})'
     return mode_labels.get(mode, f'<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Неизвестно ({mode})')
 
 
@@ -338,7 +338,7 @@ def format_tariff_info(tariff: Tariff, language: str, subs_count: int = 0) -> st
 
 {status} | {tariff_type}
 🎚️ Уровень: {tariff.tier_level}
-📊 Порядок: {tariff.display_order}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Порядок: {tariff.display_order}
 
 <b>Параметры:</b>
 • Трафик: {traffic}
@@ -361,7 +361,7 @@ def format_tariff_info(tariff: Tariff, language: str, subs_count: int = 0) -> st
 <b>Серверы:</b> {squads_display}
 <b>Промогруппы:</b> {promo_display}
 
-📊 Подписок на тарифе: {subs_count}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Подписок на тарифе: {subs_count}
 
 {f'📝 {html.escape(tariff.description)}' if tariff.description else ''}"""
 
@@ -1166,7 +1166,7 @@ async def start_edit_tariff_traffic(
     current_traffic = format_traffic(tariff.traffic_limit_gb)
 
     await callback.message.edit_text(
-        f'📊 <b>Редактирование трафика</b>\n\n'
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Редактирование трафика</b>\n\n'
         f'Текущий лимит: <b>{current_traffic}</b>\n\n'
         'Введите новый лимит в ГБ (0 = безлимит):',
         reply_markup=InlineKeyboardMarkup(
@@ -1236,7 +1236,7 @@ async def start_edit_tariff_devices(
     await state.update_data(tariff_id=tariff_id, language=db_user.language)
 
     await callback.message.edit_text(
-        f'📱 <b>Редактирование устройств</b>\n\n'
+        f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Редактирование устройств</b>\n\n'
         f'Текущий лимит: <b>{tariff.device_limit}</b>\n\n'
         'Введите новый лимит устройств:',
         reply_markup=InlineKeyboardMarkup(
@@ -1460,7 +1460,7 @@ async def start_edit_tariff_device_price(
         current_price = 'Недоступно (докупка устройств запрещена)'
 
     await callback.message.edit_text(
-        f'📱💰 <b>Редактирование цены за устройство</b>\n\n'
+        f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>💰 <b>Редактирование цены за устройство</b>\n\n'
         f'Текущая цена: <b>{current_price}</b>\n\n'
         'Введите цену в копейках за одно устройство в месяц.\n\n'
         '• <code>0</code> или <code>-</code> — докупка устройств недоступна\n'
@@ -1550,7 +1550,7 @@ async def start_edit_tariff_max_devices(
         current_max = '∞ (без лимита)'
 
     await callback.message.edit_text(
-        f'📱🔒 <b>Редактирование макс. устройств</b>\n\n'
+        f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>🔒 <b>Редактирование макс. устройств</b>\n\n'
         f'Текущее значение: <b>{current_max}</b>\n'
         f'Базовое кол-во устройств: <b>{tariff.device_limit}</b>\n\n'
         'Введите максимальное количество устройств, которое пользователь может докупить.\n\n'
@@ -1641,7 +1641,7 @@ async def start_edit_tariff_trial_days(
         current_days = f'По умолчанию ({settings.TRIAL_DURATION_DAYS} дней)'
 
     await callback.message.edit_text(
-        f'⏰ <b>Редактирование дней триала</b>\n\n'
+        f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Редактирование дней триала</b>\n\n'
         f'Текущее значение: <b>{current_days}</b>\n\n'
         'Введите количество дней триала.\n\n'
         f'• <code>0</code> или <code>-</code> — использовать настройку по умолчанию ({settings.TRIAL_DURATION_DAYS} дней)\n'
@@ -2070,7 +2070,7 @@ async def start_edit_max_topup_traffic(
         current_display = 'Без ограничений'
 
     await callback.message.edit_text(
-        f'📊 <b>Максимальный лимит трафика</b>\n\n'
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Максимальный лимит трафика</b>\n\n'
         f'Тариф: <b>{html.escape(tariff.name)}</b>\n'
         f'Текущий лимит: <b>{current_display}</b>\n\n'
         f'Введите максимальный общий объем трафика (в ГБ), который может быть на подписке после всех докупок.\n\n'
@@ -2329,7 +2329,7 @@ async def start_edit_tariff_squads(
     selected_count = len(current_squads)
 
     await callback.message.edit_text(
-        f'🌐 <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
+        f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
         f'Выбрано: {selected_count} из {len(squads)}\n\n'
         'Если не выбран ни один сервер - доступны все.\n'
         'Нажмите на сервер для выбора/отмены:',
@@ -2392,7 +2392,7 @@ async def toggle_tariff_squad(
 
     try:
         await callback.message.edit_text(
-            f'🌐 <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
+            f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
             f'Выбрано: {len(current_squads)} из {len(squads)}\n\n'
             'Если не выбран ни один сервер - доступны все.\n'
             'Нажмите на сервер для выбора/отмены:',
@@ -2457,7 +2457,7 @@ async def clear_tariff_squads(
 
     try:
         await callback.message.edit_text(
-            f'🌐 <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
+            f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
             f'Выбрано: 0 из {len(squads)}\n\n'
             'Если не выбран ни один сервер - доступны все.\n'
             'Нажмите на сервер для выбора/отмены:',
@@ -2521,7 +2521,7 @@ async def select_all_tariff_squads(
 
     try:
         await callback.message.edit_text(
-            f'🌐 <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
+            f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Серверы для тарифа «{html.escape(tariff.name)}»</b>\n\n'
             f'Выбрано: {len(squads)} из {len(squads)}\n\n'
             'Если не выбран ни один сервер - доступны все.\n'
             'Нажмите на сервер для выбора/отмены:',
@@ -2745,7 +2745,7 @@ def get_traffic_reset_mode_keyboard(tariff_id: int, current_mode: str | None, la
 
     # Кнопка "Глобальная настройка"
     global_label = (
-        f'{"✅ " if current_mode is None else ""}🌐 Глобальная настройка ({settings.DEFAULT_TRAFFIC_RESET_STRATEGY})'
+        f'{"✅ " if current_mode is None else ""}<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Глобальная настройка ({settings.DEFAULT_TRAFFIC_RESET_STRATEGY})'
     )
     buttons.append(
         [InlineKeyboardButton(text=global_label, callback_data=f'admin_tariff_set_reset_mode:{tariff_id}:GLOBAL')]

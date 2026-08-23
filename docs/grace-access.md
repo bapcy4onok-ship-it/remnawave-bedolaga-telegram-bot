@@ -27,6 +27,8 @@ GRACE_ACCESS_LIMITED_SQUAD_UUID=UUID_СКВАДА_ДЛЯ_LIMITED
 
 GRACE_ACCESS_TRAFFIC_GB=1
 
+GRACE_ACCESS_LIMITED_ENABLED=true
+
 GRACE_ACCESS_TRIAL_ENABLED=false
 GRACE_ACCESS_DAILY_ENABLED=false
 GRACE_ACCESS_FREE_ENABLED=false
@@ -47,6 +49,12 @@ GRACE_ACCESS_CANDIDATE_LOOKBACK_MINUTES=30
 Дополнительные флаги разрешают остальные взаимоисключающие виды. Подписка классифицируется по
 приоритету: trial → daily → free → обычная платная. Например, бесплатная суточная подписка
 управляется только `GRACE_ACCESS_DAILY_ENABLED`.
+
+`GRACE_ACCESS_LIMITED_ENABLED=false` полностью отключает причину `limited`: новые grace-сессии
+по ней не выдаются ни фоновой проверкой, ни webhook-ом, а `GRACE_ACCESS_LIMITED_SQUAD_UUID`
+перестаёт быть обязательным. Это нужно там, где статус `limited` в панели означает бан, а не
+честно исчерпанный трафик — иначе бан давал бы нарушителю бесплатный доступ. Уже открытые
+`limited`-сессии флаг не трогает: они завершаются и восстанавливаются штатно.
 
 Обе причины используют общий срок и квоту, но сохраняют разные сквады. Для создания overlay
 Remnawave должен вернуть текущий расход трафика; если расход неизвестен, выдача безопасно

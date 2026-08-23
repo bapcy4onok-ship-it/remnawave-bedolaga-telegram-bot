@@ -18,6 +18,15 @@ from app.database.crud.saved_payment_method import (
 )
 from app.database.crud.user import get_user_by_id
 from app.database.models import PaymentMethod, Transaction, User
+from app.services.donation_upsell_service import (
+    EXCLUDED_UPSELL_METHODS,
+    MAX_TIP_KOPEKS,
+    cancel_pending_pledges,
+    is_upsell_available,
+    register_decline,
+    register_pledge,
+    resolve_max_tip_kopeks,
+)
 from app.services.payment_method_config_service import get_enabled_methods_for_user
 from app.services.payment_service import PaymentService
 from app.services.payment_verification_service import (
@@ -33,6 +42,7 @@ from app.utils.currency_converter import currency_converter
 from ..dependencies import get_cabinet_db, get_current_cabinet_user
 from ..schemas.balance import (
     BalanceResponse,
+    DonationUpsellResponse,
     ManualCheckResponse,
     PaymentMethodResponse,
     PendingPaymentListResponse,
@@ -106,8 +116,11 @@ async def get_transactions(
     for t in transactions:
         # Determine sign based on transaction type
         # Credits (positive): DEPOSIT, REFERRAL_REWARD, REFUND, POLL_REWARD
-        # Debits (negative): SUBSCRIPTION_PAYMENT, WITHDRAWAL, GIFT_PAYMENT
-        is_debit = t.type in ['subscription_payment', 'withdrawal', 'gift_payment']
+        # Debits (negative): SUBSCRIPTION_PAYMENT, WITHDRAWAL, GIFT_PAYMENT и
+        # пожертвование-надбавка при пополнении (external_id 'pledge:<id>') —
+        # оно, в отличие от обычного доната, уменьшило баланс.
+        is_upsell_donation = t.type == 'donation' and str(t.external_id or '').startswith('pledge:')
+        is_debit = t.type in ['subscription_payment', 'withdrawal', 'gift_payment'] or is_upsell_donation
         amount_kopeks = -abs(t.amount_kopeks) if is_debit else abs(t.amount_kopeks)
 
         items.append(
@@ -250,6 +263,13 @@ async def create_stars_invoice(
             detail='Maximum amount is 10,000.00 RUB',
         )
 
+    # Донат-апселл. Метод передаём явно: у StarsInvoiceRequest нет payment_method,
+    # а обещанию нужен способ для статистики. Предел 1 000 000 копеек — тот же,
+    # что проверен выше, поэтому надбавка не выведет платёж за границу.
+    request, donation_tip_kopeks, donation_pledge = await _apply_donation_tip(
+        db, user, request, payment_method='stars', method_max_kopeks=1000000
+    )
+
     # Calculate Stars amount and normalize kopeks to match exact star value
     try:
         amount_rubles = request.amount_kopeks / 100
@@ -262,10 +282,18 @@ async def create_stars_invoice(
         normalized_kopeks = round(stars_amount * settings.get_stars_rate() * 100)
     except Exception as e:
         logger.error('Error calculating Stars amount', error=e)
+        # Обещание уже записано — без гашения оно ждало бы платёж, которого не будет.
+        await _cancel_pledge(db, donation_pledge)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to calculate Stars amount',
         )
+
+    if donation_tip_kopeks and donation_pledge is not None:
+        # Stars подгоняют платёж под целое число звёзд, и на баланс придёт именно
+        # normalized_kopeks. Обещание должно ждать эту сумму, иначе сверка не сойдётся.
+        donation_pledge.expected_total_kopeks = normalized_kopeks
+        await db.commit()
 
     # Donation: payload marker + wording so the bot's Stars handler records it as
     # a donation (not credited to balance). See handlers/stars_payments.py.
@@ -314,10 +342,130 @@ async def create_stars_invoice(
 
     except TelegramAPIError as e:
         logger.error('Error creating Stars invoice', error=e)
+        await _cancel_pledge(db, donation_pledge)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to create Stars invoice',
         )
+
+
+@router.get('/donation-upsell', response_model=DonationUpsellResponse)
+async def get_donation_upsell(
+    user: User = Depends(get_current_cabinet_user),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Показывать ли предложение «добавить к платежу» и какие суммы предлагать.
+
+    Условия, зависящие от суммы и способа (порог, лимит метода), кабинет проверяет
+    сам по возвращённым значениям — чтобы не ходить на сервер перед каждой оплатой.
+    """
+    available = await is_upsell_available(db, user)
+    return DonationUpsellResponse(
+        available=available,
+        tip_kopeks=settings.get_donation_upsell_tip_kopeks(),
+        presets_kopeks=settings.get_donation_upsell_presets_kopeks(),
+        min_topup_kopeks=settings.get_donation_upsell_min_topup_kopeks(),
+        max_tip_kopeks=MAX_TIP_KOPEKS,
+    )
+
+
+async def _apply_donation_tip(
+    db: AsyncSession,
+    user: User,
+    request,
+    *,
+    payment_method: str | None = None,
+    method_max_kopeks: int | None = None,
+):
+    """Учитывает надбавку в запросе на оплату.
+
+    Возвращает ``(запрос с суммой «пополнение + надбавка», размер надбавки, обещание)``.
+    Надбавка прибавляется к ``amount_kopeks`` копией запроса, поэтому весь дальнейший
+    код роута работает уже с итоговой суммой. Клиенту не доверяем: доступность
+    апселла и размер надбавки перепроверяем на сервере.
+
+    Вызывать ПОСЛЕ проверки лимитов способа: иначе ответ 400 оставил бы висячее
+    обещание, под которое позже подошёл бы чужой платёж.
+    """
+    method = payment_method if payment_method is not None else getattr(request, 'payment_method', None)
+
+    shown = bool(getattr(request, 'donation_upsell_shown', False))
+    tip_kopeks = max(0, int(getattr(request, 'donation_tip_kopeks', 0) or 0))
+
+    # Само пожертвование надбавкой не сопровождаем — иначе донат «+надбавка» попал бы
+    # и в метаданные доната, и в обещание. Проверяем ПЕРВЫМ делом: настоящий донат
+    # приходит без полей апселла, и любая ветка ниже погасила бы чужое обещание —
+    # человек пошёл жертвовать из меню, а не отменять прежнее пополнение.
+    if getattr(request, 'purpose', None) == 'donation':
+        return request, 0, None
+
+    if not shown and tip_kopeks <= 0:
+        # Клиент модалку не показывал (старый бандл, прямой вызов API) — но пополнение
+        # начато, значит прежнее обещание к нему не относится.
+        await cancel_pending_pledges(db, user)
+        return request, 0, None
+
+    # Tribute/CryptoBot: сумму или курс задаёт сторона провайдера, обещание неисполнимо.
+    # Прежнее обещание гасим и здесь: подбор идёт по сумме, а не по способу, поэтому
+    # оно иначе подошло бы к этому платежу и списало надбавку без спроса.
+    if method in EXCLUDED_UPSELL_METHODS:
+        await cancel_pending_pledges(db, user)
+        return request, 0, None
+
+    if not await is_upsell_available(db, user):
+        await cancel_pending_pledges(db, user)
+        return request, 0, None
+
+    # Порог суммы пополнения — тоже условие показа, и проверять его надо ДО записи
+    # отказа: ниже порога экрана быть не должно, а записанный отказ жёг бы cooldown
+    # и врал в воронке. Клиент мог отстать от настроек — верим серверу.
+    if request.amount_kopeks < settings.get_donation_upsell_min_topup_kopeks():
+        await cancel_pending_pledges(db, user)
+        return request, 0, None
+
+    if tip_kopeks <= 0:
+        await register_decline(
+            db,
+            user,
+            topup_amount_kopeks=request.amount_kopeks,
+            payment_method=method,
+            source='cabinet',
+        )
+        return request, 0, None
+
+    max_tip = resolve_max_tip_kopeks(
+        topup_amount_kopeks=request.amount_kopeks,
+        method_max_kopeks=method_max_kopeks,
+    )
+    tip_kopeks = min(tip_kopeks, max_tip)
+    if tip_kopeks <= 0:
+        return request, 0, None
+
+    pledge = await register_pledge(
+        db,
+        user,
+        tip_kopeks=tip_kopeks,
+        topup_amount_kopeks=request.amount_kopeks,
+        payment_method=method,
+        source='cabinet',
+    )
+
+    patched = request.model_copy(update={'amount_kopeks': request.amount_kopeks + tip_kopeks})
+    return patched, tip_kopeks, pledge
+
+
+async def _cancel_pledge(db: AsyncSession, pledge) -> None:
+    """Гасит обещание надбавки, под которое так и не появился платёж."""
+    if pledge is None:
+        return
+    try:
+        from app.database.crud import donation_pledge as pledge_crud
+        from app.database.models import DonationPledgeStatus
+
+        await pledge_crud.mark_pledge_status(db, pledge_id=pledge.id, status=DonationPledgeStatus.SUPERSEDED)
+        await db.commit()
+    except Exception as error:  # pragma: no cover — не мешаем отдать исходную ошибку
+        logger.warning('Не удалось погасить обещание надбавки', error=error)
 
 
 @router.post('/topup', response_model=TopUpResponse)
@@ -355,6 +503,14 @@ async def create_topup(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f'Maximum amount is {method.max_amount_kopeks / 100:.2f} RUB',
         )
+
+    # Донат-апселл: дальше по функции request.amount_kopeks — это сумма платежа
+    # (пополнение + надбавка). На баланс попадёт только пополнение: надбавку
+    # спишет вебхук (app/services/donation_upsell_service.py). Надбавка обрезана
+    # по лимиту способа, поэтому проверенный выше максимум остаётся соблюдённым.
+    request, _donation_tip_kopeks, donation_pledge = await _apply_donation_tip(
+        db, user, request, method_max_kopeks=method.max_amount_kopeks
+    )
 
     # Donation mode: the payment is recorded as a donation (not credited to balance).
     # The marker travels in the provider's metadata_json/payload and is read back by
@@ -1098,8 +1254,13 @@ async def create_topup(
             )
 
     except HTTPException:
+        # Платёж не создан (например, telegram_stars здесь всегда отвечает 400) —
+        # гасим обещание, иначе оно висело бы pending весь TTL и могло бы позже
+        # прилипнуть к чужому зачислению на ту же сумму.
+        await _cancel_pledge(db, donation_pledge)
         raise
     except Exception as e:
+        await _cancel_pledge(db, donation_pledge)
         logger.error('Payment creation error', error=e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

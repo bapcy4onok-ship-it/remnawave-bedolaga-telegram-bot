@@ -319,8 +319,8 @@ async def get_available_languages():
         'languages': [
             {
                 'code': code,
-                'name': _LANGUAGE_META.get(code, (code.upper(), '🌐'))[0],
-                'flag': _LANGUAGE_META.get(code, (code.upper(), '🌐'))[1],
+                'name': _LANGUAGE_META.get(code, (code.upper(), '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji>'))[0],
+                'flag': _LANGUAGE_META.get(code, (code.upper(), '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji>'))[1],
             }
             for code in codes
         ],

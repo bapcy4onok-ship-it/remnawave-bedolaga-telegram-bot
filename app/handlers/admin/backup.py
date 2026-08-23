@@ -115,7 +115,7 @@ async def show_backup_panel(callback: types.CallbackQuery, db_user: User, db: As
 
     text = f"""🗄️ <b>СИСТЕМА БЕКАПОВ</b>
 
-📊 <b>Статус:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статус:</b>
 • Автобекапы: {status_auto}
 • Интервал: {settings_obj.backup_interval_hours} часов
 • Хранить: {settings_obj.max_backups_keep} файлов
@@ -221,7 +221,7 @@ async def manage_backup_file(callback: types.CallbackQuery, db_user: User, db: A
 📄 <b>Файл:</b> <code>{filename}</code>
 📅 <b>Создан:</b> {date_str}
 💾 <b>Размер:</b> {backup_info.get('file_size_mb', 0):.2f} MB
-📊 <b>Таблиц:</b> {backup_info.get('tables_count', '?')}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Таблиц:</b> {backup_info.get('tables_count', '?')}
 📈 <b>Записей:</b> {backup_info.get('total_records', '?'):,}
 🗜️ <b>Сжатие:</b> {'Да' if backup_info.get('compressed') else 'Нет'}
 🗄️ <b>БД:</b> {backup_info.get('database_type', 'unknown')}

@@ -201,7 +201,7 @@ def format_subscription_status(is_active: bool, is_trial: bool, end_date: dateti
             hours_left = (end_date - now).seconds // 3600
             status += f' ({hours_left} ч.)' if use_russian_fallback else f' ({hours_left} hrs)'
     else:
-        status = '⏰ Истекла' if use_russian_fallback else '⏰ Expired'
+        status = '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Истекла' if use_russian_fallback else '⏰ Expired'
 
     return status
 

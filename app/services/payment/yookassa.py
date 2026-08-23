@@ -729,7 +729,7 @@ class YooKassaPaymentMixin:
                                                 f'🎉 <b>Пробная подписка активирована!</b>\n\n'
                                                 f'💳 Оплачено: {settings.format_price(payment.amount_kopeks)}\n'
                                                 f'📅 Период: {settings.TRIAL_DURATION_DAYS} дней\n'
-                                                f'📱 Устройств: {subscription.device_limit}\n\n'
+                                                f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройств: {subscription.device_limit}\n\n'
                                                 f'Используйте меню для подключения к VPN.'
                                             ),
                                             parse_mode='HTML',
@@ -771,6 +771,9 @@ class YooKassaPaymentMixin:
                             user.id,
                             payment.amount_kopeks,
                             getattr(self, 'bot', None),
+                            # Баланс не пополняется, надбавку донат-апселла списывать
+                            # неоткуда и незачем — комиссия считается со всей суммы.
+                            exclude_donation_tip=False,
                         )
                     except Exception as ref_error:
                         logger.error(
@@ -892,6 +895,10 @@ class YooKassaPaymentMixin:
                             user.id,
                             payment.amount_kopeks,
                             getattr(self, 'bot', None),
+                            # У рекуррентного автоплатежа пост-хук ниже не вызывается
+                            # (`if not is_recurrent_topup`), значит надбавку донат-апселла
+                            # никто не спишет — и вычитать её из базы комиссии нельзя.
+                            exclude_donation_tip=not is_recurrent_topup,
                         )
                     except Exception as error:
                         logger.error('Ошибка обработки реферального пополнения YooKassa', error=error)
@@ -1042,8 +1049,8 @@ class YooKassaPaymentMixin:
                                 success_message = (
                                     f'✅ <b>Подписка успешно активирована!</b>\n\n'
                                     f'📅 Период: {subscription_period} дней\n'
-                                    f'📱 Устройства: 1\n'
-                                    f'📊 Трафик: Безлимит\n'
+                                    f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: 1\n'
+                                    f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: Безлимит\n'
                                     f'💳 Оплата: {settings.format_price(payment.amount_kopeks)} (YooKassa)'
                                     f'{tariff_line}\n\n'
                                     f"🔗 Для подключения перейдите в раздел 'Моя подписка'"

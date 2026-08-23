@@ -781,7 +781,7 @@ class TrafficMonitoringServiceV2:
                         user_id_display = db_user.telegram_id or db_user.email or f'#{db_user.id}'
                         user_info = f'👤 <b>{html.escape(db_user.full_name or "Без имени")}</b>\n🆔 ID: <code>{user_id_display}</code>\n'
                         if db_user.username:
-                            user_info += f'📱 Username: @{html.escape(db_user.username)}\n'
+                            user_info += f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Username: @{html.escape(db_user.username)}\n'
 
                 if violation.check_type == 'fast':
                     check_type_emoji = '⚡'
@@ -801,7 +801,7 @@ class TrafficMonitoringServiceV2:
                     f'{user_info}'
                     f'🔑 ID в панели: <code>{violation.user_id}</code>\n\n'
                     f'{check_type_emoji} <b>{check_type_name}</b>\n'
-                    f'📊 {traffic_label}: <b>{violation.used_traffic_gb} ГБ</b>\n'
+                    f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {traffic_label}: <b>{violation.used_traffic_gb} ГБ</b>\n'
                     f'📈 Порог: <b>{violation.threshold_gb} ГБ</b>\n'
                     f'🚨 Превышение: <b>{violation.used_traffic_gb - violation.threshold_gb:.2f} ГБ</b>\n'
                 )
@@ -814,7 +814,7 @@ class TrafficMonitoringServiceV2:
                 elif violation.last_node_uuid:
                     message += f'\n🖥 Сервер: <code>{violation.last_node_uuid}</code>'
 
-                message += f'\n\n⏰ {datetime.now(UTC).strftime("%d.%m.%Y %H:%M:%S")} UTC'
+                message += f'\n\n<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> {datetime.now(UTC).strftime("%d.%m.%Y %H:%M:%S")} UTC'
 
                 await admin_service.send_suspicious_traffic_notification(message, bot, topic_id)
                 await self.record_notification(violation.user_id)

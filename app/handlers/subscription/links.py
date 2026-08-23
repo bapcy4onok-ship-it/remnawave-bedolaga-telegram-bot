@@ -107,7 +107,7 @@ async def handle_connect_subscription(
         await callback.message.edit_text(
             texts.t(
                 'SUBSCRIPTION_CONNECT_MINIAPP_MESSAGE',
-                """📱 <b>Подключить подписку</b>
+                """<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подключить подписку</b>
 
 🚀 Нажмите кнопку ниже, чтобы открыть подписку в мини-приложении Telegram:""",
             ),
@@ -143,7 +143,7 @@ async def handle_connect_subscription(
                 'SUBSCRIPTION_CONNECT_CUSTOM_MESSAGE',
                 """🚀 <b>Подключить подписку</b>
 
-📱 Нажмите кнопку ниже, чтобы открыть приложение:""",
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Нажмите кнопку ниже, чтобы открыть приложение:""",
             ),
             reply_markup=keyboard,
             parse_mode='HTML',
@@ -227,7 +227,7 @@ async def handle_connect_subscription(
         if hide_subscription_link:
             device_text = texts.t(
                 'SUBSCRIPTION_CONNECT_DEVICE_MESSAGE_HIDDEN',
-                """📱 <b>Подключить подписку</b>
+                """<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подключить подписку</b>
 
 ℹ️ Ссылка подписки доступна по кнопкам ниже или в разделе "Моя подписка".
 
@@ -236,7 +236,7 @@ async def handle_connect_subscription(
         else:
             device_text = texts.t(
                 'SUBSCRIPTION_CONNECT_DEVICE_MESSAGE',
-                """📱 <b>Подключить подписку</b>
+                """<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подключить подписку</b>
 
 🔗 <b>Ссылка подписки:</b>
 <code>{subscription_url}</code>
@@ -320,7 +320,7 @@ async def handle_open_subscription_link(
         texts.t('SUBSCRIPTION_DEVICE_LINK_TITLE', '🔗 <b>Ссылка подписки:</b>')
         + '\n\n'
         + f'<code>{subscription_link}</code>\n\n'
-        + texts.t('SUBSCRIPTION_LINK_USAGE_TITLE', '📱 <b>Как использовать:</b>')
+        + texts.t('SUBSCRIPTION_LINK_USAGE_TITLE', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Как использовать:</b>')
         + '\n'
         + '\n'.join(
             [

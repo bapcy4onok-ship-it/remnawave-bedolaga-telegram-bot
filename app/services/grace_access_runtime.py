@@ -563,6 +563,17 @@ class GraceAccessRuntime:
             )
             return None
 
+        # Единственная воронка выдачи: и фоновый worker, и webhook приходят сюда.
+        # Уже открытые сессии идут мимо, через _process_open, поэтому выключение
+        # причины не обрывает выданный ранее grace.
+        if reason is GraceReason.LIMITED and not settings.GRACE_ACCESS_LIMITED_ENABLED:
+            logger.debug(
+                'Grace candidate ignored: limited reason disabled',
+                subscription_id=subscription_id,
+                source=source,
+            )
+            return None
+
         if self._mode is GraceAccessMode.OBSERVE:
             async with AsyncSessionLocal() as db:
                 billing = await SQLAlchemyGraceBillingGateway(db).get_subscription(subscription_id)
@@ -1465,10 +1476,10 @@ def _build_policy() -> GraceAccessPolicy:
 def _validate_active_configuration() -> None:
     if settings.GRACE_ACCESS_TRAFFIC_GB < 1:
         raise ValueError('GRACE_ACCESS_TRAFFIC_GB must be at least 1 when GRACE_ACCESS_MODE=true')
-    for label, raw_uuid in (
-        ('GRACE_ACCESS_EXPIRED_SQUAD_UUID', settings.GRACE_ACCESS_EXPIRED_SQUAD_UUID),
-        ('GRACE_ACCESS_LIMITED_SQUAD_UUID', settings.GRACE_ACCESS_LIMITED_SQUAD_UUID),
-    ):
+    required_squads = [('GRACE_ACCESS_EXPIRED_SQUAD_UUID', settings.GRACE_ACCESS_EXPIRED_SQUAD_UUID)]
+    if settings.GRACE_ACCESS_LIMITED_ENABLED:
+        required_squads.append(('GRACE_ACCESS_LIMITED_SQUAD_UUID', settings.GRACE_ACCESS_LIMITED_SQUAD_UUID))
+    for label, raw_uuid in required_squads:
         if not raw_uuid.strip():
             raise ValueError(f'{label} is required when GRACE_ACCESS_MODE=true')
         try:

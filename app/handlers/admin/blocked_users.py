@@ -52,7 +52,7 @@ class BlockedUsersText(Enum):
     SCAN_PROGRESS = '🔄 <b>Сканирование:</b> {checked}/{total} ({percent}%)'
     SCAN_COMPLETE = (
         '✅ <b>Сканирование завершено</b>\n\n'
-        '📊 <b>Результаты:</b>\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Результаты:</b>\n'
         '• Проверено: {total_checked}\n'
         '• Заблокировали бота: {blocked_count}\n'
         '• Активных: {active_users}\n'
@@ -92,7 +92,7 @@ class BlockedUsersText(Enum):
     CLEANUP_PROGRESS = '🗑 <b>Очистка:</b> {processed}/{total}'
     CLEANUP_COMPLETE = (
         '✅ <b>Очистка завершена</b>\n\n'
-        '📊 <b>Результаты:</b>\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Результаты:</b>\n'
         '• Удалено из БД: {deleted_db}\n'
         '• Удалено из Remnawave: {deleted_remnawave}\n'
         '• Помечено как заблокированные: {marked}\n'
@@ -102,7 +102,7 @@ class BlockedUsersText(Enum):
     BUTTON_START_SCAN = '🔍 Начать сканирование'
     BUTTON_VIEW_BLOCKED = '👥 Список заблокированных ({count})'
     BUTTON_DELETE_DB = '🗑 Удалить из БД'
-    BUTTON_DELETE_REMNAWAVE = '🌐 Удалить из Remnawave'
+    BUTTON_DELETE_REMNAWAVE = '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Удалить из Remnawave'
     BUTTON_DELETE_BOTH = '💀 Удалить везде'
     BUTTON_MARK_BLOCKED = '🚫 Пометить как заблокированных'
     BUTTON_CONFIRM = '✅ Подтвердить'
@@ -300,7 +300,7 @@ async def show_blocked_users_menu(
 
     if scan_result:
         text += (
-            f'\n\n📊 <b>Последнее сканирование:</b>\n'
+            f'\n\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Последнее сканирование:</b>\n'
             f'• Заблокированных: {scan_result.get("blocked_count", 0)}\n'
             f'• Активных: {scan_result.get("active_users", 0)}'
         )

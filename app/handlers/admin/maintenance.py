@@ -71,7 +71,7 @@ async def show_maintenance_panel(callback: types.CallbackQuery, db_user: User, d
     if status_info['consecutive_failures'] > 0:
         failures_info = f'\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> <b>Неудачных проверок подряд:</b> {status_info["consecutive_failures"]}'
 
-    panel_info = f'\n🌐 <b>Панель Remnawave:</b> {panel_status["description"]}'
+    panel_info = f'\n<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Панель Remnawave:</b> {panel_status["description"]}'
     if panel_status.get('response_time'):
         panel_info += f'\n⚡ <b>Время отклика:</b> {panel_status["response_time"]}с'
 
@@ -218,7 +218,7 @@ async def check_panel_status(callback: types.CallbackQuery, db_user: User, db: A
         }.get(status_data['status'], '❓ Статус неизвестен')
 
         message_parts = [
-            '🌐 <b>Статус панели Remnawave</b>\n',
+            '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Статус панели Remnawave</b>\n',
             f'{status_text}',
             f'⚡ Время отклика: {status_data.get("response_time", 0)}с',
             f'👥 Пользователей онлайн: {status_data.get("users_online", 0)}',

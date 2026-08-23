@@ -334,7 +334,7 @@ class AdminNotificationService:
     def _get_promocode_type_display(self, promo_type: str | None) -> str:
         mapping = {
             PromoCodeType.BALANCE.value: '💰 Бонус на баланс',
-            PromoCodeType.SUBSCRIPTION_DAYS.value: '⏰ Доп. дни подписки',
+            PromoCodeType.SUBSCRIPTION_DAYS.value: '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Доп. дни подписки',
             PromoCodeType.TRIAL_SUBSCRIPTION.value: '🎁 Триал подписка',
             PromoCodeType.PROMO_GROUP.value: '👥 Промогруппа',
             PromoCodeType.DISCOUNT.value: '💸 Скидка',
@@ -356,11 +356,13 @@ class AdminNotificationService:
             default_devices = getattr(settings, 'DEFAULT_DEVICE_LIMIT', 1)
             details = [
                 f'📅 {campaign.subscription_duration_days or 0} дн. '
-                f'• 📊 {campaign.subscription_traffic_gb or 0} ГБ '
-                f'• 📱 {campaign.subscription_device_limit or default_devices} устр.',
+                f'• <tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {campaign.subscription_traffic_gb or 0} ГБ '
+                f'• <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> {campaign.subscription_device_limit or default_devices} устр.',
             ]
             if campaign.subscription_squads:
-                details.append(f'🌐 Сквады: {len(campaign.subscription_squads)} шт.')
+                details.append(
+                    f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Сквады: {len(campaign.subscription_squads)} шт.'
+                )
             return details
 
         if campaign.is_tariff_bonus:
@@ -439,7 +441,7 @@ class AdminNotificationService:
                 '',
                 f'👤 <b>Пользователь:</b> {user_display}',
                 f'🆔 <b>{user_id_label}:</b> {user_id_display}',
-                f'📱 <b>Username:</b> @{html.escape(getattr(user, "username", None) or "отсутствует")}',
+                f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Username:</b> @{html.escape(getattr(user, "username", None) or "отсутствует")}',
                 f'👥 <b>Статус:</b> {user_status}',
                 '',
             ]
@@ -470,11 +472,11 @@ class AdminNotificationService:
 
             message_lines.extend(
                 [
-                    '⏰ <b>Параметры триала:</b>',
+                    '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Параметры триала:</b>',
                     f'📅 Период: {trial_duration_days} дней',
-                    f'📊 Трафик: {self._format_traffic(trial_traffic_gb)}',
-                    f'📱 Устройства: {trial_device_limit}',
-                    f'🌐 Сервер: {subscription.connected_squads[0] if subscription.connected_squads else "По умолчанию"}',
+                    f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {self._format_traffic(trial_traffic_gb)}',
+                    f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {trial_device_limit}',
+                    f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Сервер: {subscription.connected_squads[0] if subscription.connected_squads else "По умолчанию"}',
                 ]
             )
 
@@ -493,7 +495,9 @@ class AdminNotificationService:
                     message_lines.append(f'🔗 <b>Реферер:</b> {referrer_info}')
 
             message_lines.append('')
-            message_lines.append(f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>')
+            message_lines.append(
+                f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>'
+            )
 
             return await self._send_message('\n'.join(message_lines), category=NotificationCategory.TRIALS)
 
@@ -561,13 +565,13 @@ class AdminNotificationService:
                 event_title = '🔄 КОНВЕРСИЯ ИЗ ТРИАЛА'
                 user_status = 'Конверсия'
             elif purchase_type == 'first_purchase':
-                event_title = '💎 ПОКУПКА ПОДПИСКИ'
+                event_title = '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> ПОКУПКА ПОДПИСКИ'
                 user_status = 'Первая покупка'
             elif purchase_type == 'renewal' or (purchase_type is None and user.has_had_paid_subscription):
-                event_title = '💎 ПРОДЛЕНИЕ ПОДПИСКИ'
+                event_title = '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> ПРОДЛЕНИЕ ПОДПИСКИ'
                 user_status = 'Продление'
             else:
-                event_title = '💎 ПОКУПКА ПОДПИСКИ'
+                event_title = '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> ПОКУПКА ПОДПИСКИ'
                 user_status = 'Первая покупка'
 
             # Получаем название тарифа
@@ -588,7 +592,7 @@ class AdminNotificationService:
             # Добавляем username только если есть
             username = getattr(user, 'username', None)
             if username:
-                message_lines.append(f'📱 @{html.escape(username)}')
+                message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(username)}')
 
             message_lines.append(f'📋 {user_status}')
 
@@ -601,8 +605,8 @@ class AdminNotificationService:
                     '',
                     f'💵 <b>{settings.format_price(total_amount)}</b> • {payment_method}',
                     f'📅 {period_days} дн. • до {format_local_datetime(subscription.end_date, "%d.%m.%Y")}',
-                    f'📊 {self._format_traffic(subscription.traffic_limit_gb)} • 📱 {subscription.device_limit} устр.',
-                    f'🌐 {servers_info}',
+                    f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {self._format_traffic(subscription.traffic_limit_gb)} • <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> {subscription.device_limit} устр.',
+                    f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> {servers_info}',
                 ]
             )
 
@@ -751,7 +755,7 @@ class AdminNotificationService:
 
         username = getattr(user, 'username', None)
         if username:
-            message_lines.append(f'📱 @{html.escape(username)}')
+            message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(username)}')
 
         message_lines.append(f'💳 {topup_status}')
 
@@ -772,7 +776,7 @@ class AdminNotificationService:
         )
 
         # --- Подписка ---
-        message_lines.append(f'📱 Подписка: {subscription_status}')
+        message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Подписка: {subscription_status}')
 
         # --- Реферер (только если есть) ---
         if referrer_info and referrer_info != 'Нет':
@@ -968,6 +972,7 @@ class AdminNotificationService:
         amount_kopeks: int,
         payment_method: str | None = None,
         external_id: str | None = None,
+        source: str = 'menu',
     ) -> bool:
         """Уведомление админов о пожертвовании «Поддержать проект».
 
@@ -983,11 +988,19 @@ class AdminNotificationService:
             donor_identifier = self._get_user_identifier_display(user)
             method_display = html.escape(str(payment_method)) if payment_method else '—'
 
+            # Надбавка при пополнении и кнопка «Поддержать проект» — разные каналы
+            # сбора, админу важно различать их прямо в заголовке.
+            title = (
+                '❤️ <b>Новое пожертвование при пополнении!</b>'
+                if source == 'topup_upsell'
+                else '❤️ <b>Новое пожертвование!</b>'
+            )
+
             lines = [
-                '❤️ <b>Новое пожертвование!</b>',
+                title,
                 '',
                 f'💰 Сумма: <b>{settings.format_price(amount_kopeks)}</b>',
-                f'👤 Донор: {donor_display}',
+                f'👤 Донатер: {donor_display}',
                 f'🆔 {donor_identifier}',
                 f'💳 Способ: {method_display}',
             ]
@@ -1047,11 +1060,11 @@ class AdminNotificationService:
             user_id_label = self._get_user_identifier_label(user)
             user_id_display = self._get_user_identifier_display(user)
 
-            message = f"""⏰ <b>ПРОДЛЕНИЕ ПОДПИСКИ</b>
+            message = f"""<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> <b>ПРОДЛЕНИЕ ПОДПИСКИ</b>
 
 👤 <b>Пользователь:</b> {user_display}
 🆔 <b>{user_id_label}:</b> {user_id_display}
-📱 <b>Username:</b> @{html.escape(getattr(user, 'username', None) or 'отсутствует')}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Username:</b> @{html.escape(getattr(user, 'username', None) or 'отсутствует')}
 
 {promo_block}
 
@@ -1065,14 +1078,14 @@ class AdminNotificationService:
 📆 Было до: {format_local_datetime(old_end_date, '%d.%m.%Y %H:%M')}
 📆 Стало до: {format_local_datetime(current_end_date, '%d.%m.%Y %H:%M')}
 
-📱 <b>Текущие параметры:</b>
-📊 Трафик: {self._format_traffic(subscription.traffic_limit_gb)}
-📱 Устройства: {subscription.device_limit}
-🌐 Серверы: {servers_info}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Текущие параметры:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Трафик: {self._format_traffic(subscription.traffic_limit_gb)}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Устройства: {subscription.device_limit}
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> Серверы: {servers_info}
 
 💰 <b>Баланс после операции:</b> {settings.format_price(current_balance)}
 
-⏰ <i>{format_local_datetime(datetime.now(UTC), '%d.%m.%Y %H:%M:%S')}</i>"""
+<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), '%d.%m.%Y %H:%M:%S')}</i>"""
 
             return await self._send_message(message, category=NotificationCategory.RENEWALS)
 
@@ -1138,14 +1151,14 @@ class AdminNotificationService:
                 '',
                 f'👤 <b>Пользователь:</b> {user_display}',
                 f'🆔 <b>{user_id_label}:</b> {user_id_display}',
-                f'📱 <b>Username:</b> @{html.escape(getattr(user, "username", None) or "отсутствует")}',
+                f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Username:</b> @{html.escape(getattr(user, "username", None) or "отсутствует")}',
                 '',
                 promo_block,
                 '',
                 '🎟️ <b>Промокод:</b>',
                 f'🔖 Код: <code>{promocode_data.get("code")}</code>',
                 f'🧾 Тип: {type_display}',
-                f'📊 Использования: {usage_info}',
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Использования: {usage_info}',
             ]
 
             promo_type = promocode_data.get('type')
@@ -1185,7 +1198,7 @@ class AdminNotificationService:
                     '📝 <b>Эффект:</b>',
                     effect_description.strip() or '✅ Промокод активирован',
                     '',
-                    f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
+                    f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
                 ]
             )
 
@@ -1263,7 +1276,9 @@ class AdminNotificationService:
             ]
 
             if telegram_user.username:
-                message_lines.append(f'📱 @{html.escape(telegram_user.username)}')
+                message_lines.append(
+                    f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(telegram_user.username)}'
+                )
 
             message_lines.append(f'📋 {user_status}')
 
@@ -1363,7 +1378,9 @@ class AdminNotificationService:
                 f'👤 {html.escape(telegram_user_name)} (<code>{telegram_user_id}</code>)',
             ]
             if telegram_username:
-                message_lines.append(f'📱 @{html.escape(telegram_username)}')
+                message_lines.append(
+                    f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(telegram_username)}'
+                )
 
             promo_group = await self._get_user_promo_group(db, user)
             if promo_group:
@@ -1452,7 +1469,7 @@ class AdminNotificationService:
                 '',
                 f'👤 <b>Пользователь:</b> {user_display}',
                 f'🆔 <b>{user_id_label}:</b> {user_id_display}',
-                f'📱 <b>Username:</b> @{html.escape(getattr(user, "username", None) or "отсутствует")}',
+                f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Username:</b> @{html.escape(getattr(user, "username", None) or "отсутствует")}',
                 '',
                 self._format_promo_group_block(new_group, title='Новая промогруппа', icon='🏆'),
             ]
@@ -1475,7 +1492,7 @@ class AdminNotificationService:
                 [
                     '',
                     f'💰 Баланс пользователя: {settings.format_price(user.balance_kopeks)}',
-                    f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
+                    f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
                 ]
             )
 
@@ -1718,7 +1735,9 @@ class AdminNotificationService:
                 except Exception:
                     if purchase.landing_id:
                         landing_slug = f'ID:{purchase.landing_id}'
-                message_lines.append(f'🌐 Страница: <b>/buy/{html.escape(landing_slug)}</b>')
+                message_lines.append(
+                    f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Страница: <b>/buy/{html.escape(landing_slug)}</b>'
+                )
                 message_lines.append(f'{contact_icon} Покупатель: <code>{contact_display}</code>')
 
             if purchase.is_gift:
@@ -1772,7 +1791,7 @@ class AdminNotificationService:
         method_names: dict[str, str] = {
             'telegram_stars': '⭐ Telegram Stars',
             'yookassa': '💳 YooKassa (карта)',
-            'tribute': '💎 Tribute (карта)',
+            'tribute': '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Tribute (карта)',
             'mulenpay': f'💳 {settings.get_mulenpay_display_name()} (карта)',
             'pal24': f'🏦 {settings.get_pal24_display_name()} (СБП)',
             'cryptobot': f'🪙 {settings.get_cryptobot_display_name()} (крипто)',
@@ -1946,7 +1965,9 @@ class AdminNotificationService:
                     message_parts.append('Автоматический мониторинг API остановлен.')
 
             message_parts.append('')
-            message_parts.append(f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>')
+            message_parts.append(
+                f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>'
+            )
 
             message = '\n'.join(message_parts)
 
@@ -2025,13 +2046,17 @@ class AdminNotificationService:
                     message_parts.append(f'🔧 <b>Причина:</b> {html.escape(details["maintenance_reason"])}')
 
                 if details.get('estimated_duration'):
-                    message_parts.append(f'⏰ <b>Ожидаемая длительность:</b> {details["estimated_duration"]}')
+                    message_parts.append(
+                        f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Ожидаемая длительность:</b> {details["estimated_duration"]}'
+                    )
 
                 message_parts.append('')
                 message_parts.append('Панель временно недоступна для обслуживания.')
 
             message_parts.append('')
-            message_parts.append(f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>')
+            message_parts.append(
+                f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>'
+            )
 
             message = '\n'.join(message_parts)
 
@@ -2060,9 +2085,9 @@ class AdminNotificationService:
 
             # Определяем заголовок по типу операции
             update_titles = {
-                'traffic': '📊 ДОКУПКА ТРАФИКА',
-                'devices': '📱 ДОКУПКА УСТРОЙСТВ',
-                'servers': '🌐 СМЕНА СЕРВЕРОВ',
+                'traffic': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> ДОКУПКА ТРАФИКА',
+                'devices': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> ДОКУПКА УСТРОЙСТВ',
+                'servers': '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> СМЕНА СЕРВЕРОВ',
             }
             title = update_titles.get(update_type, '⚙️ ИЗМЕНЕНИЕ ПОДПИСКИ')
 
@@ -2079,7 +2104,7 @@ class AdminNotificationService:
             # Добавляем username только если есть
             username = getattr(user, 'username', None)
             if username:
-                message_lines.append(f'📱 @{html.escape(username)}')
+                message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(username)}')
 
             # Тариф (если есть)
             if tariff_name:
@@ -2185,7 +2210,7 @@ class AdminNotificationService:
 
             username = getattr(user, 'username', None)
             if username:
-                message_lines.append(f'📱 @{html.escape(username)}')
+                message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(username)}')
 
             message_lines.append('')
 
@@ -2194,7 +2219,9 @@ class AdminNotificationService:
             if application_data.get('telegram_channel'):
                 message_lines.append(f'📢 Канал: {html.escape(str(application_data["telegram_channel"]))}')
             if application_data.get('website_url'):
-                message_lines.append(f'🌐 Сайт: {html.escape(str(application_data["website_url"]))}')
+                message_lines.append(
+                    f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Сайт: {html.escape(str(application_data["website_url"]))}'
+                )
             if application_data.get('description'):
                 desc = str(application_data['description'])
                 if len(desc) > 200:
@@ -2208,7 +2235,7 @@ class AdminNotificationService:
             message_lines.extend(
                 [
                     '',
-                    f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
+                    f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
                 ]
             )
 
@@ -2240,7 +2267,7 @@ class AdminNotificationService:
 
             username = getattr(user, 'username', None)
             if username:
-                message_lines.append(f'📱 @{html.escape(username)}')
+                message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> @{html.escape(username)}')
 
             message_lines.extend(
                 [
@@ -2259,7 +2286,7 @@ class AdminNotificationService:
             message_lines.extend(
                 [
                     '',
-                    f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
+                    f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
                 ]
             )
 
@@ -2288,7 +2315,7 @@ class AdminNotificationService:
                 f'👮 <b>Администратор:</b> {html.escape(admin_name)}',
                 f'🆔 <b>ID администратора:</b> {admin_user_id}',
                 '',
-                '📊 <b>Результаты:</b>',
+                '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Результаты:</b>',
                 f'✅ Успешно заблокировано: {successfully_banned}',
                 f'❌ Не найдено: {not_found}',
                 f'💥 Ошибок: {errors}',
@@ -2302,7 +2329,7 @@ class AdminNotificationService:
             message_lines.extend(
                 [
                     '',
-                    f'⏰ <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
+                    f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{format_local_datetime(datetime.now(UTC), "%d.%m.%Y %H:%M:%S")}</i>',
                 ]
             )
 

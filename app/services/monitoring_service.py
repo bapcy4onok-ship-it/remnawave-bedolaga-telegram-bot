@@ -1800,7 +1800,7 @@ class MonitoringService:
             extend_callback = f'se:{subscription.id}' if settings.is_multi_tariff_enabled() else 'subscription_extend'
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
-                    [build_miniapp_or_callback_button(text='💎 Продлить подписку', callback_data=extend_callback)],
+                    [build_miniapp_or_callback_button(text='<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку', callback_data=extend_callback)],
                     [build_miniapp_or_callback_button(text='💳 Пополнить баланс', callback_data='balance_topup')],
                 ]
             )
@@ -1898,13 +1898,13 @@ class MonitoringService:
             extend_callback = f'se:{subscription.id}' if settings.is_multi_tariff_enabled() else 'subscription_extend'
             sub_btn_text = texts.t(
                 'BTN_MY_SUBSCRIPTIONS' if settings.is_multi_tariff_enabled() else 'BTN_MY_SUBSCRIPTION',
-                '📱 Мои подписки' if settings.is_multi_tariff_enabled() else '📱 Моя подписка',
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Мои подписки' if settings.is_multi_tariff_enabled() else '📱 Моя подписка',
             )
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
                         build_miniapp_or_callback_button(
-                            text=texts.t('BTN_RENEW_SUBSCRIPTION', '⏰ Продлить подписку'),
+                            text=texts.t('BTN_RENEW_SUBSCRIPTION', '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Продлить подписку'),
                             callback_data=extend_callback,
                             cabinet_path='/subscription',
                         )
@@ -1965,7 +1965,7 @@ class MonitoringService:
 
 Ваша тестовая подписка истекает через 2 часа.
 
-💎 <b>Не хотите остаться без VPN?</b>
+<tg-emoji emoji-id=\"5462902520215002477\">💎</tg-emoji> <b>Не хотите остаться без VPN?</b>
 Переходите на полную подписку!
 
 ⚡️ Успейте оформить до окончания тестового периода!
@@ -1975,7 +1975,7 @@ class MonitoringService:
 
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
-                    [build_miniapp_or_callback_button(text='💎 Купить подписку', callback_data='menu_buy')],
+                    [build_miniapp_or_callback_button(text='<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку', callback_data='menu_buy')],
                     [build_miniapp_or_callback_button(text='💰 Пополнить баланс', callback_data='balance_topup')],
                 ]
             )
@@ -2134,7 +2134,7 @@ class MonitoringService:
                 inline_keyboard=[
                     [
                         build_miniapp_or_callback_button(
-                            text=texts.t('SUBSCRIPTION_EXTEND', '💎 Продлить подписку'),
+                            text=texts.t('SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку'),
                             callback_data=extend_callback,
                         )
                     ],
@@ -2246,7 +2246,7 @@ class MonitoringService:
                     ],
                     [
                         build_miniapp_or_callback_button(
-                            text=texts.t('SUBSCRIPTION_EXTEND', '💎 Продлить подписку'),
+                            text=texts.t('SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку'),
                             callback_data=extend_callback,
                         )
                     ],
@@ -2337,7 +2337,7 @@ class MonitoringService:
             if is_final:
                 template = texts.t(
                     'AUTOPAY_FAILED_FINAL',
-                    '\n⏰ <b>Последнее напоминание</b>\n\n'
+                    '\n<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Последнее напоминание</b>\n\n'
                     'Подписка скоро отключится — автоплатёж не прошёл из-за нехватки средств.\n'
                     'Баланс: {balance}\nТребуется: {required}\n\n'
                     'Пополните баланс сейчас, чтобы не потерять доступ.\n',
@@ -2358,7 +2358,7 @@ class MonitoringService:
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [build_miniapp_or_callback_button(text='💳 Пополнить баланс', callback_data='balance_topup')],
-                    [build_miniapp_or_callback_button(text='📱 Моя подписка', callback_data='menu_subscription')],
+                    [build_miniapp_or_callback_button(text='<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Моя подписка', callback_data='menu_subscription')],
                 ]
             )
 
@@ -3020,11 +3020,11 @@ class MonitoringService:
                     safe_title = html.escape(title) if title else '—'
 
                     text = (
-                        f'⏰ <b>Ожидание ответа на тикет превышено</b>\n\n'
+                        f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Ожидание ответа на тикет превышено</b>\n\n'
                         f'🆔 <b>ID:</b> <code>{ticket.id}</code>\n'
                         f'👤 <b>Пользователь:</b> {full_name}\n'
                         f'🆔 <b>Telegram ID:</b> <code>{telegram_id_display}</code>\n'
-                        f'📱 <b>Username:</b> @{username_display}\n'
+                        f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Username:</b> @{username_display}\n'
                         f'📝 <b>Заголовок:</b> {safe_title}\n'
                         f'⏱️ <b>Ожидает ответа:</b> {waited_minutes} мин\n'
                     )

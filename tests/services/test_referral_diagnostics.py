@@ -158,3 +158,42 @@ async def test_analyze_today(temp_log_file, sample_log_content):
     # Проверяем что период установлен корректно
     today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     assert report.analysis_period_start.date() == today.date()
+
+
+# --- Ремонт рефералов считает по сумме без надбавки донат-апселла ------------------
+
+
+@pytest.mark.asyncio
+async def test_net_first_topup_subtracts_applied_donation_tip(monkeypatch):
+    """Комиссия и порог задним числом считаются так же, как их считал живой путь."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    import app.services.donation_upsell_service as upsell
+    from app.services.referral_diagnostics_service import _net_first_topup_kopeks
+
+    monkeypatch.setattr(upsell, 'applied_tip_for_credited_amount', AsyncMock(return_value=1000))
+
+    net = await _net_first_topup_kopeks(AsyncMock(), 42, MagicMock(amount_kopeks=11000))
+
+    assert net == 10000
+
+
+@pytest.mark.asyncio
+async def test_net_first_topup_without_deposit_is_zero():
+    from unittest.mock import AsyncMock
+
+    from app.services.referral_diagnostics_service import _net_first_topup_kopeks
+
+    assert await _net_first_topup_kopeks(AsyncMock(), 42, None) == 0
+
+
+@pytest.mark.asyncio
+async def test_net_first_topup_keeps_plain_deposit(monkeypatch):
+    from unittest.mock import AsyncMock, MagicMock
+
+    import app.services.donation_upsell_service as upsell
+    from app.services.referral_diagnostics_service import _net_first_topup_kopeks
+
+    monkeypatch.setattr(upsell, 'applied_tip_for_credited_amount', AsyncMock(return_value=0))
+
+    assert await _net_first_topup_kopeks(AsyncMock(), 42, MagicMock(amount_kopeks=11000)) == 11000

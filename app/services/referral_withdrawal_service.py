@@ -177,7 +177,7 @@ class ReferralWithdrawalService:
     # ==================== ПРОВЕРКИ ====================
 
     async def get_last_withdrawal_request(self, db: AsyncSession, user_id: int) -> WithdrawalRequest | None:
-        """Получает последнюю заявку на вывод пользователя."""
+        """Получает последнюю заявку на вывод пользователя (любого статуса)."""
         result = await db.execute(
             select(WithdrawalRequest)
             .where(WithdrawalRequest.user_id == user_id)
@@ -185,6 +185,36 @@ class ReferralWithdrawalService:
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def get_last_successful_withdrawal(self, db: AsyncSession, user_id: int) -> WithdrawalRequest | None:
+        """
+        Получает последний успешный вывод (одобрен или выполнен).
+        Именно от него отсчитывается cooldown: отменённые и отклонённые заявки лимит не расходуют.
+        """
+        result = await db.execute(
+            select(WithdrawalRequest)
+            .where(
+                WithdrawalRequest.user_id == user_id,
+                WithdrawalRequest.status.in_(
+                    [WithdrawalRequestStatus.APPROVED.value, WithdrawalRequestStatus.COMPLETED.value]
+                ),
+            )
+            .order_by(WithdrawalRequest.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def has_pending_withdrawal_request(self, db: AsyncSession, user_id: int) -> bool:
+        """Проверяет, есть ли у пользователя заявка на рассмотрении."""
+        result = await db.execute(
+            select(WithdrawalRequest.id)
+            .where(
+                WithdrawalRequest.user_id == user_id,
+                WithdrawalRequest.status == WithdrawalRequestStatus.PENDING.value,
+            )
+            .limit(1)
+        )
+        return result.scalar_one_or_none() is not None
 
     async def can_request_withdrawal(
         self, db: AsyncSession, user_id: int, *, stats: dict | None = None
@@ -240,21 +270,24 @@ class ReferralWithdrawalService:
         if available < min_amount:
             return False, f'Минимальная сумма вывода: {min_amount / 100:.0f}₽. Доступно: {available / 100:.0f}₽', stats
 
-        # Проверяем cooldown (пропускаем в тестовом режиме)
-        last_request = await self.get_last_withdrawal_request(db, user_id)
-        if last_request:
-            # В тестовом режиме пропускаем проверку cooldown
-            if not settings.REFERRAL_WITHDRAWAL_TEST_MODE:
+        # Проверяем, нет ли активной заявки
+        if await self.has_pending_withdrawal_request(db, user_id):
+            return False, 'У вас уже есть активная заявка на рассмотрении', stats
+
+        # Проверяем cooldown (пропускаем в тестовом режиме).
+        # Считаем только от успешных выводов: отменённая пользователем или отклонённая
+        # админом заявка лимит не расходует.
+        if not settings.REFERRAL_WITHDRAWAL_TEST_MODE:
+            last_success = await self.get_last_successful_withdrawal(db, user_id)
+            if last_success:
                 cooldown_days = settings.REFERRAL_WITHDRAWAL_COOLDOWN_DAYS
-                cooldown_end = last_request.created_at + timedelta(days=cooldown_days)
+                cooldown_start = last_success.processed_at or last_success.created_at
+                cooldown_end = cooldown_start + timedelta(days=cooldown_days)
 
-                if datetime.now(UTC) < cooldown_end:
-                    days_left = (cooldown_end - datetime.now(UTC)).days + 1
+                now = datetime.now(UTC)
+                if now < cooldown_end:
+                    days_left = (cooldown_end - now).days + 1
                     return False, f'Следующий запрос на вывод будет доступен через {days_left} дн.', stats
-
-            # Проверяем, нет ли активной заявки
-            if last_request.status == WithdrawalRequestStatus.PENDING.value:
-                return False, 'У вас уже есть активная заявка на рассмотрении', stats
 
         return True, 'OK', stats
 
@@ -645,7 +678,7 @@ class ReferralWithdrawalService:
 🔍 <b>Анализ на подозрительную активность</b>
 
 {risk_emoji.get(analysis['risk_level'], '⚪')} Уровень риска: <b>{analysis['risk_level'].upper()}</b>
-📊 Оценка риска: <b>{analysis['risk_score']}/100</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Оценка риска: <b>{analysis['risk_score']}/100</b>
 {analysis.get('recommendation_text', '')}
 """
 
@@ -682,7 +715,7 @@ class ReferralWithdrawalService:
 
         # Источники дохода
         if 'earnings_by_reason' in details:
-            text += '\n📊 <b>Источники дохода:</b>\n'
+            text += '\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Источники дохода:</b>\n'
             reason_names = {
                 'referral_first_topup': 'Бонус за 1-е пополнение',
                 'referral_commission_topup': 'Комиссия с пополнений',

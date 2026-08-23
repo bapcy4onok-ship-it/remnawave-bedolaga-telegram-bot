@@ -55,7 +55,7 @@ class MaintenanceService:
 
 Сервис временно недоступен из-за проблем с подключением к серверам.
 
-⏰ Мы работаем над восстановлением. Попробуйте через несколько минут.
+<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> Мы работаем над восстановлением. Попробуйте через несколько минут.
 
 🔄 Последняя проверка: {last_check_display}
 """
@@ -79,7 +79,7 @@ class MaintenanceService:
             emoji = emoji_map.get(alert_type, 'ℹ️')
 
             timestamp = format_local_datetime(datetime.now(UTC), '%d.%m.%Y %H:%M:%S %Z')
-            formatted_message = f'{emoji} <b>ТЕХНИЧЕСКИЕ РАБОТЫ</b>\n\n{message}\n\n⏰ <i>{timestamp}</i>'
+            formatted_message = f'{emoji} <b>ТЕХНИЧЕСКИЕ РАБОТЫ</b>\n\n{message}\n\n<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <i>{timestamp}</i>'
 
             return await notification_service.send_admin_notification(
                 formatted_message, category=NotificationCategory.INFRASTRUCTURE

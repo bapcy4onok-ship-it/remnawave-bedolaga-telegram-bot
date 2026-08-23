@@ -1,4 +1,5 @@
 import html
+from contextlib import suppress
 
 import structlog
 from aiogram import Dispatcher, F, types
@@ -289,18 +290,24 @@ async def show_balance_history(callback: types.CallbackQuery, db_user: User, db:
             total_unique += 1
 
     if not unique_transactions:
-        await callback.message.edit_text('📊 История операций пуста', reply_markup=get_back_keyboard(db_user.language))
+        await callback.message.edit_text(
+            '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> История операций пуста',
+            reply_markup=get_back_keyboard(db_user.language),
+        )
         await callback.answer()
         return
 
-    text = '📊 <b>История операций</b>\n\n'
+    text = '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>История операций</b>\n\n'
 
     for transaction in unique_transactions:
         if transaction.type == TransactionType.DONATION.value:
-            # Пожертвование не двигает баланс ни вверх, ни вниз — показываем
-            # сумму без знака (так же нейтрально, как в кабинете).
+            # Обычное пожертвование баланс не двигает — показываем нейтрально.
+            # Надбавка при пополнении (external_id 'pledge:<id>') баланс уменьшила —
+            # показываем как расход, иначе столбик не сходится.
             emoji = '❤️'
             amount_text = texts.format_price(abs(transaction.amount_kopeks))
+            if str(getattr(transaction, 'external_id', '') or '').startswith('pledge:'):
+                amount_text = f'-{amount_text}'
         else:
             is_credit = transaction.type in CREDIT_TRANSACTION_TYPES
             emoji = '💰' if is_credit else '💸'
@@ -375,6 +382,15 @@ async def show_payment_methods(callback: types.CallbackQuery, db_user: User, db:
         pass
 
     full_text = payment_text
+
+    # Адрес возврата для экрана донат-апселла: при подставленной сумме способы оплаты
+    # ведут сразу на оплату (topup_amount|...), сетка сумм не рисуется, и «Назад» на
+    # апселле по умолчанию увёл бы человека на экран, которого он не видел.
+    # Привязываем подсказку к сумме и снимаем её, когда сумма не подставлена.
+    await state.update_data(
+        upsell_back_callback='balance_topup' if amount_kopeks > 0 else None,
+        upsell_back_amount=amount_kopeks if amount_kopeks > 0 else None,
+    )
 
     keyboard = get_payment_methods_keyboard(amount_kopeks, db_user.language)
 
@@ -500,7 +516,7 @@ async def request_support_topup(callback: types.CallbackQuery, db_user: User):
 • Сумму пополнения
 • Способ оплаты
 
-⏰ Время обработки: 1-24 часа
+<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> Время обработки: 1-24 часа
 
 <b>Доступные способы:</b>
 • Криптовалюта
@@ -524,7 +540,7 @@ async def request_support_topup(callback: types.CallbackQuery, db_user: User):
 
 
 @error_handler
-async def process_topup_amount(message: types.Message, db_user: User, state: FSMContext):
+async def process_topup_amount(message: types.Message, db_user: User, db: AsyncSession, state: FSMContext):
     texts = get_texts(db_user.language)
 
     try:
@@ -574,6 +590,13 @@ async def process_topup_amount(message: types.Message, db_user: User, state: FSM
                 )
                 return
 
+        # Донат-апселл: экран показывается и когда сумму вводят текстом. Решение
+        # придёт кнопкой, поэтому продолжение флоу берёт на себя его хендлер.
+        from .donation_upsell import maybe_show_upsell
+
+        if await maybe_show_upsell(message, db_user, db, state, amount_kopeks=amount_kopeks, method=payment_method):
+            return
+
         if not await route_payment_by_method(message, db_user, amount_kopeks, state, payment_method):
             await message.answer('Неизвестный способ оплаты')
 
@@ -620,10 +643,69 @@ async def handle_sbp_payment(callback: types.CallbackQuery, db: AsyncSession):
         await callback.answer('❌ Ошибка обработки платежа', show_alert=True)
 
 
+async def dispatch_topup(
+    callback: types.CallbackQuery,
+    db_user: User,
+    state: FSMContext,
+    *,
+    amount_kopeks: int,
+    method: str,
+) -> bool:
+    """Отправляет пользователя к оплате выбранным способом на указанную сумму.
+
+    Вынесено из ``handle_topup_amount_callback``, потому что этой же разводкой
+    продолжается флоу после экрана донат-апселла
+    (``app/handlers/balance/donation_upsell.py``).
+
+    Возвращает False, если способ неизвестен.
+    """
+    # Особые случаи, требующие специальной логики
+    if method.startswith('platega_m'):
+        from app.database.database import AsyncSessionLocal
+
+        from .platega import process_platega_payment_amount
+
+        platega_method_code = int(method[len('platega_m') :])
+        await state.update_data(payment_method='platega', platega_method=platega_method_code)
+        await state.set_state(BalanceStates.waiting_for_amount)
+        async with AsyncSessionLocal() as db:
+            await process_platega_payment_amount(callback.message, db_user, db, amount_kopeks, state)
+        return True
+
+    if method == 'platega':
+        from app.database.database import AsyncSessionLocal
+
+        from .platega import process_platega_payment_amount, start_platega_payment
+
+        data = await state.get_data()
+        method_code = int(data.get('platega_method', 0)) if data else 0
+
+        if method_code > 0:
+            await state.set_state(BalanceStates.waiting_for_amount)
+            async with AsyncSessionLocal() as db:
+                await process_platega_payment_amount(callback.message, db_user, db, amount_kopeks, state)
+        else:
+            await state.update_data(platega_pending_amount=amount_kopeks)
+            await start_platega_payment(callback, db_user, state)
+        return True
+
+    if method == 'tribute':
+        from .tribute import start_tribute_payment
+
+        await start_tribute_payment(callback, db_user)
+        return True
+
+    # Стандартные методы через роутер
+    await state.update_data(payment_method=method)
+    await state.set_state(BalanceStates.waiting_for_amount)
+    return await route_payment_by_method(callback.message, db_user, amount_kopeks, state, method)
+
+
 @error_handler
 async def handle_topup_amount_callback(
     callback: types.CallbackQuery,
     db_user: User,
+    db: AsyncSession,
     state: FSMContext,
 ):
     try:
@@ -638,46 +720,22 @@ async def handle_topup_amount_callback(
         return
 
     try:
-        # Особые случаи, требующие специальной логики
-        if method.startswith('platega_m'):
-            from app.database.database import AsyncSessionLocal
+        # Донат-апселл вклинивается между суммой и оплатой: если экран показан,
+        # разводку продолжит его хендлер — уже с учётом надбавки.
+        from .donation_upsell import maybe_show_upsell
 
-            from .platega import process_platega_payment_amount
-
-            platega_method_code = int(method[len('platega_m') :])
-            await state.update_data(payment_method='platega', platega_method=platega_method_code)
-            await state.set_state(BalanceStates.waiting_for_amount)
-            async with AsyncSessionLocal() as db:
-                await process_platega_payment_amount(callback.message, db_user, db, amount_kopeks, state)
-        elif method == 'platega':
-            from app.database.database import AsyncSessionLocal
-
-            from .platega import process_platega_payment_amount, start_platega_payment
-
-            data = await state.get_data()
-            method_code = int(data.get('platega_method', 0)) if data else 0
-
-            if method_code > 0:
-                await state.set_state(BalanceStates.waiting_for_amount)
-                async with AsyncSessionLocal() as db:
-                    await process_platega_payment_amount(callback.message, db_user, db, amount_kopeks, state)
-            else:
-                await state.update_data(platega_pending_amount=amount_kopeks)
-                await start_platega_payment(callback, db_user, state)
-        elif method == 'tribute':
-            from .tribute import start_tribute_payment
-
-            await start_tribute_payment(callback, db_user)
+        if await maybe_show_upsell(callback, db_user, db, state, amount_kopeks=amount_kopeks, method=method):
+            await callback.answer()
             return
-        # Стандартные методы через роутер
-        else:
-            await state.update_data(payment_method=method)
-            await state.set_state(BalanceStates.waiting_for_amount)
-            if not await route_payment_by_method(callback.message, db_user, amount_kopeks, state, method):
-                await callback.answer('❌ Неизвестный способ оплаты', show_alert=True)
-                return
 
-        await callback.answer()
+        if not await dispatch_topup(callback, db_user, state, amount_kopeks=amount_kopeks, method=method):
+            await callback.answer('❌ Неизвестный способ оплаты', show_alert=True)
+            return
+
+        # Tribute отвечает на callback сам (app/handlers/balance/tribute.py) — второй
+        # ответ поднял бы TelegramBadRequest и показал юзеру ложную ошибку.
+        with suppress(TelegramBadRequest):
+            await callback.answer()
 
     except Exception as error:
         logger.error('Ошибка быстрого пополнения', error=error)
@@ -686,8 +744,10 @@ async def handle_topup_amount_callback(
 
 def register_balance_handlers(dp: Dispatcher):
     from .donation import register_donation_handlers
+    from .donation_upsell import register_donation_upsell_handlers
 
     register_donation_handlers(dp)
+    register_donation_upsell_handlers(dp)
 
     dp.callback_query.register(show_balance_menu, F.data == 'menu_balance')
 

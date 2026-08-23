@@ -1353,6 +1353,12 @@ class DonationsStatsResponse(BaseModel):
     total_amount_kopeks: int
     donors_count: int
     top_donors: list[DonorItem]
+    # Суммы по источнику: 'menu' — кнопка «Поддержать проект», 'topup_upsell' —
+    # надбавка к пополнению. Надбавки уже посчитаны и внутри статистики пополнений:
+    # реальный платёж был на сумму «пополнение + надбавка».
+    by_source: dict[str, int] = {}
+    # Воронка апселла: shown / accepted / applied / declined.
+    upsell_funnel: dict[str, int] = {}
 
 
 @router.get('/donations', response_model=DonationsStatsResponse)
@@ -1372,8 +1378,10 @@ async def get_donations_stats(
         from app.database.crud.donation import (
             count_distinct_donors,
             get_donation_leaderboard,
+            get_donations_by_source_kopeks,
             get_total_donations_kopeks,
         )
+        from app.database.crud.donation_pledge import get_upsell_funnel
 
         # days=None → всё время; иначе — период, как у соседних эндпоинтов.
         period_start: datetime | None = None
@@ -1383,14 +1391,17 @@ async def get_donations_stats(
 
         total_amount = await get_total_donations_kopeks(db, start=period_start, end=period_end)
         donors_count = await count_distinct_donors(db, start=period_start, end=period_end)
-        leaderboard = await get_donation_leaderboard(
-            db, limit=limit, start=period_start, end=period_end
-        )
+        leaderboard = await get_donation_leaderboard(db, limit=limit, start=period_start, end=period_end)
+
+        by_source = await get_donations_by_source_kopeks(db, start=period_start, end=period_end)
+        upsell_funnel = await get_upsell_funnel(db, start=period_start, end=period_end)
 
         return DonationsStatsResponse(
             total_amount_kopeks=total_amount,
             donors_count=donors_count,
             top_donors=[DonorItem(**row) for row in leaderboard],
+            by_source=by_source,
+            upsell_funnel=upsell_funnel,
         )
 
     except HTTPException:

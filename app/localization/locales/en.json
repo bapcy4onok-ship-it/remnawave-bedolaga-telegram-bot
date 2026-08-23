@@ -1094,7 +1094,7 @@
   "LOADING": "<tg-emoji emoji-id=\"5269539162654010758\">⏳</tg-emoji> Loading...",
   "MAINTENANCE_MODE_ACTIVE": "\n🔧 Maintenance in progress!\n\nThe service is temporarily unavailable while we improve performance.\n\n⏰ Estimated completion time: unknown\n🔄 Please try again later\n\nWe apologize for the inconvenience.\n",
   "MAINTENANCE_MODE_API_ERROR": "\n🔧 Maintenance in progress!\n\nThe service is temporarily unavailable due to connection issues with the servers.\n\n⏰ We're working on it. Please try again in a few minutes.\n\n🔄 Last check: {last_check}\n",
-  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n\n📱 <b>Subscription:</b> {subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Don't forget to renew your subscription after topping up your balance, or enable auto-payment!\nChoose an option:\n",
+  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n\n📱 <b>Subscription:</b> {subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Don't forget to renew your subscription after topping up your balance, or enable auto-payment!\n\nChoose an option:\n",
   "MAIN_MENU_ACTION_PROMPT": "Choose an option:",
   "MAIN_MENU_BUTTON": "🏠 Main menu",
   "MAIN_MENU_RICH_BALANCE": "💰 Balance: {balance}",
@@ -1452,7 +1452,7 @@
   "SKIP_BUTTON": "Skip ➡️",
   "STARS_PAYMENT_ENROLLMENT_ERROR": "❌ Failed to credit funds. Please contact support; the payment will be verified manually.",
   "STARS_PAYMENT_PROCESSING_ERROR": "❌ Technical error processing the payment. Please contact support for assistance.",
-  "STARS_PAYMENT_SUCCESS": "🎉 <b>Payment processed successfully!</b>\n\n⭐ Stars spent: {stars_spent}\n💰 Added to balance: {amount} ₽\n🆔 Transaction ID: {transaction_id}...\n\nThank you for topping up! 🚀",
+  "STARS_PAYMENT_SUCCESS": "🎉 <b>Payment processed successfully!</b>\n\n⭐ Stars spent: {stars_spent}\n💰 Payment amount: {amount} ₽\n🆔 Transaction ID: {transaction_id}...\n\nThank you for topping up! 🚀",
   "STARS_PAYMENT_USER_NOT_FOUND": "❌ Error: user not found. Please contact support.",
   "STARS_PRECHECK_INVALID_PAYLOAD": "Payment validation error. Please try again.",
   "STARS_PRECHECK_TECHNICAL_ERROR": "Technical error. Please try again later.",
@@ -2139,5 +2139,14 @@
   "LAVA_RECURRING_NOTIFY_CANCELLED": "ℹ️ Lava auto-renewal has been cancelled.",
   "LAVA_RECURRING_NOTIFY_CONFIRMED": "✅ Subscription renewed by Lava auto-payment.",
   "LAVA_RECURRING_NOTIFY_FAILED": "⚠️ Lava auto-renewal payment failed.",
-  "LAVA_RECURRING_PAY_BUTTON": "💳 Pay"
+  "LAVA_RECURRING_PAY_BUTTON": "💳 Pay",
+  "DONATION_UPSELL_PROMPT": "<b>Support the project and add {tip}?</b> <tg-emoji emoji-id=\"5192879906295397710\">💝</tg-emoji>\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> It is not credited to your balance — it goes toward more capacity and faster connections.\n\nTop-up: <b>{topup}</b>\nSupport: <b>+{tip}</b>\nTotal: <b>{total}</b>",
+  "DONATION_UPSELL_PAYMENT_NOTE": "❤️ Invoice for <b>{total}</b>: {topup} goes to your balance, {tip} supports the project.",
+  "DONATION_UPSELL_ACCEPT": "❤️ Support",
+  "DONATION_UPSELL_DECLINE": "No thanks",
+  "DONATION_UPSELL_CUSTOM": "💰 Donate a different amount",
+  "DONATION_UPSELL_CUSTOM_PROMPT": "💰 <b>Support amount</b>\n\nPick an amount or type your own in rubles — it will be added to the payment.\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> This amount is not credited to your balance.",
+  "DONATION_UPSELL_EXPIRED": "The payment session has expired, please start the top-up again.",
+  "DONATION_UPSELL_TIP_TOO_BIG": "❌ For this payment method you can add at most {amount}.",
+  "DONATION_UPSELL_THANK_YOU": "❤️ <b>Thank you for your support!</b>\n\n{amount} of your payment went toward developing the project — capacity and connection speed. {credited} has been credited to your balance. Thank you! 🙏"
 }

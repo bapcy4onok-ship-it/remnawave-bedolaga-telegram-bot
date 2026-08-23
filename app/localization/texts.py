@@ -25,8 +25,8 @@ _LANGUAGE_ALIASES = {
 
 _DYNAMIC_LANGUAGE_CONFIGS = {
     'ru': {
-        'traffic_pattern': '📊 {size} ГБ - {price}',
-        'unlimited_pattern': '📊 Безлимит - {price}',
+        'traffic_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {size} ГБ - {price}',
+        'unlimited_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Безлимит - {price}',
         'support_info': (
             '\n🛟 <b>Поддержка</b>\n\n'
             'Это центр тикетов: создавайте обращения, просматривайте ответы и историю.\n\n'
@@ -37,8 +37,8 @@ _DYNAMIC_LANGUAGE_CONFIGS = {
         ),
     },
     'fa': {
-        'traffic_pattern': '📊 {size} گیگابایت - {price}',
-        'unlimited_pattern': '📊 نامحدود - {price}',
+        'traffic_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {size} گیگابایت - {price}',
+        'unlimited_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> نامحدود - {price}',
         'support_info': (
             '\n🛟 <b>پشتیبانی</b>\n\n'
             'برای هرگونه سؤال به پشتیبانی پیام دهید:\n\n'
@@ -49,8 +49,8 @@ _DYNAMIC_LANGUAGE_CONFIGS = {
         ),
     },
     'en': {
-        'traffic_pattern': '📊 {size} GB - {price}',
-        'unlimited_pattern': '📊 Unlimited - {price}',
+        'traffic_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {size} GB - {price}',
+        'unlimited_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Unlimited - {price}',
         'support_info': (
             '\n🛟 <b>RemnaWave Support</b>\n\n'
             'This is the ticket center: create requests, view replies and history.\n\n'
@@ -61,8 +61,8 @@ _DYNAMIC_LANGUAGE_CONFIGS = {
         ),
     },
     'ua': {
-        'traffic_pattern': '📊 {size} ГБ - {price}',
-        'unlimited_pattern': '📊 Безліміт - {price}',
+        'traffic_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {size} ГБ - {price}',
+        'unlimited_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Безліміт - {price}',
         'support_info': (
             '\n🛠️ <b>Технічна підтримка</b>\n\n'
             'З усіх питань звертайтеся до нашої підтримки:\n\n'
@@ -72,12 +72,12 @@ _DYNAMIC_LANGUAGE_CONFIGS = {
             '• Вирішенням технічних проблем\n'
             '• Питаннями щодо оплати\n'
             '• Іншими питаннями\n\n'
-            '⏰ Час відповіді: зазвичай протягом 1-2 годин\n'
+            '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Час відповіді: зазвичай протягом 1-2 годин\n'
         ),
     },
     'zh': {
-        'traffic_pattern': '📊{size}GB-{price}',
-        'unlimited_pattern': '📊无限-{price}',
+        'traffic_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji>{size}GB-{price}',
+        'unlimited_pattern': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji>无限-{price}',
         'support_info': (
             '\n🛠️ <b>技术支持</b>\n\n'
             '如有任何问题，请联系我们的支持团队：\n\n'
@@ -87,7 +87,7 @@ _DYNAMIC_LANGUAGE_CONFIGS = {
             '• 解决技术问题\n'
             '• 付款问题\n'
             '• 其他问题\n\n'
-            '⏰ 响应时间：通常在 1-2 小时内\n'
+            '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> 响应时间：通常在 1-2 小时内\n'
         ),
     },
 }

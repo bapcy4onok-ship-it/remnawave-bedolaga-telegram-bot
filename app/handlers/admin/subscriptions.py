@@ -50,7 +50,7 @@ def get_country_flag(country_name: str) -> str:
         'Singapore': '🇸🇬',
         'SG': '🇸🇬',
     }
-    return flags.get(country_name, '🌍')
+    return flags.get(country_name, '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji>')
 
 
 async def get_users_by_countries(db: AsyncSession) -> dict:
@@ -90,9 +90,9 @@ async def show_subscriptions_menu(callback: types.CallbackQuery, db_user: User, 
     stats = await get_subscriptions_statistics(db)
 
     text = f"""
-📱 <b>Управление подписками</b>
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Управление подписками</b>
 
-📊 <b>Статистика:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика:</b>
 - Всего: {stats['total_subscriptions']}
 - Активных: {stats['active_subscriptions']}
 - Платных: {stats['paid_subscriptions']}
@@ -129,10 +129,10 @@ async def show_subscriptions_list(callback: types.CallbackQuery, db_user: User, 
     total_pages = (total_count + 9) // 10
 
     if not subscriptions:
-        text = '📱 <b>Список подписок</b>\n\n❌ Подписки не найдены.'
+        text = '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Список подписок</b>\n\n❌ Подписки не найдены.'
     else:
-        text = '📱 <b>Список подписок</b>\n\n'
-        text += f'📊 Всего: {total_count} | Страница: {page}/{total_pages}\n\n'
+        text = '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Список подписок</b>\n\n'
+        text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Всего: {total_count} | Страница: {page}/{total_pages}\n\n'
 
         for i, sub in enumerate(subscriptions, 1 + (page - 1) * 10):
             user_info = (
@@ -146,7 +146,7 @@ async def show_subscriptions_list(callback: types.CallbackQuery, db_user: User, 
             text += f'{i}. {sub_type} {user_info}\n'
             text += f'   {status} | До: {format_datetime(sub.end_date)}\n'
             if sub.device_limit is not None:
-                text += f'   📱 Устройств: {Texts.format_device_limit(sub.device_limit)}\n'
+                text += f'   <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройств: {Texts.format_device_limit(sub.device_limit)}\n'
             text += '\n'
 
     keyboard = []
@@ -182,9 +182,9 @@ async def show_expiring_subscriptions(callback: types.CallbackQuery, db_user: Us
     expired = await get_expired_subscriptions(db)
 
     text = f"""
-⏰ <b>Истекающие подписки</b>
+<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> <b>Истекающие подписки</b>
 
-📊 <b>Статистика:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика:</b>
 - Истекают через 3 дня: {len(expiring_3d)}
 - Истекают завтра: {len(expiring_1d)}
 - Уже истекли: {len(expired)}
@@ -237,14 +237,14 @@ async def show_subscriptions_stats(callback: types.CallbackQuery, db_user: User,
     expired = await get_expired_subscriptions(db)
 
     text = f"""
-📊 <b>Детальная статистика подписок</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Детальная статистика подписок</b>
 
-<b>📱 Общая информация:</b>
+<b><tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Общая информация:</b>
 • Всего подписок: {stats['total_subscriptions']}
 • Активных: {stats['active_subscriptions']}
 • Неактивных: {stats['total_subscriptions'] - stats['active_subscriptions']}
 
-<b>💎 По типам:</b>
+<b><tg-emoji emoji-id=\"5462902520215002477\">💎</tg-emoji> По типам:</b>
 • Платных: {stats['paid_subscriptions']}
 • Триальных: {stats['trial_subscriptions']}
 
@@ -253,7 +253,7 @@ async def show_subscriptions_stats(callback: types.CallbackQuery, db_user: User,
 • За неделю: {stats['purchased_week']}
 • За месяц: {stats['purchased_month']}
 
-<b>⏰ Истечение:</b>
+<b><tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> Истечение:</b>
 • Истекают через 3 дня: {len(expiring_3d)}
 • Истекают через 7 дней: {len(expiring_7d)}
 • Уже истекли: {len(expired)}
@@ -287,7 +287,7 @@ async def show_countries_management(callback: types.CallbackQuery, db_user: User
         nodes_data = await remnawave_service.get_all_nodes()
         squads_data = await remnawave_service.get_all_squads()
 
-        text = '🌍 <b>Управление странами</b>\n\n'
+        text = '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Управление странами</b>\n\n'
 
         if nodes_data:
             text += '<b>Доступные серверы:</b>\n'
@@ -394,7 +394,7 @@ async def send_expiry_reminders(callback: types.CallbackQuery, db_user: User, db
 
 Не забудьте продлить подписку, чтобы не потерять доступ к серверам.
 
-💎 Продлить подписку можно в главном меню.
+<tg-emoji emoji-id=\"5462902520215002477\">💎</tg-emoji> Продлить подписку можно в главном меню.
 """
 
                 await callback.bot.send_message(chat_id=user.telegram_id, text=reminder_text)

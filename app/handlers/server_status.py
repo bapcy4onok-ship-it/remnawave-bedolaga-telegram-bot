@@ -90,7 +90,7 @@ def _build_status_message(
 
     current_online, current_offline = pages[current_index] if pages else ([], [])
 
-    lines: list[str] = [texts.t('SERVER_STATUS_TITLE', '📊 <b>Статус серверов</b>')]
+    lines: list[str] = [texts.t('SERVER_STATUS_TITLE', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статус серверов</b>')]
 
     if total_servers == 0:
         lines.append('')

@@ -251,7 +251,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
         else:
             actual_status = 'paid_active'
             status_display = texts.t('SUBSCRIPTION_STATUS_ACTIVE', 'Активна')
-            status_emoji = '💎'
+            status_emoji = '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji>'
     else:
         actual_status = 'unknown'
         status_display = texts.t('SUBSCRIPTION_STATUS_UNKNOWN', 'Неизвестно')
@@ -448,13 +448,13 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
             """👤 {full_name}
 🆔 ID: <code>{telegram_id}</code>
 💰 Баланс: {balance}
-📱 Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
 
-📱 Информация о подписке
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Информация о подписке
 🎭 Тип: {subscription_type}
 📈 Трафик: {traffic}
-🌍 Серверы: {servers}
-📱 Устройства: {devices_used} / {device_limit}""",
+<tg-emoji emoji-id=\"5465166522030764559\">🌍</tg-emoji> Серверы: {servers}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Устройства: {devices_used} / {device_limit}""",
         )
     else:
         message_template = texts.t(
@@ -462,20 +462,20 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
             """👤 {full_name}
 🆔 ID: <code>{telegram_id}</code>
 💰 Баланс: {balance}
-📱 Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Подписка: {status_emoji} {status_display}{warning}{tariff_info_block}
 
-📱 Информация о подписке
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Информация о подписке
 🎭 Тип: {subscription_type}
 📅 Действует до: {end_date}
-⏰ Осталось: {time_left}
+<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> Осталось: {time_left}
 📈 Трафик: {traffic}
-🌍 Серверы: {servers}
-📱 Устройства: {devices_used} / {device_limit}""",
+<tg-emoji emoji-id=\"5465166522030764559\">🌍</tg-emoji> Серверы: {servers}
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Устройства: {devices_used} / {device_limit}""",
         )
 
     if not show_devices:
         message_template = message_template.replace(
-            '\n📱 Устройства: {devices_used} / {device_limit}',
+            '\n<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {devices_used} / {device_limit}',
             '',
         )
 
@@ -501,7 +501,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
     if show_devices and devices_list:
         message += '\n\n' + texts.t(
             'SUBSCRIPTION_CONNECTED_DEVICES_TITLE',
-            '<blockquote>📱 <b>Подключенные устройства:</b>\n',
+            '<blockquote><tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Подключенные устройства:</b>\n',
         )
         for device in devices_list[:5]:
             platform = device.get('platform', 'Unknown')
@@ -586,7 +586,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
         ).format(subscription_url=subscription_link_display)
         message += '\n\n' + texts.t(
             'SUBSCRIPTION_CONNECT_LINK_PROMPT',
-            '📱 Скопируйте ссылку и добавьте в ваше VPN приложение',
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Скопируйте ссылку и добавьте в ваше VPN приложение',
         )
 
     await callback.message.edit_text(
@@ -697,7 +697,7 @@ async def show_trial_offer(callback: types.CallbackQuery, db_user: User, db: Asy
     if settings.is_devices_selection_enabled() or trial_tariff:
         devices_line_template = texts.t(
             'TRIAL_AVAILABLE_DEVICES_LINE',
-            '\n📱 <b>Устройства:</b> {devices} шт.',
+            '\n<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Устройства:</b> {devices} шт.',
         )
         devices_line = devices_line_template.format(
             devices=trial_device_limit,
@@ -858,8 +858,8 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
             texts.t('PAID_TRIAL_HEADER', '⚡ <b>Пробная подписка</b>'),
             '',
             f'📅 {texts.t("PERIOD", "Период")}: {paid_trial_days} {texts.t("DAYS", "дней")}',
-            f'📊 {texts.t("TRAFFIC", "Трафик")}: {traffic_label}',
-            f'📱 {texts.t("DEVICES", "Устройства")}: {paid_trial_devices}',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {texts.t("TRAFFIC", "Трафик")}: {traffic_label}',
+            f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> {texts.t("DEVICES", "Устройства")}: {paid_trial_devices}',
             '',
             f'💰 {texts.t("PRICE", "Стоимость")}: {settings.format_price(trial_price_kopeks)}',
             f'💳 {texts.t("YOUR_BALANCE", "Ваш баланс")}: {settings.format_price(user_balance_kopeks)}',
@@ -1127,7 +1127,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                     + '\n\n'
                     + texts.t(
                         'SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT',
-                        '📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
+                        '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
                     )
                 )
             elif hide_subscription_link:
@@ -1140,7 +1140,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                     + '\n\n'
                     + texts.t(
                         'SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT',
-                        '📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
+                        '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
                     )
                 )
             else:
@@ -1152,7 +1152,7 @@ async def activate_trial(callback: types.CallbackQuery, db_user: User, db: Async
                 trial_success_text = (
                     f'{texts.TRIAL_ACTIVATED}\n\n'
                     f'{subscription_import_link}\n\n'
-                    f'{texts.t("SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT", "📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве")}'
+                    f'{texts.t("SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT", "<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве")}'
                 )
 
             trial_success_text += payment_note
@@ -1591,8 +1591,8 @@ async def return_to_saved_cart(callback: types.CallbackQuery, state: FSMContext,
         '🛒 Восстановленная корзина',
         '',
         f'📅 Период: {period_display}',
-        f'📊 Трафик: {traffic_display}',
-        f'🌍 Страны: {", ".join(selected_countries_names)}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic_display}',
+        f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Страны: {", ".join(selected_countries_names)}',
     ]
 
     if settings.is_devices_selection_enabled():
@@ -1600,12 +1600,12 @@ async def return_to_saved_cart(callback: types.CallbackQuery, state: FSMContext,
         if devices_value is None:
             devices_value = prepared_cart_data.get('device_limit')
         if devices_value is not None:
-            summary_lines.append(f'📱 Устройства: {devices_value}')
+            summary_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {devices_value}')
 
     summary_lines.extend(
         [
             '',
-            f'💎 Общая стоимость: {texts.format_price(total_price)}',
+            f'<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Общая стоимость: {texts.format_price(total_price)}',
             '',
             'Подтверждаете покупку?',
         ]
@@ -1805,17 +1805,17 @@ async def handle_extend_subscription(
     )
 
     renewal_lines = [
-        '⏰ Продление подписки',
+        '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Продление подписки',
         '',
         f'Осталось дней: {subscription.days_left}',
         '',
         '<b>Ваша текущая конфигурация:</b>',
-        f'🌍 Серверов: {len(subscription.connected_squads or [])}',
-        f'📊 Трафик: {texts.format_traffic(subscription.traffic_limit_gb)}',
+        f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Серверов: {len(subscription.connected_squads or [])}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {texts.format_traffic(subscription.traffic_limit_gb)}',
     ]
 
     if settings.is_devices_selection_enabled():
-        renewal_lines.append(f'📱 Устройств: {Texts.format_device_limit(subscription.device_limit)}')
+        renewal_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройств: {Texts.format_device_limit(subscription.device_limit)}')
 
     renewal_lines.extend(
         [
@@ -2023,7 +2023,7 @@ async def confirm_extend_subscription(
 
     success_message = (
         '✅ Подписка успешно продлена!\n\n'
-        f'⏰ Добавлено: {days} дней\n'
+        f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Добавлено: {days} дней\n'
         f'Действует до: {format_local_datetime(refreshed_end_date, "%d.%m.%Y %H:%M")}\n\n'
         f'💰 Списано: {texts.format_price(price)}'
     )
@@ -2031,7 +2031,7 @@ async def confirm_extend_subscription(
     # Добавляем уведомление о сбросе трафика
     if settings.is_traffic_fixed() and result.subscription.traffic_limit_gb != old_traffic_gb:
         fixed_limit = settings.get_fixed_traffic_limit()
-        success_message += f'\n\n📊 Трафик сброшен до {fixed_limit} ГБ'
+        success_message += f'\n\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик сброшен до {fixed_limit} ГБ'
 
     if promo_offer_discount > 0:
         success_message += f' (включая доп. скидку {offer_pct}%: -{texts.format_price(promo_offer_discount)})'
@@ -2686,7 +2686,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                     + '\n\n'
                     + texts.t(
                         'SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT',
-                        '📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
+                        '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
                     )
                 )
             elif hide_subscription_link:
@@ -2699,7 +2699,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                     + '\n\n'
                     + texts.t(
                         'SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT',
-                        '📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
+                        '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
                     )
                 )
             else:
@@ -2711,7 +2711,7 @@ async def confirm_purchase(callback: types.CallbackQuery, state: FSMContext, db_
                 success_text = (
                     f'{texts.SUBSCRIPTION_PURCHASED}\n\n'
                     f'{import_link_section}\n\n'
-                    f'{texts.t("SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT", "📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве")}'
+                    f'{texts.t("SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT", "<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве")}'
                 )
 
             if discount_note:
@@ -2966,17 +2966,17 @@ async def handle_subscription_settings(callback: types.CallbackQuery, db_user: U
         'SUBSCRIPTION_SETTINGS_OVERVIEW',
         (
             '⚙️ <b>Настройки подписки</b>\n\n'
-            '📊 <b>Текущие параметры:</b>\n'
-            '🌐 Стран: {countries_count}\n'
+            '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Текущие параметры:</b>\n'
+            '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Стран: {countries_count}\n'
             '📈 Трафик: {traffic_used} / {traffic_limit}\n'
-            '📱 Устройства: {devices_used} / {devices_limit}\n\n'
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {devices_used} / {devices_limit}\n\n'
             'Выберите что хотите изменить:'
         ),
     )
 
     if not show_devices:
         settings_template = settings_template.replace(
-            '\n📱 Устройства: {devices_used} / {devices_limit}',
+            '\n<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {devices_used} / {devices_limit}',
             '',
         )
 
@@ -3456,7 +3456,7 @@ async def handle_trial_pay_with_balance(callback: types.CallbackQuery, db_user: 
                     + '\n\n'
                     + texts.t(
                         'SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT',
-                        '📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
+                        '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
                     )
                 )
             elif hide_subscription_link:
@@ -3469,7 +3469,7 @@ async def handle_trial_pay_with_balance(callback: types.CallbackQuery, db_user: 
                     + '\n\n'
                     + texts.t(
                         'SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT',
-                        '📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
+                        '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве',
                     )
                 )
             else:
@@ -3481,7 +3481,7 @@ async def handle_trial_pay_with_balance(callback: types.CallbackQuery, db_user: 
                 trial_success_text = (
                     f'{texts.TRIAL_ACTIVATED}\n\n'
                     f'{subscription_import_link}\n\n'
-                    f'{texts.t("SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT", "📱 Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве")}'
+                    f'{texts.t("SUBSCRIPTION_IMPORT_INSTRUCTION_PROMPT", "<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Нажмите кнопку ниже, чтобы получить инструкцию по настройке VPN на вашем устройстве")}'
                 )
 
             trial_success_text += payment_note
@@ -4416,12 +4416,12 @@ async def handle_simple_subscription_purchase(
         ]
 
         if settings.is_devices_selection_enabled():
-            simple_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+            simple_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
         simple_lines.extend(
             [
-                f'📊 Трафик: {traffic_text}',
-                f'🌍 Сервер: {"Любой доступный" if not subscription_params["squad_uuid"] else "Выбранный"}',
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic_text}',
+                f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сервер: {"Любой доступный" if not subscription_params["squad_uuid"] else "Выбранный"}',
                 '',
                 f'💰 Стоимость: {settings.format_price(price_kopeks)}',
                 f'💳 Ваш баланс: {settings.format_price(user_balance_kopeks)}',
@@ -4456,12 +4456,12 @@ async def handle_simple_subscription_purchase(
         ]
 
         if settings.is_devices_selection_enabled():
-            simple_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+            simple_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
         simple_lines.extend(
             [
-                f'📊 Трафик: {traffic_text}',
-                f'🌍 Сервер: {"Любой доступный" if not subscription_params["squad_uuid"] else "Выбранный"}',
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic_text}',
+                f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сервер: {"Любой доступный" if not subscription_params["squad_uuid"] else "Выбранный"}',
                 '',
                 f'💰 Стоимость: {settings.format_price(price_kopeks)}',
                 f'💳 Ваш баланс: {settings.format_price(user_balance_kopeks)}',
@@ -4715,7 +4715,7 @@ async def _extend_existing_subscription(
     # Отправляем сообщение пользователю
     success_message = (
         '✅ Подписка успешно продлена!\n\n'
-        f'⏰ Добавлено: {period_days} дней\n'
+        f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Добавлено: {period_days} дней\n'
         f'Действует до: {format_local_datetime(new_end_date, "%d.%m.%Y %H:%M")}\n\n'
         f'💰 Списано: {texts.format_price(price_kopeks)}'
     )

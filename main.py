@@ -369,7 +369,7 @@ async def main():
 
         async with timeline.stage(
             'Сервис отчетов',
-            '📊',
+            '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji>',
             success_message='Сервис отчетов готов',
         ) as stage:
             try:
@@ -569,7 +569,7 @@ async def main():
 
         async with timeline.stage(
             'Единый веб-сервер',
-            '🌐',
+            '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji>',
             success_message='Веб-сервер запущен',
         ) as stage:
             should_start_web_app = (
@@ -659,7 +659,7 @@ async def main():
 
         async with timeline.stage(
             'Мониторинг трафика',
-            '📊',
+            '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji>',
             success_message='Мониторинг трафика запущен',
         ) as stage:
             if traffic_monitoring_scheduler.is_enabled():

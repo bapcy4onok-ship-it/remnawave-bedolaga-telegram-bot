@@ -168,15 +168,15 @@ async def start_simple_subscription_purchase(
     ]
 
     if show_devices:
-        message_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+        message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
     traffic_limit_gb = subscription_params['traffic_limit_gb']
     traffic_label = 'Безлимит' if traffic_limit_gb == 0 else f'{traffic_limit_gb} ГБ'
 
     message_lines.extend(
         [
-            f'📊 Трафик: {traffic_label}',
-            f'🌍 Сервер: {server_label}',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic_label}',
+            f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сервер: {server_label}',
             '',
             f'💰 Стоимость: {settings.format_price(price_kopeks)}',
             f'💳 Ваш баланс: {settings.format_price(user_balance_kopeks)}',
@@ -571,15 +571,15 @@ async def handle_simple_subscription_pay_with_balance(
         ]
 
         if show_devices:
-            success_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+            success_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
         success_traffic_gb = subscription_params['traffic_limit_gb']
         success_traffic_label = 'Безлимит' if success_traffic_gb == 0 else f'{success_traffic_gb} ГБ'
 
         success_lines.extend(
             [
-                f'📊 Трафик: {success_traffic_label}',
-                f'🌍 Сервер: {server_label}',
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {success_traffic_label}',
+                f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сервер: {server_label}',
                 '',
                 f'💰 Списано с баланса: {settings.format_price(price_kopeks)}',
                 f'💳 Ваш баланс: {settings.format_price(db_user.balance_kopeks)}',
@@ -774,15 +774,15 @@ async def handle_simple_subscription_other_payment_methods(
     ]
 
     if show_devices:
-        message_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+        message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
     payment_traffic_gb = subscription_params['traffic_limit_gb']
     payment_traffic_label = 'Безлимит' if payment_traffic_gb == 0 else f'{payment_traffic_gb} ГБ'
 
     message_lines.extend(
         [
-            f'📊 Трафик: {payment_traffic_label}',
-            f'🌍 Сервер: {server_label}',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {payment_traffic_label}',
+            f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сервер: {server_label}',
             '',
             f'💰 Стоимость: {settings.format_price(price_kopeks)}',
             '',
@@ -1057,14 +1057,14 @@ async def handle_simple_subscription_payment_method(
             ]
 
             if show_devices:
-                message_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+                message_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
             yookassa_traffic_gb = subscription_params['traffic_limit_gb']
             yookassa_traffic_label = 'Безлимит' if yookassa_traffic_gb == 0 else f'{yookassa_traffic_gb} ГБ'
 
             message_lines.extend(
                 [
-                    f'📊 Трафик: {yookassa_traffic_label}',
+                    f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {yookassa_traffic_label}',
                     f'💰 Сумма: {settings.format_price(price_kopeks)}',
                     f'🆔 ID платежа: {payment_result["yookassa_payment_id"][:8]}...',
                     '',
@@ -1076,7 +1076,7 @@ async def handle_simple_subscription_payment_method(
             # Добавляем инструкции в зависимости от доступных способов оплаты
             if not confirmation_url:
                 message_text += (
-                    f'📱 <b>Инструкция по оплате:</b>\n'
+                    f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция по оплате:</b>\n'
                     f'1. Откройте приложение вашего банка\n'
                     f'2. Найдите функцию оплаты по реквизитам или перевод по СБП\n'
                     f'3. Введите ID платежа: <code>{payment_result["yookassa_payment_id"]}</code>\n'
@@ -1199,7 +1199,7 @@ async def handle_simple_subscription_payment_method(
                 f'🪙 Актив: {crypto_result["asset"]}\n'
                 f'💱 Курс: 1 USD ≈ {usd_rate:.2f} ₽\n'
                 f'🆔 ID платежа: {crypto_result["invoice_id"][:8]}...\n\n'
-                '📱 <b>Инструкция:</b>\n'
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
                 "1. Нажмите кнопку 'Оплатить через CryptoBot'\n"
                 '2. Выберите актив и следуйте подсказкам\n'
                 '3. Подтвердите перевод\n'
@@ -1309,7 +1309,7 @@ async def handle_simple_subscription_payment_method(
             message_lines.extend(
                 [
                     '',
-                    '📱 <b>Инструкция:</b>',
+                    '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>',
                     "1. Нажмите кнопку 'Оплатить через Heleket'",
                     '2. Следуйте подсказкам на странице оплаты',
                     '3. Подтвердите перевод',
@@ -1396,7 +1396,7 @@ async def handle_simple_subscription_payment_method(
                     '💳 <b>Оплата через {mulenpay_name_html}</b>\n\n'
                     '💰 Сумма: {amount}\n'
                     '🆔 ID платежа: {payment_id}\n\n'
-                    '📱 <b>Инструкция:</b>\n'
+                    '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
                     "1. Нажмите кнопку 'Оплатить через {mulenpay_name}'\n"
                     '2. Следуйте подсказкам платежной системы\n'
                     '3. Подтвердите перевод\n'
@@ -1562,7 +1562,7 @@ async def handle_simple_subscription_payment_method(
                     '🏦 <b>Оплата через PayPalych</b>\n\n'
                     '💰 Сумма: {amount}\n'
                     '🆔 ID счета: {bill_id}\n\n'
-                    '📱 <b>Инструкция:</b>\n{steps}\n\n'
+                    '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n{steps}\n\n'
                     '<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
                 ),
             )
@@ -1662,7 +1662,7 @@ async def handle_simple_subscription_payment_method(
                     '💳 <b>Оплата через WATA</b>\n\n'
                     '💰 Сумма: {amount}\n'
                     '🆔 ID платежа: {payment_id}\n\n'
-                    '📱 <b>Инструкция:</b>\n'
+                    '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
                     "1. Нажмите кнопку 'Оплатить через WATA'\n"
                     '2. Следуйте подсказкам платежной системы\n'
                     '3. Подтвердите перевод\n'
@@ -1742,7 +1742,7 @@ async def check_simple_pal24_payment_status(
             '',
             f'🆔 ID счета: {payment.bill_id}',
             f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}',
-            f'📊 Статус: {emoji} {status_text}',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}',
             f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M")}',
         ]
 
@@ -1878,7 +1878,7 @@ async def check_simple_mulenpay_payment_status(
         '',
         f'🆔 ID: {payment.mulen_payment_id or payment.id}',
         f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}',
-        f'📊 Статус: {emoji} {status_text}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}',
         f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M") if payment.created_at else "—"}',
     ]
 
@@ -1948,7 +1948,7 @@ async def check_simple_cryptobot_payment_status(
         '',
         f'🆔 ID: {payment.invoice_id}',
         f'💰 Сумма: {payment.amount} {payment.asset}',
-        f'📊 Статус: {emoji} {status_text}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}',
         f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M") if payment.created_at else "—"}',
     ]
 
@@ -2025,7 +2025,7 @@ async def check_simple_heleket_payment_status(
         '',
         f'🆔 UUID: {payment.uuid[:8]}...',
         f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}',
-        f'📊 Статус: {emoji} {status_text}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}',
         f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M") if payment.created_at else "—"}',
     ]
 
@@ -2097,7 +2097,7 @@ async def check_simple_wata_payment_status(
         '',
         f'🆔 ID: {payment.payment_link_id}',
         f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}',
-        f'📊 Статус: {emoji} {status_text}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}',
         f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M") if payment.created_at else "—"}',
     ]
 
@@ -2319,15 +2319,15 @@ async def confirm_simple_subscription_purchase(
         ]
 
         if show_devices:
-            success_lines.append(f'📱 Устройства: {subscription_params["device_limit"]}')
+            success_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {subscription_params["device_limit"]}')
 
         success_traffic_gb = subscription_params['traffic_limit_gb']
         success_traffic_label = 'Безлимит' if success_traffic_gb == 0 else f'{success_traffic_gb} ГБ'
 
         success_lines.extend(
             [
-                f'📊 Трафик: {success_traffic_label}',
-                f'🌍 Сервер: {server_label}',
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {success_traffic_label}',
+                f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сервер: {server_label}',
                 '',
                 f'💰 Списано с баланса: {settings.format_price(price_kopeks)}',
                 f'💳 Ваш баланс: {settings.format_price(db_user.balance_kopeks)}',

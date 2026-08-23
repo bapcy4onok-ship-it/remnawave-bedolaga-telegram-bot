@@ -111,8 +111,8 @@ async def handle_autopay_menu(callback: types.CallbackQuery, db_user: User, db: 
         'AUTOPAY_MENU_TEXT',
         (
             '💳 <b>Автоплатеж</b>\n\n'
-            '📊 <b>Статус:</b> {status}\n'
-            '⏰ <b>Списание за:</b> {days} дн. до окончания\n'
+            '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статус:</b> {status}\n'
+            '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Списание за:</b> {days} дн. до окончания\n'
             '📅 <b>Период продления:</b> {period}\n\n'
             'Выберите действие:'
         ),
@@ -221,7 +221,7 @@ async def show_autopay_days(callback: types.CallbackQuery, db_user: User):
     await callback.message.edit_text(
         texts.t(
             'AUTOPAY_SELECT_DAYS_PROMPT',
-            '⏰ Выберите за сколько дней до окончания списывать средства:',
+            '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Выберите за сколько дней до окончания списывать средства:',
         ),
         reply_markup=get_autopay_days_keyboard(db_user.language),
     )
@@ -390,7 +390,7 @@ async def handle_sbp_recurring_menu(
 
     text = texts.t(
         'SBP_RECURRING_MENU_TEXT',
-        '⚡ <b>Автопродление через СБП</b>\n\n📊 <b>Статус:</b> {status}',
+        '⚡ <b>Автопродление через СБП</b>\n\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статус:</b> {status}',
     ).format(status=status_text)
 
     if record is not None:

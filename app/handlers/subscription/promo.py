@@ -345,10 +345,10 @@ async def claim_discount_offer(
     subscription = getattr(db_user, 'subscription', None)
 
     if offer_type == 'purchase_discount':
-        button_text = texts.get('MENU_BUY_SUBSCRIPTION', '💎 Купить подписку')
+        button_text = texts.get('MENU_BUY_SUBSCRIPTION', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку')
         button_callback = 'subscription_upgrade'
     elif offer_type == 'extend_discount':
-        button_text = texts.get('SUBSCRIPTION_EXTEND', '💎 Продлить подписку')
+        button_text = texts.get('SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку')
         button_callback = 'subscription_extend'
     else:
         has_active_paid_subscription = bool(
@@ -356,10 +356,10 @@ async def claim_discount_offer(
         )
 
         if has_active_paid_subscription:
-            button_text = texts.get('SUBSCRIPTION_EXTEND', '💎 Продлить подписку')
+            button_text = texts.get('SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку')
             button_callback = 'subscription_extend'
         else:
-            button_text = texts.get('MENU_BUY_SUBSCRIPTION', '💎 Купить подписку')
+            button_text = texts.get('MENU_BUY_SUBSCRIPTION', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку')
             button_callback = 'subscription_upgrade'
 
     buy_keyboard = InlineKeyboardMarkup(

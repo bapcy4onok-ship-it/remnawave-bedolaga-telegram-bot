@@ -132,21 +132,21 @@ def _build_group_discount_lines(group: PromoGroup, texts, language: str) -> list
 
     if getattr(group, 'server_discount_percent', 0) > 0:
         lines.append(
-            texts.t('PROMO_GROUP_DISCOUNT_SERVERS', '🌍 Серверы: {percent}%').format(
+            texts.t('PROMO_GROUP_DISCOUNT_SERVERS', '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Серверы: {percent}%').format(
                 percent=group.server_discount_percent
             )
         )
 
     if getattr(group, 'traffic_discount_percent', 0) > 0:
         lines.append(
-            texts.t('PROMO_GROUP_DISCOUNT_TRAFFIC', '📊 Трафик: {percent}%').format(
+            texts.t('PROMO_GROUP_DISCOUNT_TRAFFIC', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {percent}%').format(
                 percent=group.traffic_discount_percent
             )
         )
 
     if getattr(group, 'device_discount_percent', 0) > 0:
         lines.append(
-            texts.t('PROMO_GROUP_DISCOUNT_DEVICES', '📱 Доп. устройства: {percent}%').format(
+            texts.t('PROMO_GROUP_DISCOUNT_DEVICES', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Доп. устройства: {percent}%').format(
                 percent=group.device_discount_percent
             )
         )
@@ -1138,7 +1138,7 @@ async def show_language_menu(
 
     await edit_or_answer_photo(
         callback=callback,
-        caption=texts.t('LANGUAGE_PROMPT', '🌐 Выберите язык интерфейса:'),
+        caption=texts.t('LANGUAGE_PROMPT', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Выберите язык интерфейса:'),
         keyboard=get_language_selection_keyboard(
             current_language=db_user.language,
             include_back=True,
@@ -1393,12 +1393,12 @@ def _get_subscription_status(user: User, texts, is_daily_tariff: bool = False) -
     if actual_status == 'active':
         # Для суточных тарифов не показываем предупреждение об истечении
         if is_daily_tariff:
-            return texts.t('SUB_STATUS_DAILY_ACTIVE', '💎 Активна')
+            return texts.t('SUB_STATUS_DAILY_ACTIVE', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Активна')
 
         if days_left > 7 and end_date_text:
             return texts.t(
                 'SUB_STATUS_ACTIVE_LONG',
-                '💎 Активна\n📅 до {end_date} ({days} дн.)',
+                '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Активна\n📅 до {end_date} ({days} дн.)',
             ).format(
                 end_date=end_date_text,
                 days=days_left,
@@ -1406,33 +1406,39 @@ def _get_subscription_status(user: User, texts, is_daily_tariff: bool = False) -
         if days_left > 1:
             return texts.t(
                 'SUB_STATUS_ACTIVE_FEW_DAYS',
-                '💎 Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает через {days} дн.',
+                '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает через {days} дн.',
             ).format(days=days_left)
         if days_left == 1:
             return texts.t(
                 'SUB_STATUS_ACTIVE_TOMORROW',
-                '💎 Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает завтра!',
+                '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает завтра!',
             )
         return texts.t(
             'SUB_STATUS_ACTIVE_TODAY',
-            '💎 Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает сегодня!',
+            '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Активна\n<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> истекает сегодня!',
         )
 
     return texts.t('SUB_STATUS_UNKNOWN', '❓ Неизвестно')
 
 
 def _insert_random_message(base_text: str, random_message: str, action_prompt: str) -> str:
-    if not random_message:
+    """Вставляет блок перед «Выберите действие:», нормализуя отступы.
+
+    В шаблоне MAIN_MENU перед подсказкой действия уже стоит пустая строка (`\\n\\n`),
+    поэтому вставляемый блок НЕ должен добавлять свой ведущий перевод строки — иначе
+    в меню появляется двойной отступ. Здесь хвост предыдущей части и края блока
+    зачищаются, а разделителем всегда служит ровно одна пустая строка.
+    """
+    block = (random_message or '').strip('\n')
+    if not block:
         return base_text
 
     prompt = action_prompt or ''
     if prompt and prompt in base_text:
-        parts = base_text.split(prompt, 1)
-        if len(parts) == 2:
-            return f'{parts[0]}\n{random_message}\n\n{prompt}{parts[1]}'
-        return base_text.replace(prompt, f'\n{random_message}\n\n{prompt}', 1)
+        head, tail = base_text.split(prompt, 1)
+        return f'{head.rstrip()}\n\n{block}\n\n{prompt}{tail}'
 
-    return f'{base_text}\n\n{random_message}'
+    return f'{base_text.rstrip()}\n\n{block}'
 
 
 async def _get_multi_tariff_status(user, texts, db: AsyncSession) -> tuple[str, str]:
@@ -1496,8 +1502,7 @@ async def get_main_menu_text(user, texts, db: AsyncSession):
 
         if tariff_info_block:
             action_prompt_text = texts.t('MAIN_MENU_ACTION_PROMPT', 'Выберите действие:')
-            if action_prompt_text in base_text:
-                base_text = base_text.replace(action_prompt_text, f'{tariff_info_block}\n\n{action_prompt_text}')
+            base_text = _insert_random_message(base_text, tariff_info_block, action_prompt_text)
     else:
         # Single-tariff mode: legacy behavior
         tariff = None
@@ -1524,8 +1529,7 @@ async def get_main_menu_text(user, texts, db: AsyncSession):
 
         if tariff_info_block:
             action_prompt_text = texts.t('MAIN_MENU_ACTION_PROMPT', 'Выберите действие:')
-            if action_prompt_text in base_text:
-                base_text = base_text.replace(action_prompt_text, f'{tariff_info_block}\n\n{action_prompt_text}')
+            base_text = _insert_random_message(base_text, tariff_info_block, action_prompt_text)
 
     action_prompt = texts.t('MAIN_MENU_ACTION_PROMPT', 'Выберите действие:')
 

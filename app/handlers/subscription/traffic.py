@@ -88,7 +88,7 @@ async def handle_add_traffic(callback: types.CallbackQuery, db_user: User, db: A
                 )
             keyboard.append([types.InlineKeyboardButton(text='◀️ Назад', callback_data='back_to_menu')])
             await callback.message.edit_text(
-                '📊 <b>Докупить трафик</b>\n\nВыберите подписку:',
+                '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Докупить трафик</b>\n\nВыберите подписку:',
                 reply_markup=types.InlineKeyboardMarkup(inline_keyboard=keyboard),
             )
             await callback.answer()
@@ -420,7 +420,7 @@ async def confirm_reset_traffic(
         await callback.message.edit_text(
             f'✅ Трафик успешно сброшен!\n\n'
             f'🔄 Использованный трафик обнулен\n'
-            f'📊 Лимит: {texts.format_traffic(subscription.traffic_limit_gb)}',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Лимит: {texts.format_traffic(subscription.traffic_limit_gb)}',
             reply_markup=get_back_keyboard(db_user.language),
         )
 
@@ -476,7 +476,7 @@ async def get_traffic_packages_info() -> str:
                 gb_text = '♾️ Безлимит' if pkg['gb'] == 0 else f'{pkg["gb"]} ГБ'
                 info_lines.append(f'   • {gb_text}: {pkg["price"] // 100}₽')
 
-        info_lines.append(f'\n📊 Всего пакетов: {len(packages)}')
+        info_lines.append(f'\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Всего пакетов: {len(packages)}')
         info_lines.append(f'🟢 Активных: {len(enabled_packages)}')
         info_lines.append(f'🔴 Отключенных: {len(disabled_packages)}')
 
@@ -1014,13 +1014,13 @@ async def execute_switch_traffic(
 
         if new_traffic_gb > current_traffic:
             success_text = '✅ Лимит трафика увеличен!\n\n'
-            success_text += f'📊 Было: {texts.format_traffic(current_traffic)} → '
+            success_text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Было: {texts.format_traffic(current_traffic)} → '
             success_text += f'Стало: {texts.format_traffic(new_traffic_gb)}\n'
             if price_difference > 0:
                 success_text += f'💰 Списано: {texts.format_price(price_difference)}'
         elif new_traffic_gb < current_traffic:
             success_text = '✅ Лимит трафика уменьшен!\n\n'
-            success_text += f'📊 Было: {texts.format_traffic(current_traffic)} → '
+            success_text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Было: {texts.format_traffic(current_traffic)} → '
             success_text += f'Стало: {texts.format_traffic(new_traffic_gb)}\n'
             success_text += 'ℹ️ Возврат средств не производится'
 

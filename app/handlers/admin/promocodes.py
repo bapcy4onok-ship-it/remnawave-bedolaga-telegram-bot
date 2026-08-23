@@ -41,7 +41,7 @@ async def show_promocodes_menu(callback: types.CallbackQuery, db_user: User, db:
     text = f"""
 🎫 <b>Управление промокодами</b>
 
-📊 <b>Статистика:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика:</b>
 - Всего промокодов: {total_codes}
 - Активных: {active_codes}
 - Неактивных: {total_codes - active_codes}
@@ -88,7 +88,7 @@ async def show_promocodes_list(callback: types.CallbackQuery, db_user: User, db:
         }.get(promo.type, '🎫')
 
         text += f'{status_emoji} {type_emoji} <code>{promo.code}</code>\n'
-        text += f'📊 Использований: {promo.current_uses}/{promo.max_uses}\n'
+        text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Использований: {promo.current_uses}/{promo.max_uses}\n'
 
         if promo.type == PromoCodeType.BALANCE.value:
             text += f'💰 Бонус: {settings.format_price(promo.balance_bonus_kopeks)}\n'
@@ -113,7 +113,7 @@ async def show_promocodes_list(callback: types.CallbackQuery, db_user: User, db:
             text += f'🏷️ Промогруппа: {html.escape(promo.promo_group.name)}\n'
 
         if promo.valid_until:
-            text += f'⏰ До: {format_datetime(promo.valid_until)}\n'
+            text += f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> До: {format_datetime(promo.valid_until)}\n'
 
         keyboard.append([types.InlineKeyboardButton(text=f'🎫 {promo.code}', callback_data=f'promo_manage_{promo.id}')])
 
@@ -172,7 +172,7 @@ async def show_promocode_management(callback: types.CallbackQuery, db_user: User
 
 {type_emoji} <b>Код:</b> <code>{promo.code}</code>
 {status_emoji} <b>Статус:</b> {'Активен' if promo.is_active else 'Неактивен'}
-📊 <b>Использований:</b> {promo.current_uses}/{promo.max_uses}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Использований:</b> {promo.current_uses}/{promo.max_uses}
 """
 
     if promo.type == PromoCodeType.BALANCE.value:
@@ -200,7 +200,7 @@ async def show_promocode_management(callback: types.CallbackQuery, db_user: User
         text += f'🏷️ <b>Промогруппа:</b> {html.escape(promo.promo_group.name)}\n'
 
     if promo.valid_until:
-        text += f'⏰ <b>Действует до:</b> {format_datetime(promo.valid_until)}\n'
+        text += f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Действует до:</b> {format_datetime(promo.valid_until)}\n'
 
     first_purchase_only = getattr(promo, 'first_purchase_only', False)
     first_purchase_emoji = '✅' if first_purchase_only else '❌'
@@ -394,7 +394,7 @@ async def start_edit_promocode_uses(callback: types.CallbackQuery, db_user: User
     await state.update_data(editing_promo_id=promo_id, edit_action='uses')
 
     text = f"""
-📊 <b>Изменение максимального количества использований</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Изменение максимального количества использований</b>
 
 Введите новое количество использований:
 • Введите <b>0</b> для безлимитных использований
@@ -549,7 +549,7 @@ async def process_promo_group_selection(
         f'🏷️ <b>Промокод для промогруппы</b>\n\n'
         f'Промогруппа: {html.escape(promo_group.name)}\n'
         f'Приоритет: {promo_group.priority}\n\n'
-        f'📊 Введите количество использований промокода (или 0 для безлимита):'
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Введите количество использований промокода (или 0 для безлимита):'
     )
 
     await state.set_state(AdminStates.setting_promocode_uses)
@@ -588,7 +588,7 @@ async def process_promocode_value(message: types.Message, db_user: User, state: 
             await state.set_state(AdminStates.setting_promocode_combo_days)
             return
 
-        await message.answer('📊 Введите количество использований промокода (или 0 для безлимита):')
+        await message.answer('<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Введите количество использований промокода (или 0 для безлимита):')
         await state.set_state(AdminStates.setting_promocode_uses)
 
     except ValueError:
@@ -608,7 +608,7 @@ async def process_promocode_combo_days(message: types.Message, db_user: User, st
 
         await state.update_data(promocode_combo_days=days)
 
-        await message.answer('📊 Введите количество использований промокода (или 0 для безлимита):')
+        await message.answer('<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Введите количество использований промокода (или 0 для безлимита):')
         await state.set_state(AdminStates.setting_promocode_uses)
 
     except ValueError:
@@ -693,7 +693,7 @@ async def process_promocode_uses(message: types.Message, db_user: User, state: F
 
         await state.update_data(promocode_max_uses=max_uses)
 
-        await message.answer('⏰ Введите срок действия промокода в днях (или 0 для бессрочного):')
+        await message.answer('<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Введите срок действия промокода в днях (или 0 для бессрочного):')
         await state.set_state(AdminStates.setting_promocode_expiry)
 
     except ValueError:
@@ -777,7 +777,7 @@ async def process_promocode_expiry(message: types.Message, db_user: User, state:
         if promo_type == 'discount':
             await state.update_data(promocode_expiry_days=expiry_days)
             await message.answer(
-                f'⏰ <b>Промокод:</b> <code>{code}</code>\n\n'
+                f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Промокод:</b> <code>{code}</code>\n\n'
                 f'Введите срок действия скидки в часах (0-8760):\n'
                 f'0 = бессрочно до первой покупки'
             )
@@ -840,10 +840,10 @@ async def process_promocode_expiry(message: types.Message, db_user: User, state:
         elif promo_type == 'group' and promo_group_name:
             summary_text += f'🏷️ <b>Промогруппа:</b> {promo_group_name}\n'
 
-        summary_text += f'📊 <b>Использований:</b> {promocode.max_uses}\n'
+        summary_text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Использований:</b> {promocode.max_uses}\n'
 
         if promocode.valid_until:
-            summary_text += f'⏰ <b>Действует до:</b> {format_datetime(promocode.valid_until)}\n'
+            summary_text += f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Действует до:</b> {format_datetime(promocode.valid_until)}\n'
 
         await message.answer(
             summary_text,
@@ -905,11 +905,11 @@ async def process_discount_hours(message: types.Message, db_user: User, state: F
 """
 
         if discount_hours > 0:
-            summary_text += f'⏰ <b>Срок скидки:</b> {discount_hours} ч.\n'
+            summary_text += f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Срок скидки:</b> {discount_hours} ч.\n'
         else:
-            summary_text += '⏰ <b>Срок скидки:</b> до первой покупки\n'
+            summary_text += '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> <b>Срок скидки:</b> до первой покупки\n'
 
-        summary_text += f'📊 <b>Использований:</b> {promocode.max_uses}\n'
+        summary_text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Использований:</b> {promocode.max_uses}\n'
 
         if promocode.valid_until:
             summary_text += f'<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> <b>Промокод действует до:</b> {format_datetime(promocode.valid_until)}\n'
@@ -1041,7 +1041,7 @@ async def confirm_delete_promocode(callback: types.CallbackQuery, db_user: User,
 
 Вы действительно хотите удалить промокод <code>{promo.code}</code>?
 
-📊 <b>Информация о промокоде:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Информация о промокоде:</b>
 • Использований: {promo.current_uses}/{promo.max_uses}
 • Статус: {'Активен' if promo.is_active else 'Неактивен'}
 
@@ -1100,7 +1100,7 @@ async def show_promocode_stats(callback: types.CallbackQuery, db_user: User, db:
     stats = await get_promocode_statistics(db, promo_id)
 
     text = f"""
-📊 <b>Статистика промокода</b> <code>{promo.code}</code>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика промокода</b> <code>{promo.code}</code>
 
 📈 <b>Общая статистика:</b>
 - Всего использований: {stats['total_uses']}
@@ -1142,7 +1142,7 @@ async def show_general_promocode_stats(callback: types.CallbackQuery, db_user: U
     active_codes = await get_promocodes_count(db, is_active=True)
 
     text = f"""
-📊 <b>Общая статистика промокодов</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Общая статистика промокодов</b>
 
 📈 <b>Основные показатели:</b>
 - Всего промокодов: {total_codes}

@@ -303,7 +303,7 @@ async def show_messages_stats(callback: types.CallbackQuery, db_user: User, db: 
     stats = await get_user_messages_stats(db)
 
     text = (
-        '📊 <b>Статистика сообщений</b>\n\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статистика сообщений</b>\n\n'
         f'📝 Всего сообщений: <b>{stats["total_messages"]}</b>\n'
         f'🟢 Активных: <b>{stats["active_messages"]}</b>\n'
         f'🔴 Неактивных: <b>{stats["inactive_messages"]}</b>\n\n'

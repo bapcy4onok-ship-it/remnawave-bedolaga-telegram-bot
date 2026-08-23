@@ -40,7 +40,7 @@ def _build_server_edit_view(server):
     trial_status = '✅ Да' if server.is_trial_eligible else '⚪️ Нет'
 
     text = f"""
-🌐 <b>Редактирование сервера</b>
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> <b>Редактирование сервера</b>
 
 <b>Информация:</b>
 • ID: {server.id}
@@ -127,9 +127,9 @@ async def show_servers_menu(callback: types.CallbackQuery, db_user: User, db: As
     stats = await get_server_statistics(db)
 
     text = f"""
-🌐 <b>Управление серверами</b>
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> <b>Управление серверами</b>
 
-📊 <b>Статистика:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика:</b>
 • Всего серверов: {stats['total_servers']}
 • Доступные: {stats['available_servers']}
 • Недоступные: {stats['unavailable_servers']}
@@ -164,10 +164,10 @@ async def show_servers_list(callback: types.CallbackQuery, db_user: User, db: As
     total_pages = (total_count + 9) // 10
 
     if not servers:
-        text = '🌐 <b>Список серверов</b>\n\n❌ Серверы не найдены.'
+        text = '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Список серверов</b>\n\n❌ Серверы не найдены.'
     else:
-        text = '🌐 <b>Список серверов</b>\n\n'
-        text += f'📊 Всего: {total_count} | Страница: {page}/{total_pages}\n\n'
+        text = '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Список серверов</b>\n\n'
+        text += f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Всего: {total_count} | Страница: {page}/{total_pages}\n\n'
 
         for i, server in enumerate(servers, 1 + (page - 1) * 10):
             status_emoji = '✅' if server.is_available else '❌'
@@ -242,7 +242,7 @@ async def sync_servers_with_remnawave(callback: types.CallbackQuery, db_user: Us
         text = f"""
 ✅ <b>Синхронизация завершена</b>
 
-📊 <b>Результаты:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результаты:</b>
 • Создано новых серверов: {created}
 • Обновлено существующих: {updated}
 • Удалено отсутствующих: {removed}
@@ -321,7 +321,7 @@ async def show_server_users(callback: types.CallbackQuery, db_user: User, db: As
     safe_uuid = html.escape(server.squad_uuid or '—')
 
     header = [
-        '🌐 <b>Пользователи сервера</b>',
+        '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Пользователи сервера</b>',
         '',
         f'• Сервер: {safe_name}',
         f'• UUID: <code>{safe_uuid}</code>',
@@ -698,9 +698,9 @@ async def show_server_detailed_stats(callback: types.CallbackQuery, db_user: Use
     available_servers = await get_available_server_squads(db)
 
     text = f"""
-📊 <b>Подробная статистика серверов</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Подробная статистика серверов</b>
 
-<b>🌐 Общая информация:</b>
+<b><tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> Общая информация:</b>
 • Всего серверов: {stats['total_servers']}
 • Доступные: {stats['available_servers']}
 • Недоступные: {stats['unavailable_servers']}
@@ -750,7 +750,7 @@ async def start_server_edit_country(callback: types.CallbackQuery, state: FSMCon
     current_country = server.country_code or 'Не указан'
 
     await callback.message.edit_text(
-        f'🌍 <b>Редактирование кода страны</b>\n\n'
+        f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Редактирование кода страны</b>\n\n'
         f'Текущий код страны: <b>{current_country}</b>\n\n'
         f"Отправьте новый код страны (например: RU, US, DE) или '-' для удаления:",
         reply_markup=types.InlineKeyboardMarkup(
@@ -1086,7 +1086,7 @@ async def sync_server_user_counts_handler(callback: types.CallbackQuery, db_user
         text = f"""
 ✅ <b>Синхронизация завершена</b>
 
-📊 <b>Результат:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результат:</b>
 • Обновлено серверов: {updated_count}
 
 Счетчики пользователей синхронизированы с реальными данными.

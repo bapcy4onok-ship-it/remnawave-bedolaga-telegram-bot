@@ -110,7 +110,7 @@ _ADMIN_NODE_EVENTS: dict[str, str] = {
     'node.deleted': '🗑️ Нода удалена',
     'node.connection_lost': '🚨 Потеряно соединение с нодой',
     'node.connection_restored': '✅ Соединение с нодой восстановлено',
-    'node.traffic_notify': '📊 Уведомление о трафике ноды',
+    'node.traffic_notify': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Уведомление о трафике ноды',
 }
 
 _ADMIN_SERVICE_EVENTS: dict[str, str] = {

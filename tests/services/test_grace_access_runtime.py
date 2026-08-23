@@ -713,3 +713,75 @@ async def test_adopt_forwards_a_non_empty_squad_list():
     await _adopt_or_create(api, 'aBcD12', {'username': 'u', 'active_internal_squads': ['squad-1', 'squad-2']})
 
     assert api.update_user.await_args.kwargs['active_internal_squads'] == ['squad-1', 'squad-2']
+
+
+@pytest.mark.asyncio
+async def test_limited_reason_is_ignored_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GRACE_ACCESS_LIMITED_ENABLED=false закрывает единственную воронку выдачи.
+
+    В нашей панели статус ``limited`` означает бан, а не честно исчерпанный трафик,
+    поэтому grace по этой причине превратил бы блокировку в награду.
+    """
+    from app.config import settings as app_settings
+    from app.services import grace_access_runtime as runtime_module
+    from app.services.grace_access_runtime import GraceAccessMode, GraceAccessRuntime
+
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_LIMITED_ENABLED', False)
+
+    def explode() -> None:
+        raise AssertionError('limited-кандидат не должен доходить до базы')
+
+    monkeypatch.setattr(runtime_module, 'AsyncSessionLocal', explode)
+
+    runtime = GraceAccessRuntime()
+    runtime._mode = GraceAccessMode.ACTIVE
+
+    assert await runtime.consider_candidate(1, GraceReason.LIMITED, source='worker') is None
+
+
+@pytest.mark.asyncio
+async def test_expired_reason_survives_the_limited_switch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Выключение limited не должно задевать основную причину — expired."""
+    from app.config import settings as app_settings
+    from app.services import grace_access_runtime as runtime_module
+    from app.services.grace_access_runtime import GraceAccessMode, GraceAccessRuntime
+
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_LIMITED_ENABLED', False)
+
+    reached: list[str] = []
+
+    def marker() -> None:
+        reached.append('db')
+        raise RuntimeError('stop here')
+
+    monkeypatch.setattr(runtime_module, 'AsyncSessionLocal', marker)
+
+    runtime = GraceAccessRuntime()
+    runtime._mode = GraceAccessMode.OBSERVE
+
+    with pytest.raises(RuntimeError):
+        await runtime.consider_candidate(1, GraceReason.EXPIRED, source='worker')
+    assert reached == ['db']
+
+
+def test_limited_squad_uuid_is_not_required_when_limited_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """При выключенной причине пустой limited-сквад больше не валит запуск grace."""
+    from app.config import settings as app_settings
+    from app.services.grace_access_runtime import _validate_active_configuration
+
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_TRAFFIC_GB', 1)
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_EXPIRED_SQUAD_UUID', GRACE_SQUAD)
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_LIMITED_SQUAD_UUID', '')
+
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_LIMITED_ENABLED', False)
+    _validate_active_configuration()
+
+    monkeypatch.setattr(app_settings, 'GRACE_ACCESS_LIMITED_ENABLED', True)
+    with pytest.raises(ValueError, match='GRACE_ACCESS_LIMITED_SQUAD_UUID'):
+        _validate_active_configuration()

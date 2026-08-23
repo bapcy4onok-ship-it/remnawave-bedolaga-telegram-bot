@@ -238,7 +238,7 @@ def get_available_payment_methods() -> list[dict[str, str]]:
             {
                 'id': 'aurapay_sbp',
                 'name': sbp_name,
-                'icon': '📱',
+                'icon': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>',
                 'description': f'через {sbp_name}',
                 'callback': 'topup_aurapay_sbp',
             }
@@ -282,7 +282,7 @@ def get_available_payment_methods() -> list[dict[str, str]]:
             {
                 'id': 'lava_sbp',
                 'name': sbp_name,
-                'icon': '📱',
+                'icon': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>',
                 'description': f'через {lava_name}',
                 'callback': 'topup_lava_sbp',
             }
@@ -319,7 +319,7 @@ def get_available_payment_methods() -> list[dict[str, str]]:
             {
                 'id': 'cispay_sbp',
                 'name': sbp_name,
-                'icon': '📱',
+                'icon': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>',
                 'description': f'через {sbp_name}',
                 'callback': 'topup_cispay_sbp',
             }
@@ -355,7 +355,7 @@ def get_available_payment_methods() -> list[dict[str, str]]:
             {
                 'id': 'etoplatezhi_sbp',
                 'name': sbp_name,
-                'icon': '📱',
+                'icon': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>',
                 'description': f'через {sbp_name}',
                 'callback': 'topup_etoplatezhi_sbp',
             }
@@ -395,7 +395,7 @@ def get_available_payment_methods() -> list[dict[str, str]]:
             {
                 'id': 'antilopay_sbp',
                 'name': sbp_name,
-                'icon': '📱',
+                'icon': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>',
                 'description': f'через {sbp_name}',
                 'callback': 'topup_antilopay_sbp',
             }

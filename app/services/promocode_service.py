@@ -511,7 +511,7 @@ class PromoCodeService:
                 await self.subscription_service.update_remnawave_user(db, existing_same_tariff_sub)
 
                 effects.append(
-                    f'⏰ Подписка «{trial_tariff.name if trial_tariff else ""}» продлена на {trial_days} дней'
+                    f'<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Подписка «{trial_tariff.name if trial_tariff else ""}» продлена на {trial_days} дней'
                 )
                 logger.info(
                     '✅ Триал промокод: продлена существующая подписка',

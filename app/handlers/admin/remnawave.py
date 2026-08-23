@@ -125,13 +125,13 @@ def _build_auto_sync_view(status: RemnaWaveAutoSyncStatus) -> tuple[str, types.I
 📅 <b>Следующий запуск:</b> {next_run_text if status.enabled else '—'}
 ⏱️ <b>Состояние:</b> {running_text}
 
-📊 <b>Последний запуск:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Последний запуск:</b>
 {last_run_text}
 
 👥 <b>Пользователи:</b>
 {_format_user_stats(status.last_user_stats)}
 
-🌐 <b>Серверы:</b>
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> <b>Серверы:</b>
 {_format_server_stats(status.last_server_stats)}
 """
 
@@ -194,7 +194,7 @@ def _build_migration_keyboard(
 
     button_template = texts.t(
         'ADMIN_SQUAD_MIGRATION_SQUAD_BUTTON',
-        '🌍 {name} — 👥 {users} ({status})',
+        '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> {name} — 👥 {users} ({status})',
     )
 
     for squad in squads:
@@ -928,7 +928,7 @@ async def show_remnawave_menu(callback: types.CallbackQuery, db_user: User, db: 
 🖥️ <b>Управление Remnawave</b>
 
 📡 <b>Соединение:</b> {status_emoji} {connection_test.get('message', 'Нет данных')}
-🌐 <b>URL:</b> <code>{api_url_display}</code>
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> <b>URL:</b> <code>{api_url_display}</code>
 
 Выберите действие:
 """
@@ -971,7 +971,7 @@ async def show_system_stats(callback: types.CallbackQuery, db_user: User, db: As
 
     users_status_text = ''
     for status, count in users_by_status.items():
-        status_emoji = {'ACTIVE': '✅', 'DISABLED': '❌', 'LIMITED': '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>', 'EXPIRED': '⏰'}.get(status, '❓')
+        status_emoji = {'ACTIVE': '✅', 'DISABLED': '❌', 'LIMITED': '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji>', 'EXPIRED': '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji>'}.get(status, '❓')
         users_status_text += f'  {status_emoji} {status}: {count}\n'
 
     top_nodes_text = ''
@@ -992,7 +992,7 @@ async def show_system_stats(callback: types.CallbackQuery, db_user: User, db: As
         return f' (🔺 {difference_str})'
 
     text = f"""
-📊 <b>Детальная статистика Remnawave</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Детальная статистика Remnawave</b>
 
 🖥️ <b>Сервер:</b>
 - CPU: {server_info.get('cpu_cores', 0)} ядер
@@ -1003,13 +1003,13 @@ async def show_system_stats(callback: types.CallbackQuery, db_user: User, db: As
 👥 <b>Пользователи ({system.get('total_users', 0)} всего):</b>
 - 🟢 Онлайн сейчас: {system.get('users_online', 0)}
 - 📅 За сутки: {system.get('users_last_day', 0)}
-- 📊 За неделю: {system.get('users_last_week', 0)}
+- <tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> За неделю: {system.get('users_last_week', 0)}
 - 💤 Никогда не заходили: {system.get('users_never_online', 0)}
 
 <b>Статусы пользователей:</b>
 {users_status_text}
 
-🌐 <b>Ноды ({system.get('nodes_online', 0)} онлайн):</b>"""
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> <b>Ноды ({system.get('nodes_online', 0)} онлайн):</b>"""
 
     if realtime_nodes_text:
         text += f"""
@@ -1025,7 +1025,7 @@ async def show_system_stats(callback: types.CallbackQuery, db_user: User, db: As
 
 📈 <b>Общий трафик пользователей:</b> {format_bytes(system.get('total_user_traffic', 0))}
 
-📊 <b>Трафик по периодам:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Трафик по периодам:</b>
 - 2 дня: {format_bytes(traffic_periods.get('last_2_days', {}).get('current', 0))}{format_traffic_change(traffic_periods.get('last_2_days', {}).get('difference', ''))}
 - 7 дней: {format_bytes(traffic_periods.get('last_7_days', {}).get('current', 0))}{format_traffic_change(traffic_periods.get('last_7_days', {}).get('difference', ''))}
 - 30 дней: {format_bytes(traffic_periods.get('last_30_days', {}).get('current', 0))}{format_traffic_change(traffic_periods.get('last_30_days', {}).get('difference', ''))}
@@ -1106,7 +1106,7 @@ async def show_traffic_stats(callback: types.CallbackQuery, db_user: User, db: A
         return f' 🔺 {diff_str}'
 
     text = f"""
-📊 <b>Статистика трафика Remnawave</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика трафика Remnawave</b>
 
 ⚡ <b>Трафик по inbounds:</b>
 - Скачивание: {format_bytes(total_realtime_download)}
@@ -1143,14 +1143,14 @@ async def show_traffic_stats(callback: types.CallbackQuery, db_user: User, db: A
 """
 
     if realtime_usage:
-        text += '\n🌐 <b>Трафик по нодам (реалтайм):</b>\n'
+        text += '\n<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Трафик по нодам (реалтайм):</b>\n'
         for node in sorted(realtime_usage, key=lambda x: x.get('totalBytes', 0), reverse=True):
             node_total = node.get('totalBytes', 0)
             if node_total > 0:
                 text += f'- {node.get("nodeName", "Unknown")}: {format_bytes(node_total)}\n'
 
     if nodes_stats.get('lastSevenDays'):
-        text += '\n📊 <b>Топ нод за 7 дней:</b>\n'
+        text += '\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Топ нод за 7 дней:</b>\n'
 
         nodes_weekly = {}
         for day_data in nodes_stats['lastSevenDays']:
@@ -1202,7 +1202,7 @@ async def show_nodes_management(callback: types.CallbackQuery, db_user: User, db
         connection_emoji = '📡' if node['is_connected'] else '📵'
 
         text += f'{status_emoji} {connection_emoji} <b>{node["name"]}</b>\n'
-        text += f'🌍 {node["country_code"]} • {node["address"]}\n'
+        text += f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> {node["country_code"]} • {node["address"]}\n'
         text += f'👥 Онлайн: {node["users_online"] or 0}\n\n'
 
         keyboard.append(
@@ -1371,7 +1371,7 @@ async def show_node_statistics(callback: types.CallbackQuery, db_user: User, db:
         node_ver = html.escape(str(versions.get('node') or '—'))
 
         text = f"""
-📊 <b>Статистика ноды: {html.escape(node['name'])}</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика ноды: {html.escape(node['name'])}</b>
 
 <b>Статус:</b>
 - Онлайн: {status_emoji} {'Да' if node['is_node_online'] else 'Нет'}
@@ -1497,7 +1497,7 @@ async def show_squad_details(callback: types.CallbackQuery, db_user: User, db: A
         return
 
     text = f"""
-🌐 <b>Сквад: {squad['name']}</b>
+<tg-emoji emoji-id=\"5449855298627989865\">🌐</tg-emoji> <b>Сквад: {squad['name']}</b>
 
 <b>Информация:</b>
 - UUID: <code>{squad['uuid']}</code>
@@ -2184,7 +2184,7 @@ async def show_sync_options(callback: types.CallbackQuery, db_user: User, db: As
         f'⚙️ Статус: {"✅ Включена" if status.enabled else "❌ Отключена"}',
         f'🕒 Расписание: {times_text}',
         f'📅 Следующий запуск: {next_run_text if status.enabled else "—"}',
-        f'📊 Последний запуск: {last_result}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Последний запуск: {last_result}',
     ]
 
     text = (
@@ -2382,7 +2382,7 @@ async def run_auto_sync_now(
             '✅ <b>Синхронизация завершена</b>\n'
             f'👥 Пользователи: создано {user_stats.get("created", 0)}, обновлено {user_stats.get("updated", 0)}, '
             f'деактивировано {user_stats.get("deleted", user_stats.get("deactivated", 0))}, ошибок {user_stats.get("errors", 0)}\n'
-            f'🌐 Серверы: создано {server_stats.get("created", 0)}, обновлено {server_stats.get("updated", 0)}, удалено {server_stats.get("removed", 0)}\n\n'
+            f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Серверы: создано {server_stats.get("created", 0)}, обновлено {server_stats.get("updated", 0)}, удалено {server_stats.get("removed", 0)}\n\n'
         )
         final_text = summary + base_text
         await callback.message.edit_text(
@@ -2512,7 +2512,7 @@ async def sync_all_users(callback: types.CallbackQuery, db_user: User, db: Async
     text = f"""
 {status_emoji} <b>Полная синхронизация {status_text}</b>
 
-📊 <b>Результат:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результат:</b>
 • 🆕 Создано: {stats['created']}
 • 🔄 Обновлено: {stats['updated']}
 • 🗑️ Деактивировано: {stats.get('deleted', 0)}
@@ -2590,7 +2590,7 @@ async def sync_users_to_panel(
 
     text = (
         f'{status_emoji} <b>Синхронизация в панель {status_text}</b>\n\n'
-        '📊 <b>Результаты:</b>\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Результаты:</b>\n'
         f'• 🆕 Создано: {stats["created"]}\n'
         f'• 🔄 Обновлено: {stats["updated"]}\n'
         f'• ❌ Ошибок: {stats["errors"]}'
@@ -2686,7 +2686,7 @@ async def validate_subscriptions(callback: types.CallbackQuery, db_user: User, d
     text = f"""
 {status_emoji} <b>Валидация {status_text}</b>
 
-📊 <b>Результаты:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результаты:</b>
 • 🔍 Проверено подписок: {stats['checked']}
 • 🔧 Исправлено подписок: {stats['fixed']}
 • ⚠️ Найдено проблем: {stats['issues_found']}
@@ -2734,7 +2734,7 @@ async def cleanup_subscriptions(callback: types.CallbackQuery, db_user: User, db
     text = f"""
 {status_emoji} <b>Очистка {status_text}</b>
 
-📊 <b>Результаты:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результаты:</b>
 • 🔍 Проверено подписок: {stats['checked']}
 • 🗑️ Деактивировано: {stats['deactivated']}
 • ❌ Ошибок: {stats['errors']}
@@ -2766,7 +2766,7 @@ async def force_cleanup_all_orphaned_users(callback: types.CallbackQuery, db_use
     await callback.message.edit_text(
         '🗑️ Выполняется принудительная очистка всех пользователей, отсутствующих в панели...\n\n'
         '<tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> ВНИМАНИЕ: Это полностью удалит ВСЕ данные пользователей!\n'
-        '📊 Включая: транзакции, реферальные доходы, промокоды, серверы, балансы\n\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Включая: транзакции, реферальные доходы, промокоды, серверы, балансы\n\n'
         '<tg-emoji emoji-id="5269539162654010758">⏳</tg-emoji> Пожалуйста, подождите...',
         reply_markup=None,
     )
@@ -2784,7 +2784,7 @@ async def force_cleanup_all_orphaned_users(callback: types.CallbackQuery, db_use
     text = f"""
 {status_emoji} <b>Принудительная очистка {status_text}</b>
 
-📊 <b>Результаты:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результаты:</b>
 • 🔍 Проверено подписок: {stats['checked']}
 • 🗑️ Полностью очищено: {stats['deactivated']}
 • ❌ Ошибок: {stats['errors']}
@@ -2899,7 +2899,7 @@ async def sync_users(callback: types.CallbackQuery, db_user: User, db: AsyncSess
     text = f"""
 {status_emoji} <b>Синхронизация {status_text}</b>
 
-📊 <b>Результат:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результат:</b>
 """
 
     if sync_type == 'all_users':
@@ -2968,7 +2968,7 @@ async def show_squads_management(callback: types.CallbackQuery, db_user: User, d
     remnawave_service = RemnaWaveService()
     squads = await remnawave_service.get_all_squads()
 
-    text = '🌍 <b>Управление сквадами</b>\n\n'
+    text = '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Управление сквадами</b>\n\n'
     keyboard = []
 
     if squads:

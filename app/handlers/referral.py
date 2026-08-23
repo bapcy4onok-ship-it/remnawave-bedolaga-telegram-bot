@@ -54,7 +54,7 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
     referral_text = (
         texts.t('REFERRAL_PROGRAM_TITLE', '👥 <b>Реферальная программа</b>')
         + '\n\n'
-        + texts.t('REFERRAL_STATS_HEADER', '📊 <b>Ваша статистика:</b>')
+        + texts.t('REFERRAL_STATS_HEADER', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Ваша статистика:</b>')
         + '\n\n'
         + texts.t(
             'REFERRAL_STATS_INVITED',
@@ -131,7 +131,7 @@ async def show_referral_info(callback: types.CallbackQuery, db_user: User, db: A
     if cabinet_referral_link:
         referral_text += (
             '\n'
-            + texts.t('REFERRAL_CABINET_LINK_TITLE', '🌐 <b>Ссылка на сайт:</b>')
+            + texts.t('REFERRAL_CABINET_LINK_TITLE', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Ссылка на сайт:</b>')
             + f'\n\n{html_escape(cabinet_referral_link)}\n'
         )
 
@@ -287,7 +287,7 @@ async def show_referral_qr(
     if cabinet_referral_link:
         caption += '\n\n' + texts.t(
             'REFERRAL_QR_CABINET_LINK',
-            '🌐 Ссылка на сайт:\n{link}',
+            '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Ссылка на сайт:\n{link}',
         ).format(link=cabinet_referral_link)
 
     try:
@@ -357,7 +357,7 @@ async def show_detailed_referral_list(callback: types.CallbackQuery, db_user: Us
         text += (
             texts.t(
                 'REFERRAL_LIST_ITEM_EARNED',
-                '   💎 Заработано с него: {amount}',
+                '   <tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Заработано с него: {amount}',
             ).format(amount=texts.format_price(referral['total_earned_kopeks']))
             + '\n'
         )
@@ -423,7 +423,7 @@ async def show_referral_analytics(callback: types.CallbackQuery, db_user: User, 
 
     analytics = await get_referral_analytics(db, db_user.id)
 
-    text = texts.t('REFERRAL_ANALYTICS_TITLE', '📊 <b>Аналитика рефералов</b>') + '\n\n'
+    text = texts.t('REFERRAL_ANALYTICS_TITLE', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Аналитика рефералов</b>') + '\n\n'
 
     text += (
         texts.t(
@@ -514,7 +514,7 @@ async def create_invite_message(callback: types.CallbackQuery, db_user: User):
     if settings.REFERRAL_FIRST_TOPUP_BONUS_KOPEKS > 0:
         bonus_block = '\n\n' + texts.t(
             'REFERRAL_INVITE_BONUS',
-            '💎 При первом пополнении от {minimum} ты получишь {bonus} бонусом на баланс!',
+            '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> При первом пополнении от {minimum} ты получишь {bonus} бонусом на баланс!',
         ).format(
             minimum=texts.format_price(settings.REFERRAL_MINIMUM_TOPUP_KOPEKS),
             bonus=texts.format_price(settings.REFERRAL_FIRST_TOPUP_BONUS_KOPEKS),
@@ -527,13 +527,13 @@ async def create_invite_message(callback: types.CallbackQuery, db_user: User):
     # html_escape-им всю собранную строку (иначе экранировались бы и теги <code>).
     cabinet_block = ''
     if cabinet_referral_link:
-        cabinet_block = f'\n\n🌐 <code>{html_escape(cabinet_referral_link)}</code>'
+        cabinet_block = f'\n\n<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <code>{html_escape(cabinet_referral_link)}</code>'
 
     invite_template = texts.t(
         'REFERRAL_INVITE_TEXT',
         '🎉 Присоединяйся к VPN сервису!{bonus_block}\n\n'
         '🚀 Быстрое подключение\n'
-        '🌍 Серверы по всему миру\n'
+        '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Серверы по всему миру\n'
         '🔒 Надежная защита\n\n'
         '👇 Переходи по ссылке:\n'
         '{link}{cabinet_block}',
@@ -590,7 +590,7 @@ async def show_withdrawal_info(callback: types.CallbackQuery, db_user: User, db:
     text += '\n'
 
     text += (
-        texts.t('REFERRAL_WITHDRAWAL_MIN_AMOUNT', '📊 Минимальная сумма: <b>{amount}</b>').format(
+        texts.t('REFERRAL_WITHDRAWAL_MIN_AMOUNT', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Минимальная сумма: <b>{amount}</b>').format(
             amount=texts.format_price(min_amount)
         )
         + '\n'
@@ -952,7 +952,7 @@ _PARTNER_APPLY_STEPS: list[dict] = [
         'state': PartnerApplicationStates.waiting_for_website,
         'kind': 'text',
         'max_len': 500,
-        'title': ('REFERRAL_PARTNER_FIELD_WEBSITE', '🌐 Сайт'),
+        'title': ('REFERRAL_PARTNER_FIELD_WEBSITE', '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Сайт'),
         'hint': ('REFERRAL_PARTNER_FIELD_WEBSITE_HINT', 'Например: https://example.com'),
     },
     {

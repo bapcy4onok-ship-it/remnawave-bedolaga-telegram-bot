@@ -871,7 +871,7 @@ async def get_payment_methods(
         methods.append(
             MiniAppPaymentMethod(
                 id='tribute',
-                icon='💎',
+                icon='<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji>',
                 requires_amount=False,
                 currency='RUB',
                 integration_type=MiniAppPaymentIntegrationType.REDIRECT,
@@ -2297,7 +2297,7 @@ async def _resolve_tribute_payment_status(
 
 _TEMPLATE_ID_PATTERN = re.compile(r'promo_template_(?P<template_id>\d+)$')
 _OFFER_TYPE_ICONS = {
-    'extend_discount': '💎',
+    'extend_discount': '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji>',
     'purchase_discount': '🎯',
     'test_access': '🧪',
 }

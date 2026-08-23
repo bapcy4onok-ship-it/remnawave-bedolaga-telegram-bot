@@ -182,7 +182,7 @@ async def process_wata_payment_amount(
             '💳 <b>Оплата через WATA</b>\n\n'
             '💰 Сумма: {amount}\n'
             '🆔 ID платежа: {payment_id}\n\n'
-            '📱 <b>Инструкция:</b>\n'
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
             "1. Нажмите кнопку 'Оплатить через WATA'\n"
             '2. Следуйте подсказкам платежной системы\n'
             '3. Подтвердите перевод\n'
@@ -298,7 +298,7 @@ async def check_wata_payment_status(
         '',
         f'🆔 ID: {payment.payment_link_id}',
         f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}',
-        f'📊 Статус: {label_info["emoji"]} {label_info["label"]}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {label_info["emoji"]} {label_info["label"]}',
         f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M") if payment.created_at else "—"}',
     ]
 

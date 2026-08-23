@@ -61,6 +61,7 @@ async def create_donation(
     donor_telegram_id: int | None = None,
     donor_username: str | None = None,
     donor_name: str | None = None,
+    source: str = 'menu',
     commit: bool = True,
 ) -> Donation:
     """Создаёт запись пожертвования. При переданном ``user`` сам заполняет снимок донора."""
@@ -75,6 +76,7 @@ async def create_donation(
         payment_method=payment_method,
         external_id=str(external_id) if external_id is not None else None,
         transaction_id=transaction_id,
+        source=source,
     )
 
     db.add(donation)
@@ -113,6 +115,18 @@ async def get_total_donations_kopeks(
     query = _apply_period(select(func.coalesce(func.sum(Donation.amount_kopeks), 0)), start, end)
     result = await db.execute(query)
     return int(result.scalar() or 0)
+
+
+async def get_donations_by_source_kopeks(
+    db: AsyncSession,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> dict[str, int]:
+    """Суммы пожертвований по источнику: 'menu' (кнопка) и 'topup_upsell' (надбавка)."""
+    query = select(Donation.source, func.coalesce(func.sum(Donation.amount_kopeks), 0)).group_by(Donation.source)
+    result = await db.execute(_apply_period(query, start, end))
+    return {str(source or 'menu'): int(total or 0) for source, total in result.all()}
 
 
 async def get_user_donation_total_kopeks(db: AsyncSession, user_id: int) -> int:
@@ -166,12 +180,7 @@ async def get_donation_leaderboard(
         start,
         end,
     )
-    query = (
-        query.group_by(donor_key)
-        .order_by(func.sum(Donation.amount_kopeks).desc())
-        .limit(limit)
-        .offset(offset)
-    )
+    query = query.group_by(donor_key).order_by(func.sum(Donation.amount_kopeks).desc()).limit(limit).offset(offset)
 
     result = await db.execute(query)
     rows = result.all()

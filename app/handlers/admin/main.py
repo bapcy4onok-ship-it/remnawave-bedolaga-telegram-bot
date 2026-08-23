@@ -360,14 +360,14 @@ async def rules_stats_command(message: types.Message, db_user: User, db: AsyncSe
             await message.reply(f'❌ Ошибка получения статистики: {stats["error"]}')
             return
 
-        text = '📊 <b>Статистика правил сервиса</b>\n\n'
+        text = '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статистика правил сервиса</b>\n\n'
         text += '📋 <b>Общая информация:</b>\n'
         text += f'• Активных правил: {stats["total_active"]}\n'
         text += f'• Всего в истории: {stats["total_all_time"]}\n'
         text += f'• Поддерживаемых языков: {stats["total_languages"]}\n\n'
 
         if stats['languages']:
-            text += '🌐 <b>По языкам:</b>\n'
+            text += '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>По языкам:</b>\n'
             for lang, lang_stats in stats['languages'].items():
                 text += f'• <code>{lang}</code>: {lang_stats["active_count"]} правил, '
                 text += f'{lang_stats["content_length"]} символов\n'
@@ -396,7 +396,7 @@ async def admin_commands_help(message: types.Message, db_user: User, db: AsyncSe
 <b>ℹ️ Справка:</b>
 • <code>/admin_help</code> - это сообщение
 
-<b>📱 Панель управления:</b>
+<b><tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> Панель управления:</b>
 Используйте кнопку "Админ панель" в главном меню для полного доступа ко всем функциям.
 
 <b><tg-emoji emoji-id="6244595016287654616">⚠️</tg-emoji> Важно:</b>

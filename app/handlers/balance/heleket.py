@@ -197,7 +197,7 @@ async def process_heleket_payment_amount(
     details.extend(
         [
             '',
-            '📱 Инструкция:',
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Инструкция:',
             "1. Нажмите кнопку 'Оплатить'",
             '2. Перейдите на страницу Heleket',
             '3. Оплатите указанную сумму',

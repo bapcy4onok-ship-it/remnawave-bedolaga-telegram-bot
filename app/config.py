@@ -95,6 +95,23 @@ class Settings(BaseSettings):
     # который не зачисляется на баланс. False — кнопка исчезает из меню бота.
     DONATIONS_ENABLED: bool = True
 
+    # Донат-апселл: перед переходом на оплату предлагаем добавить к платежу небольшую
+    # сумму в пользу проекта. Надбавка НЕ попадает на баланс — она списывается сразу
+    # после зачисления и записывается как пожертвование (app/services/donation_upsell_service.py).
+    DONATION_UPSELL_ENABLED: bool = True
+    DONATION_UPSELL_AMOUNT: float = 10  # размер надбавки по умолчанию, ₽
+    DONATION_UPSELL_PRESETS: str = '25,50,100,300,500'  # кнопки «иная сумма», ₽
+    DONATION_UPSELL_COOLDOWN_DAYS: int = 0  # 0 — спрашивать при каждом пополнении
+    DONATION_UPSELL_MIN_TOPUP: float = 0  # 0 — без порога суммы пополнения, ₽
+    DONATION_UPSELL_SKIP_IF_DONATED: bool = False  # не спрашивать тех, кто уже жертвовал
+    # Сколько ждём оплаты по обещанию. Наблюдаемая на проде задержка «согласился → оплатил» —
+    # минуты (максимум 13). Длинный TTL работает не на оплату, а на «прилипание»: забытое
+    # обещание может совпасть по сумме с чужим пополнением и списать надбавку, которую к тому
+    # платежу не обещали. Цена короткого TTL — надбавка не спишется у того, кто оплатил счёт
+    # спустя часы (у Heleket и Lava срок инвойса настраивается длиннее): деньги в этом случае
+    # просто останутся у него на балансе.
+    DONATION_UPSELL_PLEDGE_TTL_HOURS: int = 3
+
     SUPPORT_USERNAME: str = '@support'
     SUPPORT_MENU_ENABLED: bool = True
     SUPPORT_SYSTEM_MODE: str = 'both'  # one of: tickets, contact, both
@@ -120,6 +137,15 @@ class Settings(BaseSettings):
     ADMIN_NOTIFICATIONS_TOPIC_ID: int | None = None
     ADMIN_NOTIFICATIONS_TICKET_TOPIC_ID: int | None = None
     ADMIN_NOTIFICATIONS_NALOG_TOPIC_ID: int | None = None
+
+    # Алерт на массовый просмотр базы клиентов модератором (кабинет, users:read).
+    # Порог — не «сколько запросов», а сколько РАЗНЫХ карточек и страниц списка
+    # за окно: саппорт по тикетам открывает единицы, выгрузка — десятки.
+    MODERATOR_SCRAPE_ALERT_ENABLED: bool = True
+    MODERATOR_SCRAPE_ALERT_WINDOW_MINUTES: int = 60
+    MODERATOR_SCRAPE_ALERT_PROFILES: int = 30  # разных карточек клиентов за окно
+    MODERATOR_SCRAPE_ALERT_LIST_ROWS: int = 300  # глубина листания базы (offset+limit) за окно
+    MODERATOR_SCRAPE_ALERT_COOLDOWN_MINUTES: int = 60  # не спамить повторами по тому же модератору
 
     # Раздельные топики для уведомлений (если не задано — fallback на ADMIN_NOTIFICATIONS_TOPIC_ID)
     ADMIN_NOTIFICATIONS_PURCHASES_TOPIC_ID: int | None = None  # Покупки подписок
@@ -245,6 +271,10 @@ class Settings(BaseSettings):
     GRACE_ACCESS_EXPIRED_SQUAD_UUID: str = ''
     GRACE_ACCESS_LIMITED_SQUAD_UUID: str = ''
     GRACE_ACCESS_TRAFFIC_GB: int = 1
+    # false = не выдавать grace по причине limited. У нас limited в панели ставится
+    # только забаненным, а не тем, у кого честно кончился трафик, поэтому grace по
+    # этой причине означал бы награду за бан.
+    GRACE_ACCESS_LIMITED_ENABLED: bool = True
     GRACE_ACCESS_TRIAL_ENABLED: bool = False
     GRACE_ACCESS_DAILY_ENABLED: bool = False
     GRACE_ACCESS_FREE_ENABLED: bool = False
@@ -1163,8 +1193,8 @@ class Settings(BaseSettings):
         '━━━━━━━━━━━━━━━━━━━━━\n\n'
         '❌ <b>Причина:</b> Превышен лимит устройств\n'
         '{node_info}\n'
-        '📊 <b>Детали нарушения:</b>\n'
-        '├ 📱 Устройств подключено: <b>{ip_count}</b>\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Детали нарушения:</b>\n'
+        '├ <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройств подключено: <b>{ip_count}</b>\n'
         '├ 📋 Разрешено по тарифу: <b>{limit}</b>\n'
         '└ ⏱ Время блокировки: <b>{ban_minutes} мин</b>\n\n'
         '━━━━━━━━━━━━━━━━━━━━━\n'
@@ -1195,7 +1225,7 @@ class Settings(BaseSettings):
         '━━━━━━━━━━━━━━━━━━━━━\n\n'
         '❌ <b>Причина:</b> Использование WiFi сети\n'
         '{node_info}\n'
-        '📊 <b>Детали:</b>\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Детали:</b>\n'
         '├ 📶 Тип подключения: <b>WiFi</b>\n'
         '{network_info}'
         '└ ⏱ Время блокировки: <b>{ban_minutes} мин</b>\n\n'
@@ -1214,8 +1244,8 @@ class Settings(BaseSettings):
         '━━━━━━━━━━━━━━━━━━━━━\n\n'
         '❌ <b>Причина:</b> Использование мобильной сети\n'
         '{node_info}\n'
-        '📊 <b>Детали:</b>\n'
-        '├ 📱 Тип подключения: <b>Мобильная сеть</b>\n'
+        '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Детали:</b>\n'
+        '├ <tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Тип подключения: <b>Мобильная сеть</b>\n'
         '{network_info}'
         '└ ⏱ Время блокировки: <b>{ban_minutes} мин</b>\n\n'
         '━━━━━━━━━━━━━━━━━━━━━\n'
@@ -2521,7 +2551,10 @@ class Settings(BaseSettings):
         return {
             2: {'name': 'СБП', 'title': '💳 СБП'},
             11: {'name': 'Банковские карты РФ', 'title': '💳 Банковские карты РФ'},
-            12: {'name': 'Международные карты', 'title': '🌍 Международные карты'},
+            12: {
+                'name': 'Международные карты',
+                'title': '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Международные карты',
+            },
             13: {'name': 'Криптовалюта', 'title': '🪙 Криптовалюта'},
         }
 
@@ -3300,6 +3333,35 @@ class Settings(BaseSettings):
         if rate <= 0:
             raise ValueError('Stars rate must be positive')
         return max(1, round(rubles / rate))
+
+    def get_donation_upsell_tip_kopeks(self) -> int:
+        """Размер надбавки из .env (рубли) в копейках. Мусор и минус → 0."""
+        try:
+            return max(0, int(round(float(self.DONATION_UPSELL_AMOUNT) * 100)))
+        except (TypeError, ValueError):
+            return 0
+
+    def get_donation_upsell_presets_kopeks(self) -> list[int]:
+        """Кнопки «иная сумма» из .env: '25,50,100' → [2500, 5000, 10000]."""
+        presets: set[int] = set()
+        for chunk in (self.DONATION_UPSELL_PRESETS or '').split(','):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            try:
+                kopeks = int(round(float(chunk.replace(',', '.')) * 100))
+            except ValueError:
+                continue
+            if kopeks > 0:
+                presets.add(kopeks)
+        return sorted(presets)
+
+    def get_donation_upsell_min_topup_kopeks(self) -> int:
+        """Порог суммы пополнения, ниже которого апселл не показываем."""
+        try:
+            return max(0, int(round(float(self.DONATION_UPSELL_MIN_TOPUP) * 100)))
+        except (TypeError, ValueError):
+            return 0
 
     def get_admin_notifications_chat_id(self) -> int | None:
         if not self.ADMIN_NOTIFICATIONS_CHAT_ID:

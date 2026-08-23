@@ -116,7 +116,7 @@ OFFER_TYPE_CONFIG = {
         'effect_type': 'test_access',
     },
     'extend_discount': {
-        'icon': '💎',
+        'icon': '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji>',
         'label_key': 'ADMIN_PROMO_OFFER_EXTEND',
         'default_label': 'Скидка на продление',
         'allowed_segments': [
@@ -370,7 +370,7 @@ def _format_promo_offer_log_entry(
     squad_uuid = details.get('squad_uuid')
     if squad_uuid:
         lines.append(
-            texts.get('ADMIN_PROMO_OFFER_LOGS_SQUAD', '🌍 Сквад: {squad}').format(squad=html.escape(str(squad_uuid)))
+            texts.get('ADMIN_PROMO_OFFER_LOGS_SQUAD', '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Сквад: {squad}').format(squad=html.escape(str(squad_uuid)))
         )
 
     new_squads = details.get('new_squads')
@@ -378,7 +378,7 @@ def _format_promo_offer_log_entry(
         filtered = [html.escape(str(item)) for item in new_squads if item]
         if filtered:
             lines.append(
-                texts.get('ADMIN_PROMO_OFFER_LOGS_NEW_SQUADS', '🌍 Новые сквады: {squads}').format(
+                texts.get('ADMIN_PROMO_OFFER_LOGS_NEW_SQUADS', '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Новые сквады: {squads}').format(
                     squads=', '.join(filtered)
                 )
             )
@@ -462,9 +462,9 @@ def _build_user_button_label(user: User) -> str:
         if subscription.is_trial:
             subscription_emoji = '🎁'
         elif subscription.is_active:
-            subscription_emoji = '💎'
+            subscription_emoji = '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji>'
         else:
-            subscription_emoji = '⏰'
+            subscription_emoji = '<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji>'
     else:
         subscription_emoji = '❌'
 
@@ -975,7 +975,7 @@ async def _render_squad_selection(
         if selected_server:
             selected_server_name = html.escape(selected_server.display_name)
 
-    header = texts.t('ADMIN_PROMO_OFFER_SELECT_SQUAD_TITLE', '🌍 <b>Выберите сквад</b>')
+    header = texts.t('ADMIN_PROMO_OFFER_SELECT_SQUAD_TITLE', '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Выберите сквад</b>')
     if selected_server_name:
         current = texts.t(
             'ADMIN_PROMO_OFFER_SELECTED_SQUAD',
@@ -1783,7 +1783,7 @@ async def show_selected_user_details(
         lines.append(
             texts.t(
                 'ADMIN_PROMO_OFFER_SEND_USER_OFFER_STATS_HEADER',
-                '📊 Статистика предложений',
+                '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статистика предложений',
             )
         )
         lines.append(

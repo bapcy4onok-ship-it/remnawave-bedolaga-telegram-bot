@@ -148,9 +148,9 @@ CATEGORY_GROUP_METADATA: dict[str, dict[str, object]] = {
         ),
     },
     'server': {
-        'title': '📊 Статус серверов',
+        'title': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус серверов',
         'description': 'Мониторинг серверов, SLA и внешние метрики.',
-        'icon': '📊',
+        'icon': '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji>',
         'categories': ('SERVER_STATUS', 'MONITORING'),
     },
     'maintenance': {
@@ -388,7 +388,7 @@ def _get_setting_icon(definition, current_value: object) -> str:
     if 'DAYS' in key_upper:
         return '📆'
     if 'GB' in key_upper or 'TRAFFIC' in key_upper:
-        return '📊'
+        return '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji>'
 
     return '⚙️'
 
@@ -1682,7 +1682,7 @@ async def show_simple_subscription_squad_selector(
             current_display = current_uuid
 
     lines = [
-        '🌍 <b>Выберите сквад для простой покупки</b>',
+        '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Выберите сквад для простой покупки</b>',
         '',
         f'Текущий выбор: {html.escape(current_display)}' if current_display else 'Текущий выбор: —',
         '',
@@ -2810,12 +2810,12 @@ async def show_remna_config_menu(callback: types.CallbackQuery, db_user: User, d
 
     if not configs:
         text = (
-            '📱 <b>Конфиг приложений (Remnawave)</b>\n\n'
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Конфиг приложений (Remnawave)</b>\n\n'
             'В Remnawave не найдено конфигураций страниц подписки.\n\n'
             'Создайте конфигурацию в панели Remnawave, затем вернитесь сюда для выбора.'
         )
     else:
-        text = '📱 <b>Конфиг приложений (Remnawave)</b>\n\n'
+        text = '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Конфиг приложений (Remnawave)</b>\n\n'
         if current_uuid:
             current_name = next((c.name for c in configs if c.uuid == current_uuid), None)
             if current_name:

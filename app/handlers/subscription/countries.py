@@ -89,7 +89,7 @@ async def handle_add_countries(callback: types.CallbackQuery, db_user: User, db:
     text = texts.t(
         'COUNTRY_MANAGEMENT_PROMPT',
         (
-            '🌍 <b>Управление странами подписки</b>\n\n'
+            '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Управление странами подписки</b>\n\n'
             '📋 <b>Текущие страны ({current_count}):</b>\n'
             '{current_list}\n\n'
             '💡 <b>Инструкция:</b>\n'
@@ -484,7 +484,7 @@ async def apply_countries_changes(callback: types.CallbackQuery, db_user: User, 
 
         success_text += '\n' + texts.t(
             'COUNTRY_CHANGES_ACTIVE_COUNT',
-            '🌐 <b>Активных стран:</b> {count}',
+            '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Активных стран:</b> {count}',
         ).format(count=len(selected_countries))
 
         await callback.message.edit_text(
@@ -626,7 +626,7 @@ async def _get_available_countries(promo_group_id: int | None = None):
                     elif 'usa' in name_lower or 'сша' in name_lower or 'america' in name_lower or 'us' in name_lower:
                         squad_name = f'🇺🇸 {squad_name}'
                     else:
-                        squad_name = f'🌐 {squad_name}'
+                        squad_name = f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> {squad_name}'
 
                 countries.append(
                     {
@@ -957,7 +957,7 @@ async def confirm_add_countries_to_subscription(
             success_text += f'\n➖ Отключены страны:\n{chr(10).join(f"• {name}" for name in removed_countries_names)}\n'
             success_text += 'ℹ️ Повторное подключение будет платным\n'
 
-        success_text += f'\n🌍 Активных стран: {len(selected_countries)}'
+        success_text += f'\n<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Активных стран: {len(selected_countries)}'
 
         await callback.message.edit_text(success_text, reply_markup=get_back_keyboard(db_user.language))
 

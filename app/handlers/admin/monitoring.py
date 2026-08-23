@@ -366,7 +366,7 @@ async def admin_monitoring_menu(callback: CallbackQuery):
             text = f"""
 🔍 <b>Система мониторинга</b>
 
-📊 <b>Статус:</b> {running_status}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статус:</b> {running_status}
 🕐 <b>Последнее обновление:</b> {last_update}
 ⚙️ <b>Интервал проверки:</b> {settings.MONITORING_INTERVAL} мин
 
@@ -680,7 +680,7 @@ async def force_check_callback(callback: CallbackQuery):
             text = f"""
 ✅ <b>Принудительная проверка завершена</b>
 
-📊 <b>Результаты проверки:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результаты проверки:</b>
 • Истекших подписок: {results['expired']}
 • Истекающих подписок: {results['expiring']}
 • Готовых к автооплате: {results['autopay_ready']}
@@ -732,7 +732,7 @@ async def traffic_check_callback(callback: CallbackQuery):
         threshold_gb = traffic_monitoring_scheduler_v2.service.get_fast_check_threshold_gb()
 
         text = f"""
-📊 <b>Проверка трафика завершена</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Проверка трафика завершена</b>
 
 🔍 <b>Результаты (дельта):</b>
 • Превышений за интервал: {len(violations)}
@@ -810,7 +810,7 @@ async def monitoring_logs_callback(callback: CallbackQuery):
             total_failed = len(all_logs) - total_success
             success_rate = round(total_success / len(all_logs) * 100, 1) if all_logs else 0
 
-            text += '📊 <b>Общая статистика:</b>\n'
+            text += '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Общая статистика:</b>\n'
             text += f'• Всего событий: {len(all_logs)}\n'
             text += f'• Успешных: {total_success}\n'
             text += f'• Ошибок: {total_failed}\n'
@@ -853,7 +853,7 @@ async def test_notifications_callback(callback: CallbackQuery):
 
 Это тестовое сообщение для проверки работы системы уведомлений.
 
-📊 <b>Статус системы:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статус системы:</b>
 • Мониторинг: {'🟢 Работает' if monitoring_service.is_running else '🔴 Остановлен'}
 • Уведомления: {'🟢 Включены' if settings.ENABLE_NOTIFICATIONS else '🔴 Отключены'}
 • Время теста: {datetime.now(UTC).strftime('%H:%M:%S %d.%m.%Y')}
@@ -889,9 +889,9 @@ async def monitoring_statistics_callback(callback: CallbackQuery):
             week_errors = len(week_logs) - week_success
 
             text = f"""
-📊 <b>Статистика мониторинга</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика мониторинга</b>
 
-📱 <b>Подписки:</b>
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подписки:</b>
 • Всего: {sub_stats['total_subscriptions']}
 • Активных: {sub_stats['active_subscriptions']}
 • Тестовых: {sub_stats['trial_subscriptions']}
@@ -902,7 +902,7 @@ async def monitoring_statistics_callback(callback: CallbackQuery):
 • Ошибок: {mon_status['stats_24h']['failed']}
 • Успешность: {mon_status['stats_24h']['success_rate']}%
 
-📊 <b>За неделю:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>За неделю:</b>
 • Всего событий: {len(week_logs)}
 • Успешных: {week_success}
 • Ошибок: {week_errors}
@@ -1014,9 +1014,9 @@ async def nalogo_force_process_callback(callback: CallbackQuery):
             week_errors = len(week_logs) - week_success
 
             stats_text = f"""
-📊 <b>Статистика мониторинга</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика мониторинга</b>
 
-📱 <b>Подписки:</b>
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подписки:</b>
 • Всего: {sub_stats['total_subscriptions']}
 • Активных: {sub_stats['active_subscriptions']}
 • Тестовых: {sub_stats['trial_subscriptions']}
@@ -1027,7 +1027,7 @@ async def nalogo_force_process_callback(callback: CallbackQuery):
 • Ошибок: {mon_status['stats_24h']['failed']}
 • Успешность: {mon_status['stats_24h']['success_rate']}%
 
-📊 <b>За неделю:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>За неделю:</b>
 • Всего событий: {len(week_logs)}
 • Успешных: {week_success}
 • Ошибок: {week_errors}
@@ -1633,7 +1633,7 @@ async def monitoring_command(message: Message):
             text = f"""
 🔍 <b>Быстрый статус мониторинга</b>
 
-📊 <b>Статус:</b> {running_status}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статус:</b> {running_status}
 📈 <b>События за 24ч:</b> {status['stats_24h']['total_events']}
 ✅ <b>Успешность:</b> {status['stats_24h']['success_rate']}%
 
@@ -1914,7 +1914,7 @@ async def edit_fast_threshold(callback: CallbackQuery, state: FSMContext):
         settings_message_id=callback.message.message_id,
     )
     await callback.answer()
-    await callback.message.answer('📊 Введите порог дельты трафика в ГБ (например: 5.0):')
+    await callback.message.answer('<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Введите порог дельты трафика в ГБ (например: 5.0):')
 
 
 @router.callback_query(F.data == 'admin_traffic_edit_daily_time')

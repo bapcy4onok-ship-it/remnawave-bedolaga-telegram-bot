@@ -14,7 +14,7 @@ from app.utils.button_styles_cache import CALLBACK_TO_SECTION, get_cached_button
 _EMOJI_CHAR_CLASS = (
     r'[℀-⅏'  # Letterlike (ℹ ™ ©)
     r'←-⇿'  # Arrows
-    r'⌀-⏿'  # Misc Technical (⌚ ⌨ ⏰ etc.)
+    r'⌀-⏿'  # Misc Technical (⌚ ⌨ <tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> etc.)
     r'①-⓿'  # Enclosed Alphanumerics
     r'■-⛿'  # Geometric Shapes + Misc Symbols (☀ ★ ✈ etc.)
     r'✀-➿'  # Dingbats (✂ ✅ ✔ etc.)

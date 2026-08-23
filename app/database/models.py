@@ -2459,7 +2459,7 @@ class Subscription(Base):
         if actual_status == 'active':
             if self.is_trial:
                 return '🎁'
-            return '💎'
+            return '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji>'
         if actual_status == 'disabled':
             return '⚫'
         if actual_status == 'limited':
@@ -2717,6 +2717,10 @@ class Donation(Base):
         UniqueConstraint('external_id', 'payment_method', name='uq_donation_external_id_method'),
         Index('ix_donations_user_created', 'user_id', 'created_at'),
         Index('ix_donations_created_at', 'created_at'),
+        # Объявлен здесь, а не index=True на колонке: свежие БД создаются через
+        # Base.metadata.create_all (app/database/migrations.py), минуя alembic, —
+        # без этой строки индекс появлялся бы только на обновляемых установках.
+        Index('ix_donations_source', 'source'),
     )
 
     id = Column(Integer, primary_key=True)
@@ -2729,6 +2733,9 @@ class Donation(Base):
 
     amount_kopeks = Column(Integer, nullable=False)
     payment_method = Column(String(50), nullable=True)
+    # Откуда пришло пожертвование: 'menu' — кнопка «Поддержать проект»,
+    # 'topup_upsell' — надбавка к платежу при пополнении баланса.
+    source = Column(String(32), nullable=False, server_default='menu', default='menu')
     external_id = Column(String(255), nullable=True)  # provider payment id — идемпотентность
     transaction_id = Column(Integer, ForeignKey('transactions.id', ondelete='SET NULL'), nullable=True)
 
@@ -2739,6 +2746,53 @@ class Donation(Base):
     @property
     def amount_rubles(self) -> float:
         return self.amount_kopeks / 100
+
+
+class DonationPledgeStatus:
+    """Статусы обещания надбавки. Хранятся строкой — миграции для новых не нужны."""
+
+    PENDING = 'pending'  # согласился, платёж ещё не зачислен
+    APPLIED = 'applied'  # надбавка списана и записана как пожертвование
+    DECLINED = 'declined'  # отказался (нужно для cooldown и воронки)
+    SUPERSEDED = 'superseded'  # погашено новым решением пользователя
+    EXPIRED = 'expired'  # платёж не пришёл за TTL
+    SKIPPED = 'skipped'  # применить не удалось (например, не хватило баланса)
+
+
+class DonationPledge(Base):
+    """Обещание надбавки к платежу («добавить 10 ₽ на поддержку»).
+
+    Пишется в момент показа экрана апселла — и при согласии, и при отказе. Согласие
+    (`pending`) исполняется вебхуком: после зачисления платежа надбавка списывается
+    с баланса и превращается в запись `donations`
+    (``app/services/donation_upsell_service.py::try_apply_donation_pledge``).
+    Отказы нужны для cooldown и для воронки «показали → согласились → оплатили».
+    """
+
+    __tablename__ = 'donation_pledges'
+    __table_args__ = (
+        Index('ix_donation_pledges_user_status', 'user_id', 'status', 'created_at'),
+        Index('ix_donation_pledges_status_expires', 'status', 'expires_at'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+
+    tip_kopeks = Column(Integer, nullable=False, default=0)
+    topup_amount_kopeks = Column(Integer, nullable=False)
+    # Сумма платежа = пополнение + надбавка. Для отказа равна сумме пополнения.
+    expected_total_kopeks = Column(Integer, nullable=False)
+
+    payment_method = Column(String(50), nullable=True)
+    source = Column(String(16), nullable=False, default='bot')  # bot | cabinet
+    status = Column(String(16), nullable=False, default=DonationPledgeStatus.PENDING)
+
+    created_at = Column(AwareDateTime(), default=func.now())
+    expires_at = Column(AwareDateTime(), nullable=True)
+    applied_at = Column(AwareDateTime(), nullable=True)
+    transaction_id = Column(Integer, ForeignKey('transactions.id', ondelete='SET NULL'), nullable=True)
+
+    user = relationship('User')
 
 
 class SubscriptionConversion(Base):

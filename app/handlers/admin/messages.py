@@ -642,7 +642,7 @@ async def show_messages_history(callback: types.CallbackQuery, db_user: User, db
             message_preview = (
                 broadcast.message_text[:100] + '...'
                 if broadcast.message_text and len(broadcast.message_text) > 100
-                else (broadcast.message_text or '📊 Опрос')
+                else (broadcast.message_text or '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Опрос')
             )
 
             import html
@@ -651,7 +651,7 @@ async def show_messages_history(callback: types.CallbackQuery, db_user: User, db
 
             text += f"""
 {status_emoji} <b>{broadcast.created_at.strftime('%d.%m.%Y %H:%M')}</b>
-📊 Отправлено: {broadcast.sent_count}/{broadcast.total_count} ({success_rate}%)
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Отправлено: {broadcast.sent_count}/{broadcast.total_count} ({success_rate}%)
 🎯 Аудитория: {get_target_name(broadcast.target_type)}
 👤 Админ: {html.escape(broadcast.admin_name or '')}
 📝 Сообщение: {message_preview}
@@ -674,7 +674,7 @@ async def show_custom_broadcast(callback: types.CallbackQuery, db_user: User, st
     text = f"""
 📝 <b>Рассылка по критериям</b>
 
-📊 <b>Доступные фильтры:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Доступные фильтры:</b>
 
 👥 <b>По регистрации:</b>
 • Сегодня: {stats['today']} чел.
@@ -971,7 +971,7 @@ async def show_button_selector_callback(callback: types.CallbackQuery, db_user: 
 🤝 <b>Партнерка</b> — откроет реферальную программу
 🎫 <b>Промокод</b> — откроет форму ввода промокода
 🔗 <b>Подключиться</b> — поможет подключить приложение
-📱 <b>Подписка</b> — покажет состояние подписки
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подписка</b> — покажет состояние подписки
 🛠️ <b>Техподдержка</b> — свяжет с поддержкой
 
 🏠 <b>Кнопка "На главную"</b> включена по умолчанию, но вы можете отключить её при необходимости.{media_info}
@@ -1024,7 +1024,7 @@ async def show_button_selector(message: types.Message, db_user: User, state: FSM
 🤝 <b>Партнерка</b> — откроет реферальную программу
 🎫 <b>Промокод</b> — откроет форму ввода промокода
 🔗 <b>Подключиться</b> — поможет подключить приложение
-📱 <b>Подписка</b> — покажет состояние подписки
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Подписка</b> — покажет состояние подписки
 🛠️ <b>Техподдержка</b> — свяжет с поддержкой
 
 🏠 <b>Кнопка "На главную"</b> включена по умолчанию, но вы можете отключить её при необходимости.
@@ -1385,7 +1385,7 @@ async def confirm_broadcast(callback: types.CallbackQuery, db_user: User, state:
             return (
                 f'📨 <b>Рассылка в процессе...</b>\n\n'
                 f'[{bar}] {percent}%\n\n'
-                f'📊 <b>Прогресс:</b>\n'
+                f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Прогресс:</b>\n'
                 f'• Отправлено: {current_sent}\n'
                 f'{blocked_line}'
                 f'• Ошибок: {current_failed}\n'
@@ -1481,7 +1481,7 @@ async def confirm_broadcast(callback: types.CallbackQuery, db_user: User, state:
 
     result_text = (
         f'✅ <b>Рассылка завершена!</b>\n\n'
-        f'📊 <b>Результат:</b>\n'
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Результат:</b>\n'
         f'• Отправлено: {sent_count}\n'
         f'{blocked_line}'
         f'• Не доставлено: {failed_count}\n'

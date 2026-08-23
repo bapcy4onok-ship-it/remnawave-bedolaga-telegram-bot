@@ -217,7 +217,7 @@ async def process_yookassa_payment_amount(
             f'💳 <b>Оплата банковской картой</b>\n\n'
             f'💰 Сумма: {settings.format_price(amount_kopeks)}\n'
             f'🆔 ID платежа: {payment_result["yookassa_payment_id"][:8]}...\n\n'
-            f'📱 <b>Инструкция:</b>\n'
+            f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
             f"1. Нажмите кнопку 'Оплатить картой'\n"
             f'2. Введите данные вашей карты\n'
             f'3. Подтвердите платеж\n'
@@ -449,7 +449,7 @@ async def process_yookassa_sbp_payment_amount(
         # Добавляем инструкции в зависимости от доступных способов оплаты
         if not confirmation_url:
             message_text += (
-                f'📱 <b>Инструкция по оплате:</b>\n'
+                f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция по оплате:</b>\n'
                 f'1. Откройте приложение вашего банка\n'
                 f'2. Найдите функцию оплаты по реквизитам или перевод по СБП\n'
                 f'3. Введите ID платежа: <code>{payment_result["yookassa_payment_id"]}</code>\n'
@@ -548,7 +548,7 @@ async def check_yookassa_payment_status(callback: types.CallbackQuery, db: Async
             f'💳 Статус платежа:\n\n'
             f'🆔 ID: {payment.yookassa_payment_id[:8]}...\n'
             f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}\n'
-            f'📊 Статус: {emoji} {status}\n'
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status}\n'
             f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M")}\n'
         )
 

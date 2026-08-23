@@ -544,7 +544,7 @@ def _build_default_promo_message(
         bonus_rub = bonus_amount_kopeks / 100
         lines.append(f'💰 Бонус <b>{bonus_rub:.0f}₽</b> на баланс')
 
-    lines.append(f'\n⏰ Предложение действует <b>{valid_hours} ч.</b>')
+    lines.append(f'\n<tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Предложение действует <b>{valid_hours} ч.</b>')
     lines.append('\nНажмите кнопку ниже, чтобы активировать!')
 
     return '\n'.join(lines)

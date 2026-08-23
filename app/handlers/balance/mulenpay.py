@@ -202,7 +202,7 @@ async def process_mulenpay_payment_amount(
                 '💳 <b>Оплата через {mulenpay_name_html}</b>\n\n'
                 '💰 Сумма: {amount}\n'
                 '🆔 ID платежа: {payment_id}\n\n'
-                '📱 <b>Инструкция:</b>\n'
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
                 "1. Нажмите кнопку 'Оплатить через {mulenpay_name}'\n"
                 '2. Следуйте подсказкам платежной системы\n'
                 '3. Подтвердите перевод\n'
@@ -299,7 +299,7 @@ async def check_mulenpay_payment_status(callback: types.CallbackQuery, db: Async
             f'💳 Статус платежа {mulenpay_name}:\n\n',
             f'🆔 ID: {payment.mulen_payment_id or payment.id}\n',
             f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}\n',
-            f'📊 Статус: {emoji} {status_text}\n',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}\n',
             f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M")}\n',
         ]
 

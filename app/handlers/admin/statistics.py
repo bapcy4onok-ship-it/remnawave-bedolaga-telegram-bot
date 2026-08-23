@@ -22,7 +22,7 @@ logger = structlog.get_logger(__name__)
 @error_handler
 async def show_statistics_menu(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
     text = """
-📊 <b>Статистика системы</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика системы</b>
 
 Выберите раздел для просмотра статистики:
 """
@@ -92,7 +92,7 @@ async def show_subscriptions_statistics(callback: types.CallbackQuery, db_user: 
     current_time = format_datetime(datetime.now(UTC))
 
     text = f"""
-📱 <b>Статистика подписок</b>
+<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Статистика подписок</b>
 
 <b>Общие показатели:</b>
 - Всего подписок: {stats['total_subscriptions']}
@@ -264,7 +264,7 @@ async def show_summary_statistics(callback: types.CallbackQuery, db_user: User, 
         arpu = revenue_stats['totals']['income_kopeks'] / user_stats['active_users']
 
     text = f"""
-📊 <b>Общая сводка системы</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Общая сводка системы</b>
 
 <b>Пользователи:</b>
 - Всего: {user_stats['total_users']}

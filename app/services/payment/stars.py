@@ -469,8 +469,8 @@ class TelegramStarsMixin:
                 success_message = (
                     '✅ <b>Подписка успешно активирована!</b>\n\n'
                     f'📅 Период: {period_display} дней\n'
-                    f'📱 Устройства: {getattr(subscription, "device_limit", 1)}\n'
-                    f'📊 Трафик: {traffic_label}\n'
+                    f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {getattr(subscription, "device_limit", 1)}\n'
+                    f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic_label}\n'
                     f'⭐ Оплата: {stars_amount} ⭐ ({settings.format_price(amount_kopeks)})'
                     f'{tariff_line}\n\n'
                     "🔗 Для подключения перейдите в раздел 'Моя подписка'"
@@ -545,6 +545,9 @@ class TelegramStarsMixin:
                 user.id,
                 amount_kopeks,
                 getattr(self, 'bot', None),
+                # Баланс не пополняется, надбавку донат-апселла списывать
+                # неоткуда и незачем — комиссия считается со всей суммы.
+                exclude_donation_tip=False,
             )
         except Exception as ref_error:
             logger.error('Ошибка реферального начисления при покупке подписки через Stars', ref_error=ref_error)

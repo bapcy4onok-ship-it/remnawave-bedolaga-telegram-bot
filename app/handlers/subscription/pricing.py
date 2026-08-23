@@ -213,12 +213,12 @@ async def _prepare_subscription_summary(
         '📋 <b>Сводка заказа</b>',
         '',
         f'📅 <b>Период:</b> {period_display}',
-        f'📊 <b>Трафик:</b> {traffic_display}',
-        f'🌍 <b>Страны:</b> {", ".join(selected_countries_names)}',
+        f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Трафик:</b> {traffic_display}',
+        f'<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Страны:</b> {", ".join(selected_countries_names)}',
     ]
 
     if devices_selection_enabled:
-        summary_lines.append(f'📱 <b>Устройства:</b> {devices_selected}')
+        summary_lines.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Устройства:</b> {devices_selected}')
 
     summary_lines.extend(
         [
@@ -226,7 +226,7 @@ async def _prepare_subscription_summary(
             '💰 <b>Детализация стоимости:</b>',
             details_text,
             '',
-            f'💎 <b>Общая стоимость:</b> {texts.format_price(total_price)}',
+            f'<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> <b>Общая стоимость:</b> {texts.format_price(total_price)}',
             '',
             'Подтверждаете покупку?',
         ]
@@ -324,10 +324,10 @@ async def get_subscription_info_text(subscription, texts, db_user, db: AsyncSess
 
     if not devices_selection_enabled:
         info_template = info_template.replace(
-            '\n📱 <b>Устройства:</b> {devices_used} / {devices_limit}',
+            '\n<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Устройства:</b> {devices_used} / {devices_limit}',
             '',
         ).replace(
-            '\n📱 <b>Devices:</b> {devices_used} / {devices_limit}',
+            '\n<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Devices:</b> {devices_used} / {devices_limit}',
             '',
         )
 

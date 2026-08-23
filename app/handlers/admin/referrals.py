@@ -379,7 +379,7 @@ async def view_withdrawal_request(callback: types.CallbackQuery, db_user: User, 
 👤 Пользователь: {user_name}
 🆔 ID: <code>{user_tg_id}</code>
 💰 Сумма: <b>{request.amount_kopeks / 100:.0f}₽</b>
-📊 Статус: {status_text}
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Статус: {status_text}
 
 💳 <b>Реквизиты:</b>
 <code>{html.escape(request.payment_details or '')}</code>
@@ -717,7 +717,7 @@ async def _show_diagnostics_for_period(callback: types.CallbackQuery, db: AsyncS
         text = f"""
 🔍 <b>Диагностика рефералов — {period_display}</b>
 
-<b>📊 Статистика переходов:</b>
+<b><tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Статистика переходов:</b>
 • Всего кликов по реф-ссылкам: {report.total_ref_clicks}
 • Уникальных пользователей: {report.unique_users_clicked}
 • Потерянных рефералов: {len(report.lost_referrals)}
@@ -865,7 +865,7 @@ async def preview_referral_fixes(callback: types.CallbackQuery, db_user: User, d
         text = f"""
 📋 <b>Предпросмотр исправлений — {period_display}</b>
 
-<b>📊 Что будет сделано:</b>
+<b><tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Что будет сделано:</b>
 • Исправлено рефералов: {fix_report.users_fixed}
 • Бонусов рефералам: {settings.format_price(fix_report.bonuses_to_referrals)}
 • Бонусов рефереам: {settings.format_price(fix_report.bonuses_to_referrers)}
@@ -963,7 +963,7 @@ async def apply_referral_fixes(callback: types.CallbackQuery, db_user: User, db:
         text = f"""
 ✅ <b>Исправления применены — {period_display}</b>
 
-<b>📊 Результаты:</b>
+<b><tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Результаты:</b>
 • Исправлено рефералов: {fix_report.users_fixed}
 • Бонусов рефералам: {settings.format_price(fix_report.bonuses_to_referrals)}
 • Бонусов рефереам: {settings.format_price(fix_report.bonuses_to_referrers)}
@@ -1060,7 +1060,7 @@ async def check_missing_bonuses(callback: types.CallbackQuery, db_user: User, db
         text = f"""
 🔍 <b>Проверка бонусов по БД</b>
 
-📊 <b>Статистика:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Статистика:</b>
 • Всего рефералов: {report.total_referrals_checked}
 • С пополнением ≥ минимума: {report.referrals_with_topup}
 • <b>Без бонусов: {len(report.missing_bonuses)}</b>
@@ -1145,7 +1145,7 @@ async def apply_missing_bonuses(callback: types.CallbackQuery, db_user: User, db
         text = f"""
 ✅ <b>Бонусы начислены!</b>
 
-📊 <b>Результат:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результат:</b>
 • Обработано: {fix_report.users_fixed} пользователей
 • Начислено рефералам: {fix_report.bonuses_to_referrals / 100:.0f}₽
 • Начислено рефереерам: {fix_report.bonuses_to_referrers / 100:.0f}₽
@@ -1223,7 +1223,7 @@ async def sync_referrals_with_contest(
         text = f"""
 🏆 <b>Синхронизация с конкурсами завершена!</b>
 
-📊 <b>Результат:</b>
+<tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> <b>Результат:</b>
 • Конкурсов обработано: {len(all_contests)}
 • Новых событий добавлено: {total_created}
 • Обновлено: {total_updated}
@@ -1354,7 +1354,7 @@ async def receive_log_file(message: types.Message, db_user: User, db: AsyncSessi
         text = f"""
 🔍 <b>Анализ лог-файла: {html.escape(file_name)}</b>
 
-<b>📊 Статистика переходов:</b>
+<b><tg-emoji emoji-id=\"5877256784267186004\">📊</tg-emoji> Статистика переходов:</b>
 • Всего кликов по реф-ссылкам: {report.total_ref_clicks}
 • Уникальных пользователей: {report.unique_users_clicked}
 • Потерянных рефералов: {len(report.lost_referrals)}

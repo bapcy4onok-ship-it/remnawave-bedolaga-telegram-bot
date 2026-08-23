@@ -417,11 +417,11 @@ def _build_subscriptions_table(subscriptions, texts) -> str:
         # действий не влезает на мобильных (таблица уезжает за край экрана) —
         # colspan-строка видна всегда.
         if actual_status in {'active', 'trial', 'limited'}:
-            usage_parts = [f'📊 {html.escape(_traffic_usage_text(subscription, texts))}']
+            usage_parts = [f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> {html.escape(_traffic_usage_text(subscription, texts))}']
             device_limit = getattr(subscription, 'device_limit', None)
             if device_limit is not None:
                 # 0 — безлимит (HWID выключен), а не «нет устройств»: строку не прячем
-                usage_parts.append(f'📱 {Texts.format_device_limit(device_limit)}')
+                usage_parts.append(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> {Texts.format_device_limit(device_limit)}')
             connect_link = _connect_link(subscription, texts)
             if connect_link:
                 usage_parts.append(connect_link)
@@ -476,13 +476,13 @@ async def _build_single_subscription_block(user: User, texts, db: AsyncSession) 
         lines.append(f'<code>{_progress_bar(seconds_left, total_seconds)}</code> {relative_line}')
 
     if actual_status in {'active', 'trial', 'limited'}:
-        traffic_template = texts.t('MAIN_MENU_RICH_TRAFFIC', '📊 Трафик: {traffic}')
+        traffic_template = texts.t('MAIN_MENU_RICH_TRAFFIC', '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Трафик: {traffic}')
         lines.append(
             _rich_text(traffic_template).replace('{traffic}', html.escape(_traffic_usage_text(subscription, texts)))
         )
         device_limit = getattr(subscription, 'device_limit', None)
         if device_limit is not None:
-            devices_template = texts.t('MAIN_MENU_RICH_DEVICES', '📱 Устройства: {devices}')
+            devices_template = texts.t('MAIN_MENU_RICH_DEVICES', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: {devices}')
             lines.append(_rich_text(devices_template).replace('{devices}', Texts.format_device_limit(device_limit)))
         connect_link = _connect_link(subscription, texts)
         if connect_link:
@@ -509,7 +509,7 @@ async def build_main_menu_rich_html(user: User, texts, db: AsyncSession) -> str:
     blocks.append('<hr/>')
 
     if settings.is_multi_tariff_enabled():
-        heading = texts.t('MAIN_MENU_RICH_SUBSCRIPTIONS_HEADING', '📱 Подписки')
+        heading = texts.t('MAIN_MENU_RICH_SUBSCRIPTIONS_HEADING', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Подписки')
         subscriptions = await get_all_subscriptions_by_user_id(db, user.id)
         # Неоплаченные черновики триала не показываем как существующую подписку
         subscriptions = [sub for sub in subscriptions if not getattr(sub, 'is_pending_trial', False)]
@@ -523,7 +523,7 @@ async def build_main_menu_rich_html(user: User, texts, db: AsyncSession) -> str:
             blocks.append(f'<h6>{_rich_text(heading)}</h6>')
             blocks.append(subscription_block)
     else:
-        heading = texts.t('MAIN_MENU_RICH_SUBSCRIPTION_HEADING', '📱 Подписка')
+        heading = texts.t('MAIN_MENU_RICH_SUBSCRIPTION_HEADING', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Подписка')
         blocks.append(f'<h6>{_rich_text(heading)}</h6>')
         blocks.append(await _build_single_subscription_block(user, texts, db))
 

@@ -1299,10 +1299,10 @@ class EmailNotificationTemplates:
             }
 
         valid_lines = {
-            'ru': f'<p>⏰ Предложение действует <b>{valid_hours} ч.</b></p>' if valid_hours else '',
-            'en': f'<p>⏰ The offer is valid for <b>{valid_hours} h.</b></p>' if valid_hours else '',
-            'zh': f'<p>⏰ 优惠有效期 <b>{valid_hours} 小时</b></p>' if valid_hours else '',
-            'ua': f'<p>⏰ Пропозиція діє <b>{valid_hours} год.</b></p>' if valid_hours else '',
+            'ru': f'<p><tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Предложение действует <b>{valid_hours} ч.</b></p>' if valid_hours else '',
+            'en': f'<p><tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> The offer is valid for <b>{valid_hours} h.</b></p>' if valid_hours else '',
+            'zh': f'<p><tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> 优惠有效期 <b>{valid_hours} 小时</b></p>' if valid_hours else '',
+            'ua': f'<p><tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> Пропозиція діє <b>{valid_hours} год.</b></p>' if valid_hours else '',
         }
 
         bodies = {

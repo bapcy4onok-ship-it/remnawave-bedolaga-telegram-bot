@@ -305,7 +305,7 @@ def get_device_name(device_type: str, language: str = 'ru') -> str:
 # ── Remnawave async config loader ──
 
 _PLATFORM_DISPLAY = {
-    'ios': {'name': 'iPhone/iPad', 'emoji': '📱'},
+    'ios': {'name': 'iPhone/iPad', 'emoji': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>'},
     'android': {'name': 'Android', 'emoji': '🤖'},
     'windows': {'name': 'Windows', 'emoji': '💻'},
     'macos': {'name': 'macOS', 'emoji': '🎯'},
@@ -476,7 +476,7 @@ def get_platforms_list(config: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(pd, dict) or not pd.get('apps'):
             continue
 
-        display = _PLATFORM_DISPLAY.get(pk, {'name': pk, 'emoji': '📱'})
+        display = _PLATFORM_DISPLAY.get(pk, {'name': pk, 'emoji': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>'})
 
         # Get displayName from Remnawave or fallback
         display_name_data = pd.get('displayName', display['name'])
@@ -497,12 +497,12 @@ def get_platforms_list(config: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(pd, dict) or not pd.get('apps'):
             continue
 
-        display = _PLATFORM_DISPLAY.get(pk, {'name': pk, 'emoji': '📱'})
+        display = _PLATFORM_DISPLAY.get(pk, {'name': pk, 'emoji': '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>'})
         result.append(
             {
                 'key': pk,
                 'displayName': display.get('name', pk),
-                'icon_emoji': display.get('emoji', '📱'),
+                'icon_emoji': display.get('emoji', '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji>'),
                 'device_type': _PLATFORM_TO_DEVICE.get(pk, pk),
             }
         )

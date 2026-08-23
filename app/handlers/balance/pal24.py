@@ -178,7 +178,7 @@ async def _send_pal24_payment_message(
                 '🏦 <b>Оплата через PayPalych</b>\n\n'
                 '💰 Сумма: {amount}\n'
                 '🆔 ID счета: {bill_id}\n\n'
-                '📱 <b>Инструкция:</b>\n{steps}\n\n'
+                '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n{steps}\n\n'
                 '<tg-emoji emoji-id="5283202325500927617">❓</tg-emoji> Если возникнут проблемы, обратитесь в техподдержку'
             ),
         )
@@ -567,7 +567,7 @@ async def check_pal24_payment_status(
             '',
             f'🆔 ID счета: {payment.bill_id}',
             f'💰 Сумма: {settings.format_price(payment.amount_kopeks)}',
-            f'📊 Статус: {emoji} {status_text}',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status_text}',
             f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M")}',
         ]
 

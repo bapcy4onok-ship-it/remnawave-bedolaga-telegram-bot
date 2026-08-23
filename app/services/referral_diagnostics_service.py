@@ -286,6 +286,26 @@ class MissingBonusReport:
         )
 
 
+async def _net_first_topup_kopeks(db: AsyncSession, user_id: int, first_topup) -> int:
+    """Первое пополнение без надбавки донат-апселла (0 — пополнения не было).
+
+    Транзакция ``DEPOSIT`` хранит полную сумму платежа, надбавка ушла отдельной
+    транзакцией. Живой путь начисления комиссию с надбавки не платит
+    (``referral_service.process_referral_topup``), и ремонт обязан считать так же:
+    иначе он и комиссию завысит, и протащит реферала через минимум первого
+    пополнения за счёт чужого пожертвования.
+    """
+    if not first_topup:
+        return 0
+
+    gross = int(getattr(first_topup, 'amount_kopeks', 0) or 0)
+
+    from app.services.donation_upsell_service import applied_tip_for_credited_amount
+
+    tip = await applied_tip_for_credited_amount(db, user_id=user_id, credited_amount_kopeks=gross)
+    return max(0, gross - tip)
+
+
 class ReferralDiagnosticsService:
     """Сервис диагностики реферальной системы."""
 
@@ -745,10 +765,11 @@ class ReferralDiagnosticsService:
                     .limit(1)
                 )
                 first_topup = first_topup_result.scalar_one_or_none()
+                first_topup_kopeks = await _net_first_topup_kopeks(db, user.id, first_topup)
 
-                if first_topup and first_topup.amount_kopeks >= settings.REFERRAL_MINIMUM_TOPUP_KOPEKS:
+                if first_topup and first_topup_kopeks >= settings.REFERRAL_MINIMUM_TOPUP_KOPEKS:
                     detail.had_first_topup = True
-                    detail.topup_amount_kopeks = first_topup.amount_kopeks
+                    detail.topup_amount_kopeks = first_topup_kopeks
 
                     # Проверяем, не начисляли ли уже бонусы
                     existing_bonus_result = await db.execute(
@@ -790,7 +811,7 @@ class ReferralDiagnosticsService:
                         from app.utils.user_utils import get_effective_referral_commission_percent
 
                         commission_percent = get_effective_referral_commission_percent(referrer)
-                        commission_amount = int(first_topup.amount_kopeks * commission_percent / 100)
+                        commission_amount = int(first_topup_kopeks * commission_percent / 100)
                         # Партнёрам фиксированный бонус не начисляется — только процент
                         inviter_bonus = (
                             commission_amount
@@ -830,7 +851,7 @@ class ReferralDiagnosticsService:
                                 )
 
                                 # Добавляем в активные конкурсы рефералов
-                                await self._add_to_active_contests(db, user, referrer, first_topup.amount_kopeks)
+                                await self._add_to_active_contests(db, user, referrer, first_topup_kopeks)
                     else:
                         detail.error = 'Бонусы уже начислены ранее'
 
@@ -914,9 +935,10 @@ class ReferralDiagnosticsService:
                 .limit(1)
             )
             first_topup = first_topup_result.scalar_one_or_none()
+            first_topup_kopeks = await _net_first_topup_kopeks(db, referral.id, first_topup)
 
             # Если нет пополнения или меньше минимума — пропускаем
-            if not first_topup or first_topup.amount_kopeks < settings.REFERRAL_MINIMUM_TOPUP_KOPEKS:
+            if not first_topup or first_topup_kopeks < settings.REFERRAL_MINIMUM_TOPUP_KOPEKS:
                 continue
 
             report.referrals_with_topup += 1
@@ -930,7 +952,7 @@ class ReferralDiagnosticsService:
 
             # Бонусы НЕ начислены — добавляем в отчёт
             commission_percent = get_effective_referral_commission_percent(referrer)
-            commission_amount = int(first_topup.amount_kopeks * commission_percent / 100)
+            commission_amount = int(first_topup_kopeks * commission_percent / 100)
             # Партнёрам фиксированный бонус не начисляется — только процент
             referrer_bonus = (
                 commission_amount
@@ -947,7 +969,8 @@ class ReferralDiagnosticsService:
                 referrer_telegram_id=referrer.telegram_id,
                 referrer_username=referrer.username,
                 referrer_full_name=referrer.full_name,
-                first_topup_amount_kopeks=first_topup.amount_kopeks,
+                # Чистая сумма: надбавка донат-апселла в реферальном зачёте не участвует.
+                first_topup_amount_kopeks=first_topup_kopeks,
                 first_topup_date=first_topup.created_at,
                 missing_referral_bonus=settings.REFERRAL_FIRST_TOPUP_BONUS_KOPEKS > 0,
                 missing_referrer_bonus=referrer_bonus > 0,

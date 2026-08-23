@@ -53,9 +53,9 @@ def _format_campaign_summary(campaign, texts) -> str:
         if device_limit is None:
             device_limit = settings.DEFAULT_DEVICE_LIMIT
         bonus_info = (
-            f'📱 Пробная подписка: <b>{campaign.subscription_duration_days or 0} д.</b>\n'
-            f'🌐 Трафик: <b>{traffic_text}</b>\n'
-            f'📱 Устройства: <b>{Texts.format_device_limit(device_limit)}</b>'
+            f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Пробная подписка: <b>{campaign.subscription_duration_days or 0} д.</b>\n'
+            f'<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Трафик: <b>{traffic_text}</b>\n'
+            f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Устройства: <b>{Texts.format_device_limit(device_limit)}</b>'
         )
     elif campaign.is_tariff_bonus:
         tariff_name = 'Не выбран'
@@ -182,7 +182,7 @@ async def show_campaigns_overall_stats(
     texts = get_texts(db_user.language)
     overview = await get_campaigns_overview(db)
 
-    text = ['📊 <b>Общая статистика кампаний</b>\n']
+    text = ['<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Общая статистика кампаний</b>\n']
     text.append(f'Всего кампаний: <b>{overview["total"]}</b>')
     text.append(f'Активны: <b>{overview["active"]}</b>, выключены: <b>{overview["inactive"]}</b>')
     text.append(f'Всего регистраций: <b>{overview["registrations"]}</b>')
@@ -302,7 +302,7 @@ async def show_campaign_detail(
     text = ['📣 <b>Управление кампанией</b>\n']
     text.append(_format_campaign_summary(campaign, texts))
     text.append(f'🔗 Ссылка: <code>{deep_link}</code>')
-    text.append('\n📊 <b>Статистика</b>')
+    text.append('\n<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статистика</b>')
     text.append(f'• Регистраций: <b>{stats["registrations"]}</b>')
     text.append(f'• Выдано баланса: <b>{texts.format_price(stats["balance_issued"])}</b>')
     text.append(f'• Выдано подписок: <b>{stats["subscription_issued"]}</b>')
@@ -783,7 +783,7 @@ async def start_edit_campaign_subscription_traffic(
 
     await callback.message.edit_text(
         (
-            '🌐 <b>Изменение лимита трафика</b>\n\n'
+            '<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> <b>Изменение лимита трафика</b>\n\n'
             f'Текущее значение: <b>{traffic_text}</b>\n'
             'Введите новый лимит в ГБ (0 = безлимит, максимум 10000):'
         ),
@@ -886,7 +886,7 @@ async def start_edit_campaign_subscription_devices(
 
     await callback.message.edit_text(
         (
-            '📱 <b>Изменение лимита устройств</b>\n\n'
+            '<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Изменение лимита устройств</b>\n\n'
             f'Текущее значение: <b>{current_devices}</b>\n'
             f'Введите новое количество (1-{settings.MAX_DEVICES_LIMIT}):'
         ),
@@ -1004,7 +1004,7 @@ async def start_edit_campaign_subscription_servers(
 
     await callback.message.edit_text(
         (
-            '🌍 <b>Редактирование доступных серверов</b>\n\n'
+            '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> <b>Редактирование доступных серверов</b>\n\n'
             'Нажмите на сервер, чтобы добавить или убрать его из кампании.\n'
             'После выбора нажмите "✅ Сохранить".'
         ),
@@ -1145,7 +1145,7 @@ async def show_campaign_stats(
     texts = get_texts(db_user.language)
     stats = await get_campaign_statistics(db, campaign_id)
 
-    text = ['📊 <b>Статистика кампании</b>\n']
+    text = ['<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Статистика кампании</b>\n']
     text.append(_format_campaign_summary(campaign, texts))
     text.append(f'Регистраций: <b>{stats["registrations"]}</b>')
     text.append(f'Выдано баланса: <b>{texts.format_price(stats["balance_issued"])}</b>')
@@ -1438,7 +1438,7 @@ async def process_campaign_subscription_days(
 
     await state.update_data(campaign_subscription_days=days)
     await state.set_state(AdminStates.creating_campaign_subscription_traffic)
-    await message.answer('🌐 Введите лимит трафика в ГБ (0 = безлимит):')
+    await message.answer('<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji> Введите лимит трафика в ГБ (0 = безлимит):')
 
 
 @admin_required
@@ -1461,7 +1461,7 @@ async def process_campaign_subscription_traffic(
 
     await state.update_data(campaign_subscription_traffic=traffic)
     await state.set_state(AdminStates.creating_campaign_subscription_devices)
-    await message.answer(f'📱 Введите количество устройств (1-{settings.MAX_DEVICES_LIMIT}):')
+    await message.answer(f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> Введите количество устройств (1-{settings.MAX_DEVICES_LIMIT}):')
 
 
 @admin_required
@@ -1496,7 +1496,7 @@ async def process_campaign_subscription_devices(
 
     keyboard = _build_campaign_servers_keyboard(servers, [])
     await message.answer(
-        '🌍 Выберите серверы, которые будут доступны по подписке (максимум 20 отображаются).',
+        '<tg-emoji emoji-id="5465166522030764559">🌍</tg-emoji> Выберите серверы, которые будут доступны по подписке (максимум 20 отображаются).',
         reply_markup=keyboard,
     )
 

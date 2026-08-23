@@ -117,7 +117,7 @@ async def process_bulk_ban_list(message: types.Message, db_user: User, state: FS
 
         # Подготавливаем сообщение с результатами
         result_text = '✅ <b>Массовая блокировка завершена</b>\n\n'
-        result_text += '📊 <b>Результаты:</b>\n'
+        result_text += '<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> <b>Результаты:</b>\n'
         result_text += f'✅ Успешно заблокировано: {successfully_banned}\n'
         result_text += f'❌ Не найдено: {not_found}\n'
         result_text += f'💥 Ошибок: {len(error_ids)}\n\n'

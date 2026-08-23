@@ -108,7 +108,7 @@ DEFAULT_TEMPLATES = [
         'attempts_per_user': 1,
         'times_per_day': 1,
         'schedule_times': '13:00',
-        'payload': {'pairs': [{'question': '🔐📡🌐', 'answer': 'VPN'}]},
+        'payload': {'pairs': [{'question': '🔐📡<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji>', 'answer': 'VPN'}]},
         'is_enabled': False,
     },
     {

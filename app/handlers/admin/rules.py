@@ -249,7 +249,7 @@ async def save_rules(callback: types.CallbackQuery, db_user: User, state: FSMCon
             '✓ HTML теги проверены и корректны\n'
             '✓ Кеш правил очищен и обновлен\n'
             '✓ Правила будут показываться пользователям\n\n'
-            f'📊 Размер текста: {len(new_rules)} символов',
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Размер текста: {len(new_rules)} символов',
             reply_markup=types.InlineKeyboardMarkup(
                 inline_keyboard=[
                     [types.InlineKeyboardButton(text='👀 Просмотреть', callback_data='admin_view_rules')],

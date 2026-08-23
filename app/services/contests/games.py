@@ -357,7 +357,7 @@ class EmojiGuessStrategy(BaseGameStrategy):
     game_type = GameType.EMOJI_GUESS
 
     def build_payload(self, template_payload: dict[str, Any]) -> dict[str, Any]:
-        pairs = template_payload.get('pairs') or [{'question': '🔐📡🌐', 'answer': 'VPN'}]
+        pairs = template_payload.get('pairs') or [{'question': '🔐📡<tg-emoji emoji-id="5449855298627989865">🌐</tg-emoji>', 'answer': 'VPN'}]
         pair = random.choice(pairs)
         return pair
 

@@ -208,7 +208,7 @@ async def process_cryptobot_payment_amount(
             f'🪙 Актив: {payment_result["asset"]}\n'
             f'💱 Курс: 1 USD = {current_rate:.2f} ₽\n'
             f'🆔 ID платежа: {payment_result["invoice_id"][:8]}...\n\n'
-            f'📱 <b>Инструкция:</b>\n'
+            f'<tg-emoji emoji-id="6222114543280065157">📱</tg-emoji> <b>Инструкция:</b>\n'
             f"1. Нажмите кнопку 'Оплатить'\n"
             f'2. Выберите удобный актив\n'
             f'3. Переведите указанную сумму\n'
@@ -265,7 +265,7 @@ async def check_cryptobot_payment_status(callback: types.CallbackQuery, db: Asyn
             f'🪙 Статус платежа:\n\n'
             f'🆔 ID: {payment.invoice_id[:8]}...\n'
             f'💰 Сумма: {payment.amount} {payment.asset}\n'
-            f'📊 Статус: {emoji} {status}\n'
+            f'<tg-emoji emoji-id="5877256784267186004">📊</tg-emoji> Статус: {emoji} {status}\n'
             f'📅 Создан: {payment.created_at.strftime("%d.%m.%Y %H:%M")}\n'
         )
 
