@@ -336,7 +336,7 @@ class ReportingService:
                 '💜 <b>Пожертвования</b>',
                 (
                     f'• Собрано за период: <b>{self._format_amount(donations["total_amount"])}</b> '
-                    f'(донатов: {donations["total_count"]}, доноров: {donations["donors_count"]})'
+                    f'(донатов: {donations["total_count"]}, донатеров: {donations["donors_count"]})'
                 ),
                 (
                     '• Кнопка «Поддержать проект»: '

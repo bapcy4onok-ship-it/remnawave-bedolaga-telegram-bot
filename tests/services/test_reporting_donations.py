@@ -224,7 +224,7 @@ async def test_report_contains_donations_section(monkeypatch):
     text, _ = await _render_report(monkeypatch)
 
     assert '💜 <b>Пожертвования</b>' in text
-    assert '• Собрано за период: <b>3 076.00 ₽</b> (донатов: 204, доноров: 87)' in text
+    assert '• Собрано за период: <b>3 076.00 ₽</b> (донатов: 204, донатеров: 87)' in text
     assert '• Кнопка «Поддержать проект»: 816.00 ₽ (9)' in text
     assert '• Надбавка при пополнении: 2 260.00 ₽ (195)' in text
     assert '• Средний донат: 15.07 ₽' in text
