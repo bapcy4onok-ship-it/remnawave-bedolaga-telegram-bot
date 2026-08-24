@@ -557,6 +557,77 @@ async def _sync_subscription_from_panel_by_email(db: AsyncSession, user: User) -
         await db.refresh(user)
 
 
+# Потолок на аналитическую запись в пути авторизации. Даже если строку юзера в этот
+# момент держит чужая транзакция (бот на /start, админка), вход не должен ждать её
+# дольше пары секунд: CID — не та ценность, ради которой можно рискнуть логином.
+# Без потолка ожидание упирается в asyncpg command_timeout (30 c), а это заведомо
+# больше таймаутов фронта и прокси, то есть для человека — «регистрация не прошла».
+_YANDEX_CID_CAPTURE_TIMEOUT = 3.0
+
+
+async def _capture_yandex_cid(user_id: int, cid: str | None, *, source: str) -> None:
+    """Сохранить ClientID Метрики, пришедший вместе с запросом авторизации.
+
+    Путь записи переиспользуется целиком — тот же, что у POST
+    /cabinet/branding/analytics/yandex-cid: ``store_cid`` → ``upsert_cid``.
+
+    ВЫЗЫВАТЬ ТОЛЬКО ДЛЯ АККАУНТА, СОЗДАННОГО ЭТИМ ЖЕ ЗАПРОСОМ. У возвращающегося
+    пользователя строку не трогаем осознанно: ``upsert_cid`` перезаписывает CID
+    безусловно, а истории CID таблица не хранит (одна строка на user_id). Запись
+    на каждом логине превратила бы ``yandex_client_id_map`` из «визита, с которого
+    пришёл человек» в «последний браузер, из которого зашли», и первичный визит
+    было бы не восстановить — а цель ``registration`` именно first-touch. Плюс
+    защита от фантомных конверсий: у аккаунта, заведённого год назад,
+    ``registration_sent = false`` просто потому, что строки не было.
+    Возвращающегося пользователя и так покрывает /branding/analytics/yandex-cid,
+    а кабинетные покупки шлют свежий CID прямо в теле запроса.
+
+    МЕСТО ВЫЗОВА В ХЭНДЛЕРЕ КРИТИЧНО — сразу после ``db.commit()``, которым
+    зафиксирован аккаунт, и ДО реферально-кампанийного блока:
+
+    * запись идёт в ОТДЕЛЬНОЙ сессии (упавший INSERT не имеет права отравить
+      транзакцию эндпоинта), а ``yandex_client_id_map.user_id`` — это FK на
+      ``users``. На INSERT PostgreSQL проверяет FK через
+      ``SELECT 1 FROM users WHERE id = $1 FOR KEY SHARE``;
+    * ``FOR KEY SHARE`` конфликтует с ``FOR UPDATE``. ``_process_campaign_bonus``
+      и ``_process_referral_code`` берут ``SELECT ... FOR UPDATE`` по строке юзера
+      и на части веток (bonus_type='none', «бонус уже начислен», ранний return)
+      не коммитят. Если вызвать запись после них, вторая сессия встанет ждать
+      транзакцию, закоммитить которую может только эта же корутина — после
+      возврата из ``await``. Классический self-deadlock через две сессии: PostgreSQL
+      его не видит (держатель блокировки ничего не ждёт в БД), и запрос висит до
+      asyncpg command_timeout;
+    * пока аккаунт не закоммичен, FK-проверка точно так же встанет — уже на
+      незакоммиченной родительской строке. Поэтому не «до», а именно «сразу после».
+
+    Остальное — страховка: ``store_cid_and_fire_registration`` открывает свою
+    сессию, сама глотает ошибки, событие ``registration`` уходит в фон и только
+    когда офлайн-конверсии включены; ``wait_for`` ограничивает ожидание, внешний
+    ``except`` ловит всё остальное (включая сбой импорта). CID в лог пишем только
+    замаскированным.
+    """
+    if not cid:
+        return
+
+    masked = '****'
+    try:
+        from app.services import yandex_offline_conv_service as yandex_conv
+
+        masked = yandex_conv._mask_cid(cid)
+        await asyncio.wait_for(
+            yandex_conv.store_cid_and_fire_registration(user_id, cid, source=source),
+            timeout=_YANDEX_CID_CAPTURE_TIMEOUT,
+        )
+    except Exception as exc:
+        logger.debug(
+            'Failed to capture yandex_cid on auth (non-fatal)',
+            user_id=user_id,
+            source=source,
+            cid=masked,
+            error=str(exc),
+        )
+
+
 @router.post('/telegram', response_model=AuthResponse)
 async def auth_telegram(
     request: TelegramAuthRequest,
@@ -696,6 +767,13 @@ async def auth_telegram(
     user.cabinet_last_login = datetime.now(UTC)
     await db.commit()
 
+    # Яндекс.Метрика: CID визита, из которого человек зарегистрировался. Только для
+    # НОВОГО аккаунта, и строго здесь — сразу после commit() и ДО реферально-кампанийного
+    # блока с его SELECT ... FOR UPDATE по этой же строке users. Почему — см.
+    # _capture_yandex_cid, там же про то, почему это не может уронить или подвесить вход.
+    if is_new_user:
+        await _capture_yandex_cid(user.id, request.yandex_cid, source='cabinet_telegram')
+
     response = await _create_auth_response(user, db)
 
     # Store refresh token
@@ -773,7 +851,12 @@ async def auth_telegram_widget(
             headers={'Retry-After': '60'},
         )
 
-    widget_data = request.model_dump(exclude={'campaign_slug', 'referral_code'})
+    # ВАЖНО: всё, что не входит в exclude и не равно None, попадает в
+    # data-check-string и ломает HMAC (см. validate_telegram_login_widget).
+    # Telegram подписывает только свои поля — наши обязаны быть исключены.
+    widget_data = request.model_dump(
+        exclude={'campaign_slug', 'referral_code', 'yandex_cid', 'accepted_legal_documents'}
+    )
 
     # Login Widget auth is fresh per click (24h is already very generous).
     if not validate_telegram_login_widget(widget_data, max_age_seconds=86400):
@@ -870,6 +953,13 @@ async def auth_telegram_widget(
 
     user.cabinet_last_login = datetime.now(UTC)
     await db.commit()
+
+    # Яндекс.Метрика: CID визита, из которого человек зарегистрировался. Только для
+    # НОВОГО аккаунта, и строго здесь — сразу после commit() и ДО реферально-кампанийного
+    # блока с его SELECT ... FOR UPDATE по этой же строке users. Почему — см.
+    # _capture_yandex_cid, там же про то, почему это не может уронить или подвесить вход.
+    if is_new_user:
+        await _capture_yandex_cid(user.id, request.yandex_cid, source='cabinet_widget')
 
     response = await _create_auth_response(user, db)
     await _store_refresh_token(db, user.id, response.refresh_token)
@@ -1058,6 +1148,13 @@ async def auth_telegram_oidc(
 
     user.cabinet_last_login = datetime.now(UTC)
     await db.commit()
+
+    # Яндекс.Метрика: CID визита, из которого человек зарегистрировался. Только для
+    # НОВОГО аккаунта, и строго здесь — сразу после commit() и ДО реферально-кампанийного
+    # блока с его SELECT ... FOR UPDATE по этой же строке users. Почему — см.
+    # _capture_yandex_cid, там же про то, почему это не может уронить или подвесить вход.
+    if is_new_user:
+        await _capture_yandex_cid(user.id, request.yandex_cid, source='cabinet_oidc')
 
     response = await _create_auth_response(user, db)
     await _store_refresh_token(db, user.id, response.refresh_token)
@@ -1511,6 +1608,13 @@ async def register_email_standalone(
                 custom_subject=custom_subject,
                 custom_body_html=custom_body,
             )
+
+    # Яндекс.Метрика: аккаунт здесь создаётся всегда, флаг is_new_user не нужен.
+    # Событие 'registration' уйдёт в момент отправки формы, до подтверждения почты —
+    # цель считает регистрации, а не верификации; registration_sent в БД гарантирует
+    # ровно одну отправку. Место вызова — после commit() обеих веток выше и до
+    # реферального блока; про требования к месту см. _capture_yandex_cid.
+    await _capture_yandex_cid(user.id, request.yandex_cid, source='cabinet_email')
 
     # Обработать реферальную регистрацию (если есть реферер)
     if referrer:

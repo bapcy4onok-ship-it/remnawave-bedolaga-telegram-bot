@@ -26,8 +26,8 @@ from ..auth.oauth_providers import (
 )
 from ..dependencies import get_cabinet_db
 from ..routes.account_linking import OAuthProviderName
-from ..schemas.auth import AuthResponse
-from .auth import _create_auth_response, _process_campaign_bonus, _store_refresh_token
+from ..schemas.auth import YANDEX_CID_DESCRIPTION, AuthResponse, YandexCid
+from .auth import _capture_yandex_cid, _create_auth_response, _process_campaign_bonus, _store_refresh_token
 
 
 logger = structlog.get_logger(__name__)
@@ -43,10 +43,19 @@ async def _finalize_oauth_login(
     referral_code: str | None = None,
     *,
     is_new_user: bool = False,
+    yandex_cid: str | None = None,
 ) -> AuthResponse:
     """Update last login, create tokens, store refresh token."""
     user.cabinet_last_login = datetime.now(UTC)
     await db.commit()
+
+    # Яндекс.Метрика: CID визита, из которого человек зарегистрировался. Только для
+    # НОВОГО аккаунта, и строго здесь — сразу после commit() и ДО реферально-кампанийного
+    # блока с его SELECT ... FOR UPDATE по этой же строке users. Почему — см.
+    # _capture_yandex_cid, там же про то, почему это не может уронить или подвесить вход.
+    if is_new_user:
+        await _capture_yandex_cid(user.id, yandex_cid, source='cabinet_oauth')
+
     auth_response = await _create_auth_response(user, db)
     await _store_refresh_token(db, user.id, auth_response.refresh_token, device_info=f'oauth:{provider}')
 
@@ -88,6 +97,7 @@ class OAuthCallbackRequest(BaseModel):
     referral_code: str | None = Field(
         None, max_length=32, pattern=r'^[a-zA-Z0-9_-]+$', description='Referral code of inviter'
     )
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)  # см. YandexCid в schemas/auth.py
 
 
 # --- Endpoints ---
@@ -195,7 +205,9 @@ async def oauth_callback(
         if was_deleted:
             await revive_deleted_user(db, user, source=f'oauth_{provider}_provider_id')
         logger.info('OAuth login for existing user', provider=provider, user_id=user.id, revived=was_deleted)
-        return await _finalize_oauth_login(db, user, provider, request.campaign_slug, request.referral_code)
+        return await _finalize_oauth_login(
+            db, user, provider, request.campaign_slug, request.referral_code, yandex_cid=request.yandex_cid
+        )
 
     # 6. Find user by email — link provider only when BOTH the IdP and
     # the local row attest the email is verified. Without the local
@@ -244,7 +256,9 @@ async def oauth_callback(
                 user_id=user.id,
                 revived=was_deleted,
             )
-            return await _finalize_oauth_login(db, user, provider, request.campaign_slug, request.referral_code)
+            return await _finalize_oauth_login(
+                db, user, provider, request.campaign_slug, request.referral_code, yandex_cid=request.yandex_cid
+            )
 
     # 7. Resolve referral code for new user
     referrer_id = None
@@ -304,5 +318,11 @@ async def oauth_callback(
             logger.warning('Failed to sync panel subscription for new OAuth user', user_id=user.id, exc_info=True)
 
     return await _finalize_oauth_login(
-        db, user, provider, request.campaign_slug, request.referral_code, is_new_user=True
+        db,
+        user,
+        provider,
+        request.campaign_slug,
+        request.referral_code,
+        is_new_user=True,
+        yandex_cid=request.yandex_cid,
     )

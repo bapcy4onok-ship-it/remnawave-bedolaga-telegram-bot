@@ -1,8 +1,42 @@
 """Authentication schemas for cabinet."""
 
+import re
 from datetime import datetime
+from typing import Annotated, Any
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field
+
+
+# Кэшированный ClientID Метрики, который фронт кладёт в тело КАЖДОГО запроса входа
+# и регистрации (src/api/auth.ts, src/api/oauth.ts). См. PurchasePreviewRequest.yandex_cid (#558449).
+#
+# Поле аналитическое, а эндпоинты — входные, поэтому НИКАКИХ pattern/max_length:
+# констрейнт pydantic превратил бы кривое значение в 422, то есть в отказ авторизации.
+# Значение живёт в localStorage (ключ ym_client_id) и пишется туда «как есть» из
+# ym('getClientID'), так что один испорченный ClientID залипал бы намертво: браузер
+# слал бы его при каждой попытке входа и человек не смог бы зайти в кабинет, пока не
+# почистит storage. Поэтому мусор молча превращается в None и до БД просто не доезжает.
+#
+# Символ '_' в начале исключён сознательно: в yandex_client_id_map это зарезервированное
+# пространство плейсхолдеров (upsert_subid пишет '_subid_only'), а сервис конверсий
+# трактует любой CID с таким префиксом как «настоящего CID ещё нет» и навсегда глушит
+# для юзера registration/trial/purchase. Клиент не должен уметь занять это пространство.
+_YANDEX_CID_RE = re.compile(r'^[A-Za-z0-9.:-][A-Za-z0-9._:-]{3,127}$')
+
+
+def _sanitize_yandex_cid(value: Any) -> str | None:
+    """Привести значение к валидному CID или к None. Никогда не бросает — см. комментарий выше."""
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not _YANDEX_CID_RE.match(value):
+        return None
+    return value
+
+
+YandexCid = Annotated[str | None, BeforeValidator(_sanitize_yandex_cid)]
+
+YANDEX_CID_DESCRIPTION = 'Cached Yandex.Metrika ClientID (optional). Malformed values are ignored, never rejected.'
 
 
 class TelegramAuthRequest(BaseModel):
@@ -24,6 +58,7 @@ class TelegramAuthRequest(BaseModel):
             'для существующего игнорируются.'
         ),
     )
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)  # см. YandexCid выше
 
 
 class TelegramWidgetAuthRequest(BaseModel):
@@ -51,6 +86,7 @@ class TelegramWidgetAuthRequest(BaseModel):
             'для существующего игнорируются.'
         ),
     )
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)  # см. YandexCid выше
 
 
 class TelegramOIDCAuthRequest(BaseModel):
@@ -72,6 +108,7 @@ class TelegramOIDCAuthRequest(BaseModel):
             'для существующего игнорируются.'
         ),
     )
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)  # см. YandexCid выше
 
 
 class EmailRegisterRequest(BaseModel):
@@ -79,6 +116,9 @@ class EmailRegisterRequest(BaseModel):
 
     email: EmailStr = Field(..., description='Email address')
     password: str = Field(..., min_length=8, max_length=128, description='Password (min 8 chars)')
+    # Принимается только ради контракта: это вход/линковка существующего аккаунта,
+    # а CID возвращающегося пользователя мы не переписываем (см. _capture_yandex_cid).
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)
 
 
 class EmailVerifyRequest(BaseModel):
@@ -98,6 +138,9 @@ class EmailLoginRequest(BaseModel):
     campaign_slug: str | None = Field(
         None, min_length=1, max_length=64, pattern=r'^[a-zA-Z0-9_-]+$', description='Campaign slug from web link'
     )
+    # Принимается только ради контракта: это вход/линковка существующего аккаунта,
+    # а CID возвращающегося пользователя мы не переписываем (см. _capture_yandex_cid).
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)
 
 
 class RefreshTokenRequest(BaseModel):
@@ -176,6 +219,7 @@ class EmailRegisterStandaloneRequest(BaseModel):
             '(см. GET /cabinet/info/legal-consent).'
         ),
     )
+    yandex_cid: YandexCid = Field(None, description=YANDEX_CID_DESCRIPTION)  # см. YandexCid выше
 
 
 class CampaignBonusInfo(BaseModel):
