@@ -1347,16 +1347,34 @@ class DonorItem(BaseModel):
     last_donation_at: datetime | None = None
 
 
+class DailyDonationItem(BaseModel):
+    date: str
+    count: int
+    amount_kopeks: int
+
+
+class DailyDonationBySourceItem(BaseModel):
+    date: str
+    source: str
+    amount_kopeks: int
+
+
 class DonationsStatsResponse(BaseModel):
     """Статистика пожертвований: общая сумма + топ спонсоров."""
 
     total_amount_kopeks: int
+    donations_count: int = 0
     donors_count: int
+    avg_donation_kopeks: int = 0
     top_donors: list[DonorItem]
     # Суммы по источнику: 'menu' — кнопка «Поддержать проект», 'topup_upsell' —
     # надбавка к пополнению. Надбавки уже посчитаны и внутри статистики пополнений:
     # реальный платёж был на сумму «пополнение + надбавка».
     by_source: dict[str, int] = {}
+    # Количество донатов по тем же источникам.
+    by_source_count: dict[str, int] = {}
+    daily: list[DailyDonationItem] = []
+    daily_by_source: list[DailyDonationBySourceItem] = []
     # Воронка апселла: shown / accepted / applied / declined.
     upsell_funnel: dict[str, int] = {}
 
@@ -1370,15 +1388,18 @@ async def get_donations_stats(
     admin: User = Depends(require_permission('sales_stats:read')),
     db: AsyncSession = Depends(get_cabinet_db),
 ) -> DonationsStatsResponse:
-    """Статистика пожертвований «Поддержать проект»: общая сумма, число доноров, топ спонсоров.
+    """Статистика пожертвований «Поддержать проект»: суммы, число доноров, топ спонсоров и динамика по дням.
 
     Донаты не входят в выручку/партнёрку — это отдельный реестр. По умолчанию — всё время.
     """
     try:
         from app.database.crud.donation import (
             count_distinct_donors,
+            count_donations,
             get_donation_leaderboard,
-            get_donations_by_source_kopeks,
+            get_donations_by_source,
+            get_donations_daily_by_source,
+            get_donations_daily_series,
             get_total_donations_kopeks,
         )
         from app.database.crud.donation_pledge import get_upsell_funnel
@@ -1390,17 +1411,26 @@ async def get_donations_stats(
             period_start, period_end = _parse_period(days, start_date, end_date)
 
         total_amount = await get_total_donations_kopeks(db, start=period_start, end=period_end)
+        donations_count = await count_donations(db, start=period_start, end=period_end)
         donors_count = await count_distinct_donors(db, start=period_start, end=period_end)
         leaderboard = await get_donation_leaderboard(db, limit=limit, start=period_start, end=period_end)
 
-        by_source = await get_donations_by_source_kopeks(db, start=period_start, end=period_end)
+        by_source_rows = await get_donations_by_source(db, start=period_start, end=period_end)
+        daily = await get_donations_daily_series(db, start=period_start, end=period_end)
+        daily_by_source = await get_donations_daily_by_source(db, start=period_start, end=period_end)
         upsell_funnel = await get_upsell_funnel(db, start=period_start, end=period_end)
 
         return DonationsStatsResponse(
             total_amount_kopeks=total_amount,
+            donations_count=donations_count,
             donors_count=donors_count,
+            avg_donation_kopeks=total_amount // donations_count if donations_count > 0 else 0,
             top_donors=[DonorItem(**row) for row in leaderboard],
-            by_source=by_source,
+            # by_source остаётся плоским {источник: сумма} — на нём завязан уже выложенный фронт.
+            by_source={source: row['amount_kopeks'] for source, row in by_source_rows.items()},
+            by_source_count={source: row['count'] for source, row in by_source_rows.items()},
+            daily=[DailyDonationItem(**row) for row in daily],
+            daily_by_source=[DailyDonationBySourceItem(**row) for row in daily_by_source],
             upsell_funnel=upsell_funnel,
         )
 

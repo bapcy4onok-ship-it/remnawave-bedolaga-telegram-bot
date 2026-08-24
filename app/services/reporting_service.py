@@ -13,6 +13,14 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import false, true
 
 from app.config import settings
+from app.database.crud.donation import (
+    count_distinct_donors,
+    count_donations,
+    get_donation_leaderboard,
+    get_donations_by_source,
+    get_total_donations_kopeks,
+)
+from app.database.crud.donation_pledge import get_upsell_funnel
 from app.database.crud.subscription import get_subscriptions_statistics
 from app.database.crud.transaction import REAL_PAYMENT_METHODS
 from app.database.database import AsyncSessionLocal
@@ -29,6 +37,12 @@ from app.database.models import (
 
 
 logger = structlog.get_logger(__name__)
+
+# Отчёт уходит одним сообщением (лимит Telegram — 4096 символов), а подписи спонсоров и
+# рефереров приходят из имён Telegram, то есть это чужой ввод. Экранирование раздувает его
+# впятеро (`&` → `&amp;`), поэтому 8 таких подписей способны вынести отчёт за лимит — и
+# тогда не отправится ничего. Режем до отправки в escape, иначе можно разрубить сущность.
+MAX_LABEL_CHARS = 48
 
 
 class ReportingServiceError(RuntimeError):
@@ -252,6 +266,9 @@ class ReportingService:
             stats = await self._collect_period_stats(session, start_utc, end_utc)
             top_referrers = await self._get_top_referrers(session, start_utc, end_utc, limit=5)
             usage = await self._get_user_usage_stats(session)
+            donations = (
+                await self._collect_donation_stats(session, start_utc, end_utc) if settings.DONATIONS_ENABLED else None
+            )
 
         conversion_rate = (
             (stats['trial_to_paid_conversions'] / stats['new_trials'] * 100) if stats['new_trials'] > 0 else 0.0
@@ -276,8 +293,17 @@ class ReportingService:
             ),
             f'• Новых платных (всего): <b>{stats["new_paid_subscriptions"]}</b>',
             f'• Поступления всего (только пополнения): <b>{self._format_amount(stats["deposits_amount"])}</b>',
-            '',
         ]
+        if donations is not None:
+            # Оговорка прямо в строке: соседняя строка «Поступления всего» уже содержит надбавки,
+            # и без пометки их сложили бы дважды.
+            upsell_note = (
+                f' <i>(из них {self._format_amount(donations["upsell_amount"])} — надбавки, уже в поступлениях)</i>'
+                if donations['upsell_amount']
+                else ''
+            )
+            lines.append(f'• Пожертвования: <b>{self._format_amount(donations["total_amount"])}</b>{upsell_note}')
+        lines.append('')
 
         # Подписки
         lines += [
@@ -302,6 +328,51 @@ class ReportingService:
             '',
         ]
 
+        # Пожертвования
+        if donations is not None:
+            funnel = donations['funnel']
+            upsell_conversion = (funnel['applied'] / funnel['shown'] * 100) if funnel['shown'] > 0 else 0.0
+            lines += [
+                '💜 <b>Пожертвования</b>',
+                (
+                    f'• Собрано за период: <b>{self._format_amount(donations["total_amount"])}</b> '
+                    f'(донатов: {donations["total_count"]}, доноров: {donations["donors_count"]})'
+                ),
+                (
+                    '• Кнопка «Поддержать проект»: '
+                    f'{self._format_amount(donations["menu_amount"])} ({donations["menu_count"]})'
+                ),
+                (
+                    '• Надбавка при пополнении: '
+                    f'{self._format_amount(donations["upsell_amount"])} ({donations["upsell_count"]})'
+                ),
+            ]
+            if donations['other_amount'] > 0:
+                lines.append(
+                    f'• Прочие источники: {self._format_amount(donations["other_amount"])} ({donations["other_count"]})'
+                )
+            lines += [
+                f'• Средний донат: {self._format_amount(donations["avg_amount"])}',
+                (
+                    f'• Апселл (по дате решения): решений {funnel["shown"]} → согласий {funnel["accepted"]} → '
+                    f'исполнено {funnel["applied"]} (<i>{upsell_conversion:.1f}%</i>)'
+                ),
+            ]
+            if donations['top_donors']:
+                top_donors = ', '.join(
+                    f'{index}. {self._escaped_label(donor["label"])} — {self._format_amount(donor["amount"])}'
+                    for index, donor in enumerate(donations['top_donors'], 1)
+                )
+                lines.append(f'• Топ спонсоров за период: {top_donors}')
+            lines += [
+                f'• Всего собрано за всё время: {self._format_amount(donations["all_time_amount"])}',
+                (
+                    '<i>Примечание: надбавки при пополнении уже входят в «Пополнения» выше — платёж проходил '
+                    'на сумму «пополнение + надбавка».</i>'
+                ),
+                '',
+            ]
+
         # Поддержка
         lines += [
             '🎟️ <b>Поддержка</b>',
@@ -322,7 +393,7 @@ class ReportingService:
         lines += ['🤝 <b>Топ по рефералам (за период)</b>']
         if top_referrers:
             for index, row in enumerate(top_referrers, 1):
-                referrer_label = escape(row['referrer_label'], quote=False)
+                referrer_label = self._escaped_label(row['referrer_label'])
                 lines.append(f'{index}. {referrer_label}: {row["count"]} приглашений')
         else:
             lines.append('— данных нет')
@@ -470,6 +541,60 @@ class ReportingService:
             'new_tickets': new_tickets,
         }
 
+    async def _collect_donation_stats(
+        self,
+        session,
+        start_utc: datetime,
+        end_utc: datetime,
+    ) -> dict:
+        """Пожертвования за период: суммы и количества, воронка апселла, топ спонсоров."""
+        # CRUD пожертвований фильтрует по `created_at <= end`, а отчёт работает на полуинтервале
+        # [start, end): без сдвига донат ровно в полночь попал бы сразу в два соседних отчёта.
+        period_end = end_utc - timedelta(microseconds=1)
+
+        total_amount = await get_total_donations_kopeks(session, start=start_utc, end=period_end)
+        total_count = await count_donations(session, start=start_utc, end=period_end)
+        donors_count = await count_distinct_donors(session, start=start_utc, end=period_end)
+        by_source = await get_donations_by_source(session, start=start_utc, end=period_end)
+        all_time_amount = await get_total_donations_kopeks(session)
+        funnel = await get_upsell_funnel(session, start=start_utc, end=period_end)
+        leaderboard = await get_donation_leaderboard(session, limit=3, start=start_utc, end=period_end)
+
+        menu = by_source.get('menu') or {}
+        upsell = by_source.get('topup_upsell') or {}
+
+        total_amount = int(total_amount or 0)
+        total_count = int(total_count or 0)
+        menu_amount = int(menu.get('amount_kopeks') or 0)
+        menu_count = int(menu.get('count') or 0)
+        upsell_amount = int(upsell.get('amount_kopeks') or 0)
+        upsell_count = int(upsell.get('count') or 0)
+
+        return {
+            'total_amount': total_amount,
+            'total_count': total_count,
+            'donors_count': int(donors_count or 0),
+            'menu_amount': menu_amount,
+            'menu_count': menu_count,
+            'upsell_amount': upsell_amount,
+            'upsell_count': upsell_count,
+            # Источник, которого ещё не было на момент написания отчёта: без этой строки его
+            # деньги молча выпали бы из разбивки, не сходясь с «Собрано за период».
+            'other_amount': max(0, total_amount - menu_amount - upsell_amount),
+            'other_count': max(0, total_count - menu_count - upsell_count),
+            'avg_amount': total_amount // total_count if total_count else 0,
+            'all_time_amount': int(all_time_amount or 0),
+            'funnel': {
+                'shown': int(funnel.get('shown') or 0),
+                'accepted': int(funnel.get('accepted') or 0),
+                'applied': int(funnel.get('applied') or 0),
+                'declined': int(funnel.get('declined') or 0),
+            },
+            'top_donors': [
+                {'label': self._donor_label(row), 'amount': int(row.get('total_kopeks') or 0)} for row in leaderboard
+            ],
+        }
+
     def _txn_query_base(self, txn_type: str, start_utc: datetime, end_utc: datetime):
         return select(
             func.count(Transaction.id),
@@ -573,6 +698,29 @@ class ReportingService:
         if parts:
             return ' '.join(parts)
         return f'User #{getattr(user, "id", "?")}'
+
+    def _donor_label(self, row: dict) -> str:
+        """Подпись спонсора: @username → имя → telegram id → User #id → «аноним»."""
+        username = row.get('donor_username')
+        if username:
+            return f'@{username}'
+        name = (row.get('donor_name') or '').strip()
+        if name:
+            return name
+        telegram_id = row.get('donor_telegram_id')
+        if telegram_id:
+            return f'ID {telegram_id}'
+        user_id = row.get('user_id')
+        if user_id:
+            return f'User #{user_id}'
+        return 'аноним'
+
+    def _escaped_label(self, label: str) -> str:
+        """Готовит подпись пользователя к вставке в HTML: обрезает до лимита и экранирует."""
+        label = (label or '').strip()
+        if len(label) > MAX_LABEL_CHARS:
+            label = f'{label[: MAX_LABEL_CHARS - 1]}…'
+        return escape(label, quote=False)
 
     def _format_period_label(self, start: datetime, end: datetime) -> str:
         start_date = start.astimezone(self._moscow_tz).date()

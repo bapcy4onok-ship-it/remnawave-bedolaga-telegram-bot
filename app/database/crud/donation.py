@@ -117,16 +117,92 @@ async def get_total_donations_kopeks(
     return int(result.scalar() or 0)
 
 
-async def get_donations_by_source_kopeks(
+async def count_donations(
     db: AsyncSession,
     *,
     start: datetime | None = None,
     end: datetime | None = None,
-) -> dict[str, int]:
-    """Суммы пожертвований по источнику: 'menu' (кнопка) и 'topup_upsell' (надбавка)."""
-    query = select(Donation.source, func.coalesce(func.sum(Donation.amount_kopeks), 0)).group_by(Donation.source)
+) -> int:
+    """Количество пожертвований (опц. за период)."""
+    query = _apply_period(select(func.count(Donation.id)), start, end)
+    result = await db.execute(query)
+    return int(result.scalar() or 0)
+
+
+async def get_donations_by_source(
+    db: AsyncSession,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> dict[str, dict[str, int]]:
+    """Пожертвования по источнику: сумма и количество ('menu' — кнопка, 'topup_upsell' — надбавка)."""
+    query = select(
+        Donation.source,
+        func.coalesce(func.sum(Donation.amount_kopeks), 0).label('amount'),
+        func.count(Donation.id).label('count'),
+    ).group_by(Donation.source)
     result = await db.execute(_apply_period(query, start, end))
-    return {str(source or 'menu'): int(total or 0) for source, total in result.all()}
+    return {
+        str(source or 'menu'): {'amount_kopeks': int(amount or 0), 'count': int(count or 0)}
+        for source, amount, count in result.all()
+    }
+
+
+async def get_donations_daily_series(
+    db: AsyncSession,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Пожертвования по дням: [{'date': 'YYYY-MM-DD', 'count': ..., 'amount_kopeks': ...}] по возрастанию даты."""
+    donation_date = func.date(Donation.created_at)
+    query = (
+        select(
+            donation_date.label('date'),
+            func.count(Donation.id).label('count'),
+            func.coalesce(func.sum(Donation.amount_kopeks), 0).label('amount'),
+        )
+        .group_by(donation_date)
+        .order_by(donation_date)
+    )
+    result = await db.execute(_apply_period(query, start, end))
+    return [
+        {
+            # func.date отдаёт date на PostgreSQL и str на SQLite
+            'date': row.date.isoformat() if hasattr(row.date, 'isoformat') else str(row.date),
+            'count': int(row.count or 0),
+            'amount_kopeks': int(row.amount or 0),
+        }
+        for row in result.all()
+    ]
+
+
+async def get_donations_daily_by_source(
+    db: AsyncSession,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Суммы пожертвований по дням и источникам: [{'date', 'source', 'amount_kopeks'}], сортировка по (дата, источник)."""
+    donation_date = func.date(Donation.created_at)
+    query = (
+        select(
+            donation_date.label('date'),
+            Donation.source.label('source'),
+            func.coalesce(func.sum(Donation.amount_kopeks), 0).label('amount'),
+        )
+        .group_by(donation_date, Donation.source)
+        .order_by(donation_date, Donation.source)
+    )
+    result = await db.execute(_apply_period(query, start, end))
+    return [
+        {
+            'date': row.date.isoformat() if hasattr(row.date, 'isoformat') else str(row.date),
+            'source': str(row.source or 'menu'),
+            'amount_kopeks': int(row.amount or 0),
+        }
+        for row in result.all()
+    ]
 
 
 async def get_user_donation_total_kopeks(db: AsyncSession, user_id: int) -> int:
