@@ -6,7 +6,16 @@ import pytest
 from pydantic import ValidationError
 
 from app.cabinet.routes.admin_profit import ExpenseWriteRequest, _parse_period, _payload_to_fields
-from app.database.models import ProfitExpense, ProfitExpenseCategory, ProfitExpenseKind
+from app.database.models import (
+    Donation,
+    GuestPurchase,
+    ProfitExpense,
+    ProfitExpenseCategory,
+    ProfitExpenseKind,
+    Transaction,
+    User,
+    WithdrawalRequest,
+)
 from app.services.exchange_rate_service import exchange_rate_service
 
 
@@ -223,3 +232,47 @@ def test_days_zero_means_all_time():
 def test_days_none_means_current_month():
     start, _ = _parse_period(None, None, None)
     assert start.day == 1 and start.month == datetime.now(UTC).month
+
+
+@pytest.mark.asyncio
+async def test_payload_round_trips_into_the_database(monkeypatch):
+    """Схема запроса → модель → БД → отчёт.
+
+    Стык, который поодиночке не ловится: опечатка в имени поля видна только
+    когда словарь из ``_payload_to_fields`` реально уходит в ``ProfitExpense``.
+    """
+    from datetime import timedelta
+
+    from app.database.crud.profit_expense import create_expense, list_expenses
+    from app.services.profit_service import calculate_profit_report
+    from tests.fixtures.sqlite_memory import memory_session
+
+    tables = [
+        User.__table__,
+        Transaction.__table__,
+        Donation.__table__,
+        GuestPurchase.__table__,
+        WithdrawalRequest.__table__,
+        ProfitExpense.__table__,
+    ]
+
+    async with memory_session(monkeypatch, tables) as session:
+        for payload in (
+            ExpenseWriteRequest(
+                category='server', title='node-1', kind='monthly', amount=6, currency='EUR', group_name='Hetzner'
+            ),
+            ExpenseWriteRequest(category='ads', title='@channel', amount=1500, link='@channel'),
+            ExpenseWriteRequest(category='personal', title='Никита', kind='share', percent=20),
+        ):
+            await create_expense(session, created_by=None, **await _payload_to_fields(payload))
+
+        stored = await list_expenses(session)
+        assert {e.title for e in stored} == {'node-1', '@channel', 'Никита'}
+        assert next(e for e in stored if e.title == 'Никита').percent == 20
+
+        now = datetime.now(UTC)
+        report = await calculate_profit_report(session, now - timedelta(days=1), now)
+
+    # Доход нулевой, поэтому доля равна нулю, а обычные расходы — нет.
+    assert report['shares_total_kopeks'] == 0
+    assert report['expenses']['total_kopeks'] > 0
