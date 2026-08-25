@@ -39,7 +39,7 @@ services:
       retries: 3
 
   bot:
-    image: remnawave-bedolaga-telegram-bot-bot:v4.1.8-yandex-cid
+    image: remnawave-bedolaga-telegram-bot-bot:v4.1.10-profit-share
     container_name: remnawave_bot
     restart: unless-stopped
     # Доступ к Postfix, работающему на хосте (SMTP_HOST=host.docker.internal)
