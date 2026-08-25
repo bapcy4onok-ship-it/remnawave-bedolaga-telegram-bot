@@ -546,3 +546,194 @@ async def test_cdn_monthly_plan_is_not_estimated_on_top(monkeypatch):
     assert report['expenses']['estimated_kopeks'] == 0
     cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
     assert all(not item['is_estimate'] for item in cdn['items'])
+
+
+# ── доли от прибыли ───────────────────────────────────────────────────────────
+
+
+def _share(percent: float, **kwargs) -> ProfitExpense:
+    defaults = {
+        'category': ProfitExpenseCategory.PERSONAL.value,
+        'kind': ProfitExpenseKind.SHARE.value,
+        'title': 'Никита',
+        'percent': percent,
+        'is_active': True,
+    }
+    return ProfitExpense(**{**defaults, **kwargs})
+
+
+@pytest.mark.asyncio
+async def test_share_is_percent_of_profit_after_other_expenses(monkeypatch):
+    """20 % берутся не с дохода, а с того, что осталось после рекламы и серверов."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=1_000_000,  # доход 10 000 ₽
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.ADS.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='@channel',
+                    amount_minor=200_000,  # реклама 2000 ₽
+                    spent_at=PERIOD_START + timedelta(days=2),
+                ),
+                _share(20),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    # 10 000 − 2000 = 8000 ₽ до долей, доля 20 % = 1600 ₽, остаток 6400 ₽
+    assert report['profit_before_shares_kopeks'] == 800_000
+    assert report['shares_total_kopeks'] == 160_000
+    assert report['net_profit_kopeks'] == 640_000
+    assert report['expenses']['total_kopeks'] == 360_000
+
+    personal = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.PERSONAL.value)
+    assert personal['items'][0]['is_share'] is True
+    assert personal['items'][0]['percent'] == 20.0
+
+
+@pytest.mark.asyncio
+async def test_fixed_pocket_entry_and_share_live_together(monkeypatch):
+    """Фиксированная выплата остаётся расходом и уменьшает базу доли, а не спорит с ней."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=1_000_000,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.PERSONAL.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Партнёру фиксом',
+                    amount_minor=200_000,
+                    spent_at=PERIOD_START + timedelta(days=3),
+                ),
+                _share(20),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    assert report['profit_before_shares_kopeks'] == 800_000
+    assert report['shares_total_kopeks'] == 160_000
+
+    personal = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.PERSONAL.value)
+    assert personal['total_kopeks'] == 360_000
+    assert {item['title'] for item in personal['items']} == {'Партнёру фиксом', 'Никита'}
+
+
+@pytest.mark.asyncio
+async def test_shares_do_not_compound(monkeypatch):
+    """Две доли считаются от одной базы, а не одна от остатка другой."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=1_000_000,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                ),
+                _share(20, title='Никита'),
+                _share(10, title='Партнёр'),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    assert report['shares_total_kopeks'] == 300_000  # 200 000 + 100 000, а не 200 000 + 80 000
+    assert report['shares_percent_total'] == 30.0
+    assert report['net_profit_kopeks'] == 700_000
+
+
+@pytest.mark.asyncio
+async def test_share_is_zero_when_period_is_at_a_loss(monkeypatch):
+    """Убыток на доли не делится: процент от минуса был бы «доплатой» себе."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=100_000,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.ADS.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='@channel',
+                    amount_minor=500_000,
+                    spent_at=PERIOD_START + timedelta(days=2),
+                ),
+                _share(20),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    assert report['profit_before_shares_kopeks'] == -400_000
+    assert report['shares_total_kopeks'] == 0
+    assert report['net_profit_kopeks'] == -400_000
+
+
+@pytest.mark.asyncio
+async def test_share_started_midway_is_prorated(monkeypatch):
+    """Доля, начавшая действовать в середине периода, берёт только свои дни."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=1_000_000,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                    created_at=datetime(2026, 8, 2, tzinfo=UTC),
+                ),
+                _share(20, started_at=datetime(2026, 8, 11, tzinfo=UTC)),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session,
+            datetime(2026, 8, 1, tzinfo=UTC),
+            datetime(2026, 8, 21, tzinfo=UTC),
+        )
+
+    # 20 дней в периоде, доля действовала 10 → половина от 20 % с 10 000 ₽
+    assert report['shares_total_kopeks'] == 100_000
+
+
+@pytest.mark.asyncio
+async def test_inactive_share_is_ignored(monkeypatch):
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=1_000_000,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                ),
+                _share(20, is_active=False),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    assert report['shares_total_kopeks'] == 0
+    assert report['net_profit_kopeks'] == 1_000_000

@@ -4809,6 +4809,10 @@ class ProfitExpenseKind(StrEnum):
     # Разовый: сумма с датой (``spent_at``) либо счёт за интервал
     # (``period_start``/``period_end``, так приходят счета CDN).
     ONCE = 'once'
+    # Доля от прибыли: вместо суммы задан ``percent``. Считается от прибыли
+    # ПОСЛЕ всех остальных расходов (сервера, реклама, CDN, зарплаты…), но до
+    # самих долей — иначе доли считались бы друг от друга по кругу.
+    SHARE = 'share'
 
 
 class ProfitExpense(Base):
@@ -4844,6 +4848,8 @@ class ProfitExpense(Base):
 
     amount_minor = Column(Integer, nullable=False, default=0)
     currency = Column(String(3), nullable=False, default='RUB', server_default='RUB')
+    # Процент от прибыли для kind='share' (20.0 = 20 %). У остальных видов пустой.
+    percent = Column(Float, nullable=True)
     # Курс (рублей за 1 единицу валюты), зафиксированный при сохранении разового
     # расхода: оплаченный счёт стоил столько, сколько стоил тогда, и отчёт за
     # прошлый месяц не должен меняться от сегодняшнего курса. Для регулярных

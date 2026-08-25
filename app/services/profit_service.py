@@ -252,6 +252,8 @@ async def _expense_to_item(
         'node_uuid': expense.node_uuid,
         'color': expense.color,
         'notes': expense.notes,
+        'percent': expense.percent,
+        'is_share': expense.kind == ProfitExpenseKind.SHARE.value,
         'is_estimate': False,
         'source': 'manual',
     }
@@ -313,6 +315,8 @@ async def _partner_payout_items(
                 'notes': None,
                 'payouts_count': int(row.payouts or 0),
                 'user_id': row.user_id,
+                'percent': None,
+                'is_share': False,
                 'is_estimate': False,
                 # Не редактируется в кабинете: источник — заявки на вывод.
                 'source': 'withdrawal',
@@ -417,6 +421,8 @@ async def _cdn_estimate_items(
                 'notes': None,
                 'uncovered_days': round(uncovered_days, 1),
                 'daily_kopeks': int(round(daily_kopeks)),
+                'percent': None,
+                'is_share': False,
                 'is_estimate': True,
                 'source': 'estimate',
             }
@@ -463,17 +469,78 @@ async def _average_daily_kopeks(
 # ── отчёт ─────────────────────────────────────────────────────────────────────
 
 
+async def _share_items(
+    shares: list[ProfitExpense],
+    base_kopeks: int,
+    period_start: datetime,
+    period_end: datetime,
+) -> list[dict[str, Any]]:
+    """Доли от прибыли: процент от того, что осталось после остальных расходов.
+
+    База не может быть отрицательной: делить убыток на доли бессмысленно —
+    при минусе доля равна нулю, а не «минус 20 %».
+
+    Если доля действовала не весь период (появилась 15-го), она уменьшается
+    пропорционально своим дням: точнее было бы считать прибыль за эти дни
+    отдельно, но это потребовало бы пересчёта всего отчёта на каждую долю.
+    """
+    base = max(base_kopeks, 0)
+    period_days = _period_days(period_start, period_end)
+    items: list[dict[str, Any]] = []
+
+    for share in shares:
+        percent = float(share.percent or 0)
+        if percent <= 0:
+            continue
+
+        active_days = _overlap_days(period_start, period_end, share.started_at, share.ended_at)
+        fraction = (active_days / period_days) if period_days > 0 else 0.0
+        amount = int(round(base * percent / 100 * fraction))
+
+        items.append(
+            {
+                'id': share.id,
+                'category': share.category,
+                'kind': ProfitExpenseKind.SHARE.value,
+                'title': share.title,
+                'group_name': share.group_name,
+                'link': share.link,
+                'amount_minor': 0,
+                'currency': 'RUB',
+                'full_amount_kopeks': amount,
+                'period_amount_kopeks': amount,
+                'spent_at': None,
+                'period_start': None,
+                'period_end': None,
+                'started_at': _aware(share.started_at),
+                'ended_at': _aware(share.ended_at),
+                'node_uuid': None,
+                'color': share.color,
+                'notes': share.notes,
+                'percent': percent,
+                'is_share': True,
+                'is_estimate': False,
+                'source': 'manual',
+            }
+        )
+
+    return items
+
+
 async def calculate_profit_report(
     db: AsyncSession,
     period_start: datetime,
     period_end: datetime,
 ) -> dict[str, Any]:
-    """Полный отчёт: доход, расходы по категориям, чистая прибыль."""
+    """Полный отчёт: доход, расходы по категориям, доли от прибыли, чистая прибыль."""
     revenue = await calculate_revenue(db, period_start, period_end)
 
     expenses = await list_expenses_for_period(db, period_start, period_end)
+    shares = [e for e in expenses if e.kind == ProfitExpenseKind.SHARE.value]
+    regular = [e for e in expenses if e.kind != ProfitExpenseKind.SHARE.value]
+
     items_by_category: dict[str, list[dict[str, Any]]] = {}
-    for expense in expenses:
+    for expense in regular:
         item = await _expense_to_item(expense, period_start, period_end)
         if item['period_amount_kopeks'] == 0 and expense.kind == ProfitExpenseKind.MONTHLY.value:
             continue
@@ -481,7 +548,7 @@ async def calculate_profit_report(
 
     cdn_estimates = await _cdn_estimate_items(
         db,
-        [e for e in expenses if e.category == ProfitExpenseCategory.CDN.value],
+        [e for e in regular if e.category == ProfitExpenseCategory.CDN.value],
         period_start,
         period_end,
     )
@@ -491,6 +558,18 @@ async def calculate_profit_report(
     partner_items = await _partner_payout_items(db, period_start, period_end)
     if partner_items:
         items_by_category.setdefault(ProfitExpenseCategory.PARTNER.value, []).extend(partner_items)
+
+    # Доли считаются вторым проходом: их база — прибыль после ВСЕХ остальных
+    # расходов, поэтому раньше этого места её просто не существует.
+    expenses_before_shares = sum(
+        item['period_amount_kopeks'] for items in items_by_category.values() for item in items
+    )
+    profit_before_shares = revenue['total_kopeks'] - expenses_before_shares
+
+    share_items = await _share_items(shares, profit_before_shares, period_start, period_end)
+    for item in share_items:
+        items_by_category.setdefault(item['category'], []).append(item)
+    shares_total = sum(item['period_amount_kopeks'] for item in share_items)
 
     groups: list[dict[str, Any]] = []
     total_expenses = 0
@@ -533,6 +612,10 @@ async def calculate_profit_report(
             'estimated_kopeks': total_estimated,
             'groups': groups,
         },
+        # База, от которой считаются доли, и сколько по ним ушло.
+        'profit_before_shares_kopeks': profit_before_shares,
+        'shares_total_kopeks': shares_total,
+        'shares_percent_total': round(sum(float(s.percent or 0) for s in shares), 2),
         'net_profit_kopeks': net_profit,
         'margin_percent': margin,
         'fx': fx,

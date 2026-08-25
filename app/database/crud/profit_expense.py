@@ -12,6 +12,9 @@ from app.database.models import ProfitExpense, ProfitExpenseKind
 
 logger = structlog.get_logger(__name__)
 
+# Виды, у которых нет даты траты: в период они попадают окном действия.
+WINDOWED_KINDS = (ProfitExpenseKind.MONTHLY.value, ProfitExpenseKind.SHARE.value)
+
 
 async def list_expenses(
     db: AsyncSession,
@@ -49,17 +52,17 @@ async def list_expenses_for_period(
     интервалу счёта. Точное вычисление доли — в ``profit_service``: здесь
     только грубый отсев, чтобы не тащить из БД заведомо чужие строки.
     """
-    monthly_clause = ProfitExpense.kind == ProfitExpenseKind.MONTHLY.value
-    monthly_window = (
-        monthly_clause
+    # Регулярные расходы и доли от прибыли живут не датой траты, а окном
+    # действия: «этот сервер арендован с марта», «эта доля — с 1 августа».
+    windowed = ProfitExpense.kind.in_(WINDOWED_KINDS)
+    windowed_active = (
+        windowed
         & (or_(ProfitExpense.started_at.is_(None), ProfitExpense.started_at <= period_end))
         & (or_(ProfitExpense.ended_at.is_(None), ProfitExpense.ended_at >= period_start))
     )
 
-    once_by_date = (ProfitExpense.kind != ProfitExpenseKind.MONTHLY.value) & (
-        ProfitExpense.spent_at.between(period_start, period_end)
-    )
-    once_by_period = (ProfitExpense.kind != ProfitExpenseKind.MONTHLY.value) & (
+    once_by_date = ~windowed & ProfitExpense.spent_at.between(period_start, period_end)
+    once_by_period = ~windowed & (
         ProfitExpense.period_start.isnot(None)
         & ProfitExpense.period_end.isnot(None)
         & (ProfitExpense.period_start <= period_end)
@@ -68,7 +71,7 @@ async def list_expenses_for_period(
 
     query = select(ProfitExpense).where(
         ProfitExpense.is_active.is_(True),
-        or_(monthly_window, once_by_date, once_by_period),
+        or_(windowed_active, once_by_date, once_by_period),
     )
     if categories:
         query = query.where(ProfitExpense.category.in_(categories))

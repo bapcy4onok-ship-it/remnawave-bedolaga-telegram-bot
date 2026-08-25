@@ -9,7 +9,7 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.crud.profit_expense import (
@@ -66,12 +66,17 @@ def _parse_period(days: int | None, start_date: str | None, end_date: str | None
             )
         return start, end.replace(hour=23, minute=59, second=59)
 
+    if days == 0:
+        # 0 — «всё время», как в статистике продаж. Отличать от «не передано»
+        # обязательно: иначе кнопка «Всё время» молча показывала бы текущий месяц.
+        return datetime(2020, 1, 1, tzinfo=UTC), now
+
     if days is not None and days > 0:
         days = min(days, MAX_PERIOD_DAYS)
         start = (now - timedelta(days=days)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, now
 
-    # По умолчанию — текущий месяц: «чистая прибыль» — величина месячная.
+    # Параметров нет — текущий месяц: «чистая прибыль» величина месячная.
     return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), now
 
 
@@ -99,6 +104,9 @@ class ExpenseItem(BaseModel):
     node_uuid: str | None = None
     color: str | None = None
     notes: str | None = None
+    # Заполнены у строк вида «доля от прибыли»
+    percent: float | None = None
+    is_share: bool = False
     is_estimate: bool = False
     source: str = 'manual'
     # Только у автоматических строк
@@ -155,6 +163,10 @@ class ProfitReport(BaseModel):
     period: PeriodInfo
     revenue: RevenueBreakdown
     expenses: ExpensesBlock
+    # Прибыль до долей — база, от которой считается процент каждой доли.
+    profit_before_shares_kopeks: int = 0
+    shares_total_kopeks: int = 0
+    shares_percent_total: float = 0.0
     net_profit_kopeks: int
     margin_percent: float
     fx: FxInfo
@@ -172,6 +184,7 @@ class ExpenseResponse(BaseModel):
     amount_minor: int
     currency: str
     amount: float
+    percent: float | None = None
     fx_rate_snapshot: float | None = None
     spent_at: datetime | None = None
     period_start: datetime | None = None
@@ -194,8 +207,10 @@ class ExpenseWriteRequest(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     group_name: str | None = Field(default=None, max_length=128)
     link: str | None = Field(default=None, max_length=500)
-    amount: float = Field(ge=0)
+    # Для kind='share' сумма не нужна — там процент; поэтому значение по умолчанию.
+    amount: float = Field(default=0, ge=0)
     currency: str = 'RUB'
+    percent: float | None = Field(default=None, ge=0, le=100)
     spent_at: datetime | None = None
     period_start: datetime | None = None
     period_end: datetime | None = None
@@ -228,6 +243,16 @@ class ExpenseWriteRequest(BaseModel):
         if code not in SUPPORTED_CURRENCIES:
             raise ValueError(f'Unsupported currency: {value}')
         return code
+
+    @model_validator(mode='after')
+    def _check_share(self) -> 'ExpenseWriteRequest':
+        """Доля обязана нести процент, остальные виды — сумму, а не процент."""
+        if self.kind == ProfitExpenseKind.SHARE.value:
+            if not self.percent or self.percent <= 0:
+                raise ValueError('percent is required for kind=share')
+        else:
+            self.percent = None
+        return self
 
     @field_validator('link')
     @classmethod
@@ -308,6 +333,7 @@ def _to_response(expense: ProfitExpense) -> ExpenseResponse:
         amount_minor=int(expense.amount_minor or 0),
         currency=expense.currency or 'RUB',
         amount=round(int(expense.amount_minor or 0) / 100, 2),
+        percent=expense.percent,
         fx_rate_snapshot=expense.fx_rate_snapshot,
         spent_at=expense.spent_at,
         period_start=expense.period_start,
@@ -335,6 +361,7 @@ async def _payload_to_fields(payload: ExpenseWriteRequest, *, existing: ProfitEx
         'link': payload.link,
         'amount_minor': amount_minor,
         'currency': payload.currency,
+        'percent': payload.percent,
         'spent_at': _as_utc(payload.spent_at),
         'period_start': _as_utc(payload.period_start),
         'period_end': _as_end_of_day(payload.period_end),

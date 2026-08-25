@@ -183,3 +183,43 @@ def test_https_link_untouched():
         category='ads', title='канал', amount=1, link='https://t.me/vpn_news'
     )
     assert payload.link == 'https://t.me/vpn_news'
+
+
+def test_share_requires_percent():
+    """Доля без процента бессмысленна — не даём её сохранить."""
+    with pytest.raises(ValidationError):
+        ExpenseWriteRequest(category='personal', title='Никита', kind='share')
+
+
+def test_share_percent_capped_at_hundred():
+    with pytest.raises(ValidationError):
+        ExpenseWriteRequest(category='personal', title='Никита', kind='share', percent=120)
+
+
+def test_percent_ignored_for_fixed_kinds():
+    """Процент у обычной строки — недоразумение: молча обнуляем, чтобы не считался."""
+    payload = ExpenseWriteRequest(category='personal', title='Вывод', amount=5000, percent=20)
+    assert payload.percent is None
+
+
+@pytest.mark.asyncio
+async def test_share_stores_percent_and_no_amount():
+    fields = await _payload_to_fields(
+        ExpenseWriteRequest(category='personal', title='Никита', kind='share', percent=20)
+    )
+
+    assert fields['percent'] == 20
+    assert fields['amount_minor'] == 0
+    # Дата траты у доли не появляется: она действует окном, а не одним днём.
+    assert fields['spent_at'] is None
+
+
+def test_days_zero_means_all_time():
+    """Кнопка «Всё время» шлёт days=0 — её нельзя спутать с «параметров нет»."""
+    start, _ = _parse_period(0, None, None)
+    assert start.year == 2020
+
+
+def test_days_none_means_current_month():
+    start, _ = _parse_period(None, None, None)
+    assert start.day == 1 and start.month == datetime.now(UTC).month
