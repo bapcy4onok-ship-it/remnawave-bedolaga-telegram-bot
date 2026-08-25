@@ -4833,6 +4833,17 @@ class ProfitExpense(Base):
     __table_args__ = (
         Index('ix_profit_expenses_category_active', 'category', 'is_active'),
         Index('ix_profit_expenses_category_spent', 'category', 'spent_at'),
+        # Одна нода панели — одна строка стоимости. Без этого быстрый ввод цен
+        # в диалоге серверов успевал создать вторую строку на ту же ноду
+        # (POST уходил повторно, пока не пришёл рефетч), и аренда считалась дважды,
+        # причём дубль не был виден в самом диалоге — он схлопывает строки по uuid.
+        Index(
+            'uq_profit_expenses_node_uuid',
+            'node_uuid',
+            unique=True,
+            postgresql_where=text('node_uuid IS NOT NULL'),
+            sqlite_where=text('node_uuid IS NOT NULL'),
+        ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4861,7 +4872,11 @@ class ProfitExpense(Base):
     period_start = Column(AwareDateTime(), nullable=True)
     period_end = Column(AwareDateTime(), nullable=True)
 
-    # kind='monthly': окно, в котором расход действует (пусто — «всегда»)
+    # kind='monthly': окно, в котором расход действует. Пустое начало означает
+    # «с начала месяца, когда строку завели» (см. profit_service._window_start),
+    # а НЕ «всегда»: иначе период «Всё время» начислял аренду с 2020 года.
+    # У kind='share' пусто по-прежнему означает «всегда» — доля это
+    # договорённость, а не трата с датой старта.
     started_at = Column(AwareDateTime(), nullable=True)
     ended_at = Column(AwareDateTime(), nullable=True)
 

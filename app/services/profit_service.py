@@ -11,9 +11,10 @@
 реферального баланса (``withdrawal_requests`` со статусом «выполнена») —
 последние тянутся автоматически, руками их дублировать не надо.
 
-Регулярные (месячные) расходы раскладываются по дням: доля = месячная
-стоимость × (дней в периоде / 30.4375). Поэтому «за 7 дней» и «за месяц»
-сравнимы между собой.
+Регулярные (месячные) расходы разносятся ЦЕЛЫМИ календарными месяцами:
+период, задевающий август, списывает всю августовскую стоимость. Дробить их
+по дням значило бы показывать суммы, которых нет ни в одном счёте, — «411 ₽
+25-го августа и 509 ₽ 31-го» вместо ровных 500 ₽, которые платят хостеру.
 """
 
 from __future__ import annotations
@@ -44,11 +45,6 @@ from app.services.exchange_rate_service import exchange_rate_service
 
 
 logger = structlog.get_logger(__name__)
-
-# Средняя длина месяца (365.25 / 12) — по ней месячная стоимость превращается
-# в дневную. Календарные месяцы разной длины дали бы скачки «прибыль в феврале
-# выше просто потому, что февраль короче».
-AVERAGE_MONTH_DAYS = 365.25 / 12
 
 # Надбавка к пополнению («добавить 10 ₽ на поддержку») списывается С БАЛАНСА,
 # который шлюз уже зачислил, — она сидит внутри суммы пополнения. Считать её
@@ -96,6 +92,59 @@ def _overlap_days(
 
 def _period_days(period_start: datetime, period_end: datetime) -> float:
     return max((period_end - period_start).total_seconds() / 86400, 0.0)
+
+
+def _active_months(
+    period_start: datetime,
+    period_end: datetime,
+    window_start: datetime | None,
+    window_end: datetime | None,
+) -> int:
+    """Сколько КАЛЕНДАРНЫХ месяцев периода расход действовал.
+
+    Неполный месяц считается целым: хостеру платят 500 ₽ за август независимо
+    от того, смотрим мы отчёт 25-го или 31-го. Дробление по дням давало
+    «411 ₽ сегодня, 509 ₽ в конце месяца» — цифры, которых нет ни в одном счёте.
+    """
+    start = max(period_start, _aware(window_start) or period_start)
+    end = min(period_end, _aware(window_end) or period_end)
+    if end <= start:
+        return 0
+
+    # Полночь как верхняя граница — это конец предыдущих суток, а не начало
+    # новых: период «по 1 сентября 00:00» не должен прихватывать сентябрь.
+    if (end.hour, end.minute, end.second, end.microsecond) == (0, 0, 0, 0):
+        end -= timedelta(microseconds=1)
+        if end <= start:
+            return 0
+
+    return (end.year - start.year) * 12 + (end.month - start.month) + 1
+
+
+def _window_start(expense: ProfitExpense) -> datetime | None:
+    """С какого момента действует регулярный расход или доля.
+
+    Пустое «действует с» раньше означало «всегда», и на периоде «Всё время»
+    (он начинается с 2020 года) аренда одного сервера превращалась в 240 тысяч
+    за 80 месяцев. Теперь умолчание — НАЧАЛО МЕСЯЦА, в котором строку завели:
+    заводя расход, человек описывает свои текущие траты, и на текущий месяц
+    они ложатся целиком, а на предыдущие — только если он явно укажет дату.
+
+    Только для регулярных расходов. Доля от прибыли — договорённость, а не
+    трата с датой начала, и к ней это умолчание не применяется.
+    """
+    if expense.started_at is not None:
+        return _aware(expense.started_at)
+
+    created = _aware(expense.created_at)
+    ended = _aware(expense.ended_at)
+    if created is None:
+        return ended.replace(day=1, hour=0, minute=0, second=0, microsecond=0) if ended else None
+
+    # Расход, заведённый задним числом уже закрытым («сервер держали до июня»),
+    # иначе исчезал бы отовсюду: начало окна оказывалось позже его конца.
+    anchor = min(created, ended) if ended is not None else created
+    return anchor.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
 def _merge_intervals(intervals: Sequence[tuple[datetime, datetime]]) -> list[tuple[datetime, datetime]]:
@@ -210,8 +259,9 @@ async def _expense_full_kopeks(expense: ProfitExpense) -> int:
 def _allocate(expense: ProfitExpense, full_kopeks: int, period_start: datetime, period_end: datetime) -> int:
     """Сколько из записи приходится на выбранный период."""
     if expense.kind == ProfitExpenseKind.MONTHLY.value:
-        days = _overlap_days(period_start, period_end, expense.started_at, expense.ended_at)
-        return int(round(full_kopeks * days / AVERAGE_MONTH_DAYS))
+        return full_kopeks * _active_months(
+            period_start, period_end, _window_start(expense), expense.ended_at
+        )
 
     start = _aware(expense.period_start)
     end = _aware(expense.period_end)
@@ -340,13 +390,32 @@ async def _cdn_estimate_items(
     Провайдеры берутся не только из счетов, попавших в период: типичный случай —
     отчёт за текущий месяц, счёт за который ещё не выставлен. Тогда в периоде
     счетов нет вообще, и считать по нулю было бы хуже, чем по среднему.
+
+    Три ограничения, без которых прикидка врёт больше, чем помогает:
+      1. провайдер — ТОЛЬКО ``group_name``. Раньше при пустом поле им становился
+         заголовок, и «Счёт за июль» с «Счётом за август» превращались в двух
+         разных провайдеров, каждый со своей оценкой поверх чужого счёта;
+      2. достраиваются только дни ПОСЛЕ первого известного счёта провайдера —
+         иначе первый месяц нового CDN дорисовывался на дни до подключения;
+      3. вперёд от последнего счёта достраивается не больше одного окна
+         усреднения — экстраполировать на два года по трём счетам бессмысленно.
     """
     total_days = _period_days(period_start, period_end)
     if total_days <= 0:
         return []
 
-    def provider_of(expense: ProfitExpense) -> str:
-        return (expense.group_name or expense.title or 'CDN').strip()
+    def provider_of(expense: ProfitExpense) -> str | None:
+        name = (expense.group_name or '').strip()
+        return name or None
+
+    def bounds_of(expense: ProfitExpense) -> tuple[datetime, datetime] | None:
+        """Отрезок, к которому относится строка: интервал счёта либо день платежа."""
+        start = _aware(expense.period_start)
+        end = _aware(expense.period_end)
+        if start and end and end > start:
+            return start, end
+        spent_at = _aware(expense.spent_at) or _aware(expense.created_at)
+        return (spent_at, spent_at) if spent_at else None
 
     # Счета за последний месяц перед концом периода — база для среднедневной.
     average_window_start = period_end - timedelta(days=CDN_AVERAGE_WINDOW_DAYS)
@@ -361,18 +430,43 @@ async def _cdn_estimate_items(
 
     recent_by_provider: dict[str, list[ProfitExpense]] = {}
     for expense in recent:
-        recent_by_provider.setdefault(provider_of(expense), []).append(expense)
+        provider = provider_of(expense)
+        if provider:
+            recent_by_provider.setdefault(provider, []).append(expense)
 
     in_period_by_provider: dict[str, list[ProfitExpense]] = {}
     for expense in cdn_expenses:
-        in_period_by_provider.setdefault(provider_of(expense), []).append(expense)
+        provider = provider_of(expense)
+        if provider:
+            in_period_by_provider.setdefault(provider, []).append(expense)
 
     items: list[dict[str, Any]] = []
     for provider in sorted({*in_period_by_provider, *recent_by_provider}):
         in_period = in_period_by_provider.get(provider, [])
+        known = [*in_period, *recent_by_provider.get(provider, [])]
 
         # Регулярная строка закрывает провайдера целиком — достраивать нечего.
-        if any(e.kind == ProfitExpenseKind.MONTHLY.value for e in in_period):
+        # Но только если она в этом периоде действительно действует: тариф,
+        # закрытый в прошлом месяце, не должен обнулять прикидку в этом.
+        if any(
+            e.kind == ProfitExpenseKind.MONTHLY.value
+            and _overlap_days(period_start, period_end, _window_start(e), e.ended_at) > 0
+            for e in known
+        ):
+            continue
+
+        spans = [span for span in (bounds_of(e) for e in known) if span]
+        if not spans:
+            continue
+        first_known = min(span[0] for span in spans)
+        last_known = max(span[1] for span in spans)
+
+        # Окно, в котором вообще имеет смысл достраивать: от первого счёта
+        # и не дальше одного окна усреднения за последним.
+        window_start = max(period_start, first_known)
+        window_end = min(period_end, last_known + timedelta(days=CDN_AVERAGE_WINDOW_DAYS))
+        window_days = _period_days(window_start, window_end)
+        if window_days <= 0:
             continue
 
         covered: list[tuple[datetime, datetime]] = []
@@ -380,20 +474,38 @@ async def _cdn_estimate_items(
             start = _aware(expense.period_start)
             end = _aware(expense.period_end)
             if start and end and end > start:
-                clipped_start = max(start, period_start)
-                clipped_end = min(end, period_end)
+                clipped_start = max(start, window_start)
+                clipped_end = min(end, window_end)
                 if clipped_end > clipped_start:
                     covered.append((clipped_start, clipped_end))
+                continue
+
+            # Платёж без интервала уже посчитан отдельной строкой в полном
+            # размере — его сутки закрыты, иначе оценка легла бы поверх него.
+            spent_at = _aware(expense.spent_at) or _aware(expense.created_at)
+            if spent_at is None:
+                continue
+            day_start = max(spent_at.replace(hour=0, minute=0, second=0, microsecond=0), window_start)
+            day_end = min(day_start + timedelta(days=1), window_end)
+            if day_end > day_start:
+                covered.append((day_start, day_end))
 
         covered_days = sum((end - start).total_seconds() / 86400 for start, end in _merge_intervals(covered))
-        uncovered_days = total_days - covered_days
+        uncovered_days = window_days - covered_days
         if uncovered_days <= 0.5:  # меньше половины суток — округление, не дыра
             continue
+
+        # Потолок на выдуманное: сколько бы дыр ни было в истории счетов,
+        # прикидка не превышает месяца. На дырявой истории за два года она
+        # иначе давала 54 тысячи поверх 6 тысяч реальных счетов — цифру,
+        # на девять десятых сочинённую, и молча уменьшала чистую прибыль.
+        uncovered_days = min(uncovered_days, CDN_AVERAGE_WINDOW_DAYS)
 
         daily_kopeks = await _average_daily_kopeks(
             recent_by_provider.get(provider, []),
             average_window_start,
             period_end,
+            already_counted=(period_start, period_end),
         )
         if daily_kopeks <= 0:
             continue
@@ -435,12 +547,17 @@ async def _average_daily_kopeks(
     expenses: list[ProfitExpense],
     window_start: datetime,
     window_end: datetime,
+    *,
+    already_counted: tuple[datetime, datetime] | None = None,
 ) -> float:
     """Средний расход в день по счетам, попавшим в окно усреднения.
 
     Счёт за интервал даёт свою дневную ставку с весом «сколько его дней попало
-    в окно»; счёт без интервала — это платёж, его сумма просто размазывается
-    по всему окну.
+    в окно»; счёт без интервала — это платёж, его сумма размазывается по окну.
+
+    ``already_counted`` — период отчёта: платежи без интервала, попавшие внутрь
+    него, уже учтены отдельной строкой в полном размере, и повторно кормить ими
+    среднедневную нельзя. Раньше платёж в 3000 ₽ давал ещё и оценку на 3100 ₽.
     """
     weighted_sum = 0.0
     weight = 0.0
@@ -459,8 +576,11 @@ async def _average_daily_kopeks(
                 weight += overlap
         else:
             spent_at = _aware(expense.spent_at) or _aware(expense.created_at)
-            if spent_at and window_start <= spent_at <= window_end:
-                flat_kopeks += full
+            if spent_at is None or not (window_start <= spent_at <= window_end):
+                continue
+            if already_counted and already_counted[0] <= spent_at <= already_counted[1]:
+                continue
+            flat_kopeks += full
 
     daily = (weighted_sum / weight) if weight > 0 else 0.0
     return daily + flat_kopeks / window_days
@@ -493,6 +613,9 @@ async def _share_items(
         if percent <= 0:
             continue
 
+        # У доли, в отличие от аренды, пустое «действует с» означает «всегда»:
+        # 20 % — это договорённость, а не расход, начавшийся в день ввода строки,
+        # и при взгляде на прошлый месяц человек ждёт свои полные 20 %.
         active_days = _overlap_days(period_start, period_end, share.started_at, share.ended_at)
         fraction = (active_days / period_days) if period_days > 0 else 0.0
         amount = int(round(base * percent / 100 * fraction))

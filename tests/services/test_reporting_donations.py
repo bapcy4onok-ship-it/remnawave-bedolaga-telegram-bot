@@ -31,21 +31,12 @@ def _patch_crud(
     total_count: int = 204,
     donors_count: int = 87,
     by_source: dict | None = None,
-    all_time_amount: int = 512300,
-    funnel: dict | None = None,
-    leaderboard: list | None = None,
 ) -> dict[str, AsyncMock]:
     mocks = {
-        'get_total_donations_kopeks': AsyncMock(side_effect=[total_amount, all_time_amount]),
+        'get_total_donations_kopeks': AsyncMock(return_value=total_amount),
         'count_donations': AsyncMock(return_value=total_count),
         'count_distinct_donors': AsyncMock(return_value=donors_count),
         'get_donations_by_source': AsyncMock(return_value=PROD_BY_SOURCE if by_source is None else by_source),
-        'get_upsell_funnel': AsyncMock(
-            return_value=funnel
-            if funnel is not None
-            else {'shown': 480, 'accepted': 260, 'applied': 195, 'declined': 220}
-        ),
-        'get_donation_leaderboard': AsyncMock(return_value=leaderboard if leaderboard is not None else []),
     }
     for name, mock in mocks.items():
         monkeypatch.setattr(reporting, name, mock)
@@ -53,32 +44,7 @@ def _patch_crud(
 
 
 async def test_collect_donation_stats_maps_crud_payload(monkeypatch):
-    mocks = _patch_crud(
-        monkeypatch,
-        leaderboard=[
-            {
-                'donor_username': 'ivan',
-                'donor_name': 'Иван',
-                'donor_telegram_id': 1,
-                'user_id': 7,
-                'total_kopeks': 50000,
-            },
-            {
-                'donor_username': None,
-                'donor_name': ' Пётр ',
-                'donor_telegram_id': 2,
-                'user_id': 8,
-                'total_kopeks': 30000,
-            },
-            {
-                'donor_username': None,
-                'donor_name': None,
-                'donor_telegram_id': None,
-                'user_id': 9,
-                'total_kopeks': 10000,
-            },
-        ],
-    )
+    mocks = _patch_crud(monkeypatch)
     service = reporting.ReportingService()
 
     stats = await service._collect_donation_stats(object(), START_UTC, END_UTC)
@@ -90,17 +56,9 @@ async def test_collect_donation_stats_maps_crud_payload(monkeypatch):
     assert stats['menu_count'] == 9
     assert stats['upsell_amount'] == 226000
     assert stats['upsell_count'] == 195
-    assert stats['avg_amount'] == 307600 // 204
-    assert stats['all_time_amount'] == 512300
-    assert stats['funnel'] == {'shown': 480, 'accepted': 260, 'applied': 195, 'declined': 220}
-    assert stats['top_donors'] == [
-        {'label': '@ivan', 'amount': 50000},
-        {'label': 'Пётр', 'amount': 30000},
-        {'label': 'User #9', 'amount': 10000},
-    ]
-    # «Всего за всё время» — второй вызов, он идёт без периода
-    assert mocks['get_total_donations_kopeks'].await_args_list[1].kwargs == {}
-    assert mocks['get_donation_leaderboard'].await_args.kwargs['limit'] == 3
+    # Сумма запрашивается только за период: строки «за всё время» в отчёте нет
+    assert mocks['get_total_donations_kopeks'].await_count == 1
+    assert mocks['get_total_donations_kopeks'].await_args.kwargs['start'] == START_UTC
 
 
 async def test_collect_donation_stats_uses_half_open_period(monkeypatch):
@@ -116,16 +74,7 @@ async def test_collect_donation_stats_uses_half_open_period(monkeypatch):
 
 
 async def test_collect_donation_stats_empty_period(monkeypatch):
-    _patch_crud(
-        monkeypatch,
-        total_amount=0,
-        total_count=0,
-        donors_count=0,
-        by_source={},
-        all_time_amount=0,
-        funnel={'shown': 0, 'accepted': 0, 'applied': 0, 'declined': 0},
-        leaderboard=[],
-    )
+    _patch_crud(monkeypatch, total_amount=0, total_count=0, donors_count=0, by_source={})
     service = reporting.ReportingService()
 
     stats = await service._collect_donation_stats(object(), START_UTC, END_UTC)
@@ -134,9 +83,8 @@ async def test_collect_donation_stats_empty_period(monkeypatch):
     assert stats['total_count'] == 0
     assert stats['menu_amount'] == 0
     assert stats['upsell_count'] == 0
-    assert stats['avg_amount'] == 0
-    assert stats['all_time_amount'] == 0
-    assert stats['top_donors'] == []
+    assert stats['other_amount'] == 0
+    assert stats['other_count'] == 0
 
 
 def _donation_stats(**overrides) -> dict:
@@ -150,10 +98,6 @@ def _donation_stats(**overrides) -> dict:
         'upsell_count': 195,
         'other_amount': 0,
         'other_count': 0,
-        'avg_amount': 307600 // 204,
-        'all_time_amount': 512300,
-        'funnel': {'shown': 480, 'accepted': 260, 'applied': 195, 'declined': 220},
-        'top_donors': [{'label': '@ivan', 'amount': 50000}],
     }
     stats.update(overrides)
     return stats
@@ -227,41 +171,24 @@ async def test_report_contains_donations_section(monkeypatch):
     assert '• Собрано за период: <b>3 076.00 ₽</b> (донатов: 204, донатеров: 87)' in text
     assert '• Кнопка «Поддержать проект»: 816.00 ₽ (9)' in text
     assert '• Надбавка при пополнении: 2 260.00 ₽ (195)' in text
-    assert '• Средний донат: 15.07 ₽' in text
-    assert '• Апселл (по дате решения): решений 480 → согласий 260 → исполнено 195 (<i>40.6%</i>)' in text
-    assert '• Топ спонсоров за период: 1. @ivan — 500.00 ₽' in text
-    assert '• Всего собрано за всё время: 5 123.00 ₽' in text
-    assert 'надбавки при пополнении уже входят в «Пополнения» выше' in text
+    # Хвост секции вырезан: средний чек, воронка апселла, топ спонсоров, «за всё время» и оговорка
+    for removed in ('Средний донат', 'Апселл', 'Топ спонсоров', 'за всё время', 'уже входят в «Пополнения»'):
+        assert removed not in text
     # TL;DR — строка последняя в блоке «Итог по периоду»
     assert '• Пожертвования: <b>3 076.00 ₽</b> <i>(из них 2 260.00 ₽ — надбавки, уже в поступлениях)</i>\n\n' in text
     # Секция стоит сразу после «Финансов», до «Поддержки»
     assert text.index('💰 <b>Финансы</b>') < text.index('💜 <b>Пожертвования</b>') < text.index('🎟️ <b>Поддержка</b>')
 
 
-async def test_report_hides_top_donors_when_empty(monkeypatch):
-    text, _ = await _render_report(monkeypatch, donations=_donation_stats(top_donors=[]))
-
-    assert '💜 <b>Пожертвования</b>' in text
-    assert 'Топ спонсоров' not in text
-
-
-async def test_report_escapes_donor_names(monkeypatch):
+async def test_report_escapes_user_names(monkeypatch):
+    """Имя из Telegram — чужой ввод: разметка в нём не должна доезжать до Telegram живой."""
     text, _ = await _render_report(
         monkeypatch,
-        donations=_donation_stats(top_donors=[{'label': '<b>Вася</b> & Co', 'amount': 12300}]),
+        top_referrers=[{'referrer_label': '<b>Вася</b> & Co', 'count': 3}],
     )
 
-    assert '1. &lt;b&gt;Вася&lt;/b&gt; &amp; Co — 123.00 ₽' in text
+    assert '1. &lt;b&gt;Вася&lt;/b&gt; &amp; Co: 3 приглашений' in text
     assert '<b>Вася</b>' not in text
-
-
-async def test_report_zero_upsell_conversion(monkeypatch):
-    text, _ = await _render_report(
-        monkeypatch,
-        donations=_donation_stats(funnel={'shown': 0, 'accepted': 0, 'applied': 0, 'declined': 0}),
-    )
-
-    assert '• Апселл (по дате решения): решений 0 → согласий 0 → исполнено 0 (<i>0.0%</i>)' in text
 
 
 async def test_report_without_donations_when_disabled(monkeypatch):
@@ -297,11 +224,10 @@ async def test_report_fits_telegram_limit(monkeypatch):
 
 async def test_report_fits_telegram_limit_with_hostile_labels(monkeypatch):
     # Имя в Telegram — чужой ввод (64+64 символа), и escape раздувает `&` впятеро.
-    # Без обрезки 3 спонсора + 5 рефереров уносили отчёт за 4096 и он не отправлялся вовсе.
+    # Без обрезки 5 рефереров уносили отчёт за 4096 и он не отправлялся вовсе.
     hostile = '&' * 64 + ' ' + '<' * 64
     text, _ = await _render_report(
         monkeypatch,
-        donations=_donation_stats(top_donors=[{'label': hostile, 'amount': 50000 - index} for index in range(3)]),
         top_referrers=[{'referrer_label': hostile, 'count': 10 - index} for index in range(5)],
     )
 

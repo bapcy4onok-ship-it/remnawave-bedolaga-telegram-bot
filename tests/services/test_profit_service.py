@@ -185,13 +185,20 @@ def _monthly(**kwargs) -> ProfitExpense:
         'amount_minor': 300_000,  # 3000 ₽/мес
         'currency': 'RUB',
         'is_active': True,
+        # Явно: окно действия по умолчанию начинается месяцем создания строки,
+        # и без фиксации даты тест зависел бы от того, когда его запускают.
+        'created_at': datetime(2026, 6, 1, tzinfo=UTC),
     }
     return ProfitExpense(**{**defaults, **kwargs})
 
 
 @pytest.mark.asyncio
-async def test_monthly_expense_is_prorated_by_days(monkeypatch):
-    """Месячная стоимость делится на среднюю длину месяца и умножается на дни периода."""
+async def test_monthly_expense_counts_whole_calendar_month(monkeypatch):
+    """Неполный месяц считается целым: хостеру платят за август 500 ₽ целиком.
+
+    Дробление по дням давало «411 ₽ 25-го и 509 ₽ 31-го» — суммы, которых
+    нет ни в одном счёте.
+    """
     async with memory_session(monkeypatch, TABLES) as session:
         session.add(_monthly())
         await session.commit()
@@ -200,24 +207,64 @@ async def test_monthly_expense_is_prorated_by_days(monkeypatch):
         week_end = week_start + timedelta(days=7)
         report = await profit_service.calculate_profit_report(session, week_start, week_end)
 
-    expected = round(300_000 * 7 / profit_service.AVERAGE_MONTH_DAYS)
-    assert report['expenses']['total_kopeks'] == expected
+    assert report['expenses']['total_kopeks'] == 300_000
     assert report['expenses']['groups'][0]['category'] == ProfitExpenseCategory.SERVER.value
 
 
 @pytest.mark.asyncio
-async def test_monthly_expense_respects_active_window(monkeypatch):
-    """Сервер, снятый в середине периода, считается только до даты снятия."""
+async def test_monthly_expense_counts_each_month_of_a_long_period(monkeypatch):
+    """Период на три месяца — три месячные стоимости."""
     async with memory_session(monkeypatch, TABLES) as session:
-        session.add(_monthly(ended_at=datetime(2026, 8, 11, tzinfo=UTC)))
+        session.add(_monthly(created_at=datetime(2026, 6, 1, tzinfo=UTC)))
         await session.commit()
 
-        week_start = datetime(2026, 8, 8, tzinfo=UTC)
-        week_end = week_start + timedelta(days=7)
-        report = await profit_service.calculate_profit_report(session, week_start, week_end)
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 6, 15, tzinfo=UTC), datetime(2026, 8, 10, tzinfo=UTC)
+        )
 
-    expected = round(300_000 * 3 / profit_service.AVERAGE_MONTH_DAYS)
-    assert report['expenses']['total_kopeks'] == expected
+    assert report['expenses']['total_kopeks'] == 900_000
+
+
+@pytest.mark.asyncio
+async def test_period_ending_at_midnight_does_not_grab_next_month(monkeypatch):
+    """«По 1 сентября 00:00» — это конец августа, а не начало сентября."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(_monthly())
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 9, 1, tzinfo=UTC)
+        )
+
+    assert report['expenses']['total_kopeks'] == 300_000
+
+
+@pytest.mark.asyncio
+async def test_monthly_expense_respects_active_window(monkeypatch):
+    """Сервер, снятый в сентябре, считается за август и сентябрь, но не за октябрь."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(_monthly(ended_at=datetime(2026, 9, 15, tzinfo=UTC)))
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 10, 31, 23, 59, 59, tzinfo=UTC)
+        )
+
+    assert report['expenses']['total_kopeks'] == 600_000
+
+
+@pytest.mark.asyncio
+async def test_monthly_expense_ended_before_period_is_not_counted(monkeypatch):
+    """Сервер, снятый в июле, за август не начисляется."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(_monthly(ended_at=datetime(2026, 7, 31, 23, 59, 59, tzinfo=UTC)))
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 8, 31, 23, 59, 59, tzinfo=UTC)
+        )
+
+    assert report['expenses']['total_kopeks'] == 0
 
 
 @pytest.mark.asyncio
@@ -244,12 +291,13 @@ async def test_currency_expense_uses_snapshot_then_live_rate(monkeypatch):
                     group_name='Hetzner',
                     amount_minor=1_000,
                     currency='EUR',
+                    created_at=datetime(2026, 6, 1, tzinfo=UTC),
                 ),
             ]
         )
         await session.commit()
 
-        month_end = PERIOD_START + timedelta(days=profit_service.AVERAGE_MONTH_DAYS)
+        month_end = datetime(2026, 8, 31, 23, 59, 59, tzinfo=UTC)
         report = await profit_service.calculate_profit_report(session, PERIOD_START, month_end)
 
     by_category = {g['category']: g for g in report['expenses']['groups']}
@@ -533,6 +581,7 @@ async def test_cdn_monthly_plan_is_not_estimated_on_top(monkeypatch):
                 title='Selectel CDN',
                 group_name='Selectel',
                 amount_minor=300_000,
+                created_at=datetime(2026, 6, 1, tzinfo=UTC),
             )
         )
         await session.commit()
@@ -558,6 +607,7 @@ def _share(percent: float, **kwargs) -> ProfitExpense:
         'title': 'Никита',
         'percent': percent,
         'is_active': True,
+        'created_at': datetime(2026, 6, 1, tzinfo=UTC),
     }
     return ProfitExpense(**{**defaults, **kwargs})
 
@@ -737,3 +787,384 @@ async def test_inactive_share_is_ignored(monkeypatch):
 
     assert report['shares_total_kopeks'] == 0
     assert report['net_profit_kopeks'] == 1_000_000
+
+
+# ── регрессии, найденные ревью ────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_cdn_flat_payment_is_not_counted_twice(monkeypatch):
+    """Платёж CDN без интервала счёта не должен ещё раз приезжать строкой-оценкой.
+
+    Раньше 3000 ₽ превращались в 6100 ₽: покрытыми считались только дни
+    интервальных счетов, а сам платёж при этом кормил среднедневную ставку.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(
+            ProfitExpense(
+                category=ProfitExpenseCategory.CDN.value,
+                kind=ProfitExpenseKind.ONCE.value,
+                title='Пополнение Яндекс.Облака',
+                group_name='Яндекс',
+                amount_minor=300_000,
+                spent_at=datetime(2026, 8, 10, tzinfo=UTC),
+            )
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    assert cdn['total_kopeks'] == 300_000
+    assert cdn['estimated_kopeks'] == 0
+
+
+@pytest.mark.asyncio
+async def test_cdn_without_provider_gets_no_estimate(monkeypatch):
+    """Провайдер берётся только из поля «провайдер», а не из заголовка счёта.
+
+    Иначе «Счёт за июль» и «Счёт за август» становились разными провайдерами,
+    и на каждый достраивалась оценка поверх чужого реального счёта.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add_all(
+            [
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Счёт за июль',
+                    amount_minor=250_000,
+                    period_start=datetime(2026, 7, 1, tzinfo=UTC),
+                    period_end=datetime(2026, 8, 1, tzinfo=UTC),
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Счёт за август',
+                    amount_minor=250_000,
+                    period_start=datetime(2026, 8, 1, tzinfo=UTC),
+                    period_end=datetime(2026, 9, 1, tzinfo=UTC),
+                ),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 8, 26, tzinfo=UTC)
+        )
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    assert cdn['estimated_kopeks'] == 0
+    # 25 дней августовского счёта из 31: 2500 × 25/31
+    assert cdn['total_kopeks'] == round(250_000 * 25 / 31)
+
+
+@pytest.mark.asyncio
+async def test_cdn_estimate_does_not_reach_before_first_bill(monkeypatch):
+    """Первый месяц нового провайдера не дорисовывается на дни до подключения."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(
+            ProfitExpense(
+                category=ProfitExpenseCategory.CDN.value,
+                kind=ProfitExpenseKind.ONCE.value,
+                title='первый счёт',
+                group_name='Selectel',
+                amount_minor=110_000,  # 1100 ₽ за 11 дней = 100 ₽/день
+                period_start=datetime(2026, 8, 20, tzinfo=UTC),
+                period_end=datetime(2026, 9, 1, tzinfo=UTC),
+            )
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 8, 31, 23, 59, 59, tzinfo=UTC)
+        )
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    assert cdn['estimated_kopeks'] == 0
+    # Счёт 20.08–01.09 пересекается с периодом почти целиком; прикидки
+    # на 19 дней до подключения (это было бы +190 000) нет.
+    assert 109_000 <= cdn['total_kopeks'] <= 110_000
+
+
+@pytest.mark.asyncio
+async def test_cdn_estimate_is_capped_after_last_bill(monkeypatch):
+    """Три счёта за лето не превращаются в прикидку на два года вперёд."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(
+            ProfitExpense(
+                category=ProfitExpenseCategory.CDN.value,
+                kind=ProfitExpenseKind.ONCE.value,
+                title='Счёт',
+                group_name='Яндекс',
+                amount_minor=300_000,  # 3000 ₽ за 31 день
+                period_start=datetime(2026, 7, 1, tzinfo=UTC),
+                period_end=datetime(2026, 8, 1, tzinfo=UTC),
+            )
+        )
+        await session.commit()
+
+        # Период — почти два года, счёт один.
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2024, 9, 1, tzinfo=UTC), datetime(2026, 8, 25, tzinfo=UTC)
+        )
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    estimate = next(i for i in cdn['items'] if i['is_estimate'])
+    # Без ограничителей достраивалось бы ~690 дней (весь период с 2024 года).
+    # Здесь первым срабатывает правый край: последний счёт кончился 01.08,
+    # плюс окно усреднения — но период отчёта обрывается 25.08, поэтому
+    # достраиваются только эти 24 дня, а не два года.
+    assert estimate['uncovered_days'] == pytest.approx(24.0, abs=0.1)
+    assert cdn['total_kopeks'] == 300_000 + round(300_000 / 31 * 24)
+
+
+@pytest.mark.asyncio
+async def test_monthly_expense_does_not_reach_before_it_was_entered(monkeypatch):
+    """«Всё время» не умножает аренду на годы до появления строки.
+
+    Пустое «действует с» теперь означает «с начала месяца, когда завели»,
+    а не «всегда»: один сервер на периоде с 2020 года давал 240 000 ₽.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(_monthly(created_at=datetime(2026, 8, 20, tzinfo=UTC)))
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2020, 1, 1, tzinfo=UTC), datetime(2026, 8, 25, tzinfo=UTC)
+        )
+
+    # Только август, а не 80 месяцев с 2020 года.
+    assert report['expenses']['total_kopeks'] == 300_000
+
+
+@pytest.mark.asyncio
+async def test_monthly_entered_this_month_covers_the_whole_month(monkeypatch):
+    """Расход, заведённый 20-го числа, ложится на весь текущий месяц целиком.
+
+    Человек описывает свои текущие траты, а не начинает платить в день ввода —
+    клампить по дню создания было бы занижением ровно в самом частом сценарии.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(_monthly(created_at=datetime(2026, 8, 20, tzinfo=UTC)))
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 8, 25, 23, 59, 59, tzinfo=UTC)
+        )
+
+    assert report['expenses']['total_kopeks'] == 300_000
+
+
+@pytest.mark.asyncio
+async def test_explicit_started_at_beats_creation_month(monkeypatch):
+    """Явно указанное «действует с» позволяет отнести расход к прошлым месяцам."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(
+            _monthly(created_at=datetime(2026, 8, 20, tzinfo=UTC), started_at=datetime(2026, 3, 1, tzinfo=UTC))
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 4, 1, tzinfo=UTC), datetime(2026, 4, 30, 23, 59, 59, tzinfo=UTC)
+        )
+
+    assert report['expenses']['total_kopeks'] == 300_000
+
+
+@pytest.mark.asyncio
+async def test_half_open_interval_row_is_still_counted(monkeypatch):
+    """Строка с началом интервала, но без конца, не должна быть невидимкой.
+
+    API такое больше не принимает, но строки, попавшие в БД раньше, обязаны
+    оставаться в расчёте — иначе расход виден в редакторе и не влияет на прибыль.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(
+            ProfitExpense(
+                category=ProfitExpenseCategory.CDN.value,
+                kind=ProfitExpenseKind.ONCE.value,
+                title='Счёт без конца',
+                group_name='Selectel',
+                amount_minor=500_000,
+                period_start=datetime(2026, 8, 1, tzinfo=UTC),
+                created_at=datetime(2026, 8, 5, tzinfo=UTC),
+            )
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(session, PERIOD_START, PERIOD_END)
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    assert cdn['total_kopeks'] == 500_000
+
+
+@pytest.mark.asyncio
+async def test_share_without_start_date_applies_to_past_months(monkeypatch):
+    """Доля без «действует с» работает и на прошлый месяц.
+
+    В отличие от аренды, 20 % — это договорённость, а не расход, начавшийся
+    в день ввода строки: открывая июль, человек ждёт свои полные 20 %.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=1_000_000,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                    created_at=datetime(2026, 7, 10, tzinfo=UTC),
+                ),
+                # Строку завели в августе, смотрим июль.
+                _share(20, created_at=datetime(2026, 8, 25, tzinfo=UTC)),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 7, 31, 23, 59, 59, tzinfo=UTC)
+        )
+
+    assert report['revenue']['total_kopeks'] == 1_000_000
+    assert report['shares_total_kopeks'] == 200_000
+    assert report['net_profit_kopeks'] == 800_000
+
+
+# ── регрессии, найденные аудитом исправлений ─────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_already_closed_expense_entered_afterwards_is_not_invisible(monkeypatch):
+    """Сервер, заведённый задним числом уже снятым, не должен исчезать отовсюду.
+
+    Начало окна (месяц создания) оказывалось позже конца — строка не попадала
+    ни в один период, продолжая висеть в редакторе.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add(
+            _monthly(
+                created_at=datetime(2026, 8, 25, tzinfo=UTC),
+                ended_at=datetime(2026, 6, 30, 23, 59, 59, tzinfo=UTC),
+            )
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 6, 1, tzinfo=UTC), datetime(2026, 6, 30, 23, 59, 59, tzinfo=UTC)
+        )
+
+    assert report['expenses']['total_kopeks'] == 300_000
+
+
+@pytest.mark.asyncio
+async def test_closed_monthly_plan_does_not_silence_cdn_estimate(monkeypatch):
+    """Тариф CDN, закрытый в прошлом месяце, не обнуляет прикидку в этом."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add_all(
+            [
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.MONTHLY.value,
+                    title='Старый тариф',
+                    group_name='Яндекс',
+                    amount_minor=300_000,
+                    started_at=datetime(2026, 1, 1, tzinfo=UTC),
+                    ended_at=datetime(2026, 8, 1, tzinfo=UTC),
+                    created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Счёт по метрике',
+                    group_name='Яндекс',
+                    amount_minor=150_000,  # 1500 ₽ за 15 дней = 100 ₽/день
+                    period_start=datetime(2026, 8, 1, tzinfo=UTC),
+                    period_end=datetime(2026, 8, 16, tzinfo=UTC),
+                    created_at=datetime(2026, 8, 16, tzinfo=UTC),
+                ),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 18, tzinfo=UTC), datetime(2026, 8, 25, tzinfo=UTC)
+        )
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    assert cdn['estimated_kopeks'] > 0
+
+
+@pytest.mark.asyncio
+async def test_estimate_is_bounded_even_with_holes_in_history(monkeypatch):
+    """Дыра в истории счетов не превращается в выдуманные десятки тысяч."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add_all(
+            [
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Счёт 2025',
+                    group_name='Яндекс',
+                    amount_minor=310_000,  # 100 ₽/день
+                    period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                    period_end=datetime(2025, 2, 1, tzinfo=UTC),
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Счёт 2026',
+                    group_name='Яндекс',
+                    amount_minor=310_000,
+                    period_start=datetime(2026, 7, 1, tzinfo=UTC),
+                    period_end=datetime(2026, 8, 1, tzinfo=UTC),
+                ),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2020, 1, 1, tzinfo=UTC), datetime(2026, 8, 25, tzinfo=UTC)
+        )
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    # Реальные счета 6200 ₽ + не больше месяца прикидки (3000 ₽), а не 54 000 ₽.
+    assert cdn['estimated_kopeks'] <= round(100_00 * profit_service.CDN_AVERAGE_WINDOW_DAYS / 100 * 100)
+    assert cdn['total_kopeks'] < 1_000_000
+
+
+@pytest.mark.asyncio
+async def test_flat_payment_day_is_covered_even_when_average_exists(monkeypatch):
+    """Платёж без интервала не получает прикидку поверх себя в тот же день."""
+    async with memory_session(monkeypatch, TABLES) as session:
+        session.add_all(
+            [
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Счёт за июль',
+                    group_name='Яндекс',
+                    amount_minor=310_000,  # 100 ₽/день — даёт среднедневную
+                    period_start=datetime(2026, 7, 1, tzinfo=UTC),
+                    period_end=datetime(2026, 8, 1, tzinfo=UTC),
+                ),
+                ProfitExpense(
+                    category=ProfitExpenseCategory.CDN.value,
+                    kind=ProfitExpenseKind.ONCE.value,
+                    title='Предоплата',
+                    group_name='Яндекс',
+                    amount_minor=200_000,
+                    spent_at=datetime(2026, 8, 3, 12, 0, tzinfo=UTC),
+                ),
+            ]
+        )
+        await session.commit()
+
+        report = await profit_service.calculate_profit_report(
+            session, datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 8, 5, 23, 59, 59, tzinfo=UTC)
+        )
+
+    cdn = next(g for g in report['expenses']['groups'] if g['category'] == ProfitExpenseCategory.CDN.value)
+    estimate = next(i for i in cdn['items'] if i['is_estimate'])
+    # 5 суток периода минус закрытые платежом сутки 3 августа.
+    assert estimate['uncovered_days'] == pytest.approx(4.0, abs=0.1)

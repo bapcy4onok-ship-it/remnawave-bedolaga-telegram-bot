@@ -62,11 +62,14 @@ async def list_expenses_for_period(
     )
 
     once_by_date = ~windowed & ProfitExpense.spent_at.between(period_start, period_end)
+    # Незакрытый интервал (есть начало, нет конца) API больше не принимает, но
+    # строки, попавшие в БД раньше или мимо него, не должны становиться
+    # невидимками: расход остаётся в редакторе, а в прибыль не входит —
+    # ошибка, которую не на чем заметить.
     once_by_period = ~windowed & (
         ProfitExpense.period_start.isnot(None)
-        & ProfitExpense.period_end.isnot(None)
         & (ProfitExpense.period_start <= period_end)
-        & (ProfitExpense.period_end >= period_start)
+        & or_(ProfitExpense.period_end.is_(None), ProfitExpense.period_end >= period_start)
     )
 
     query = select(ProfitExpense).where(

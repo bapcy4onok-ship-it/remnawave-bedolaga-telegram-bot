@@ -9,13 +9,16 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field, field_validator, model_validator
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.crud.profit_expense import (
     create_expense,
     delete_expense,
     get_expense,
+    get_expense_by_node,
     list_expenses,
     update_expense,
 )
@@ -245,6 +248,31 @@ class ExpenseWriteRequest(BaseModel):
         return code
 
     @model_validator(mode='after')
+    def _check_dates(self) -> 'ExpenseWriteRequest':
+        """Интервал счёта задаётся обоими концами и не вывернут наизнанку.
+
+        Полузаполненный интервал раньше сохранялся молча и не попадал НИ В ОДИН
+        отчёт: выборка требует оба конца, а подстановка даты срабатывала только
+        когда пусты и она, и начало интервала. Расход был виден в редакторе,
+        но в прибыль не входил, и признака ошибки не было.
+        """
+        if (self.period_start is None) != (self.period_end is None):
+            raise ValueError('period_start and period_end must be set together')
+
+        # Сравнивать ТОЛЬКО после приведения к UTC: одна дата приходит из БД
+        # (aware), вторая от клиента (naive ISO), и голое сравнение бросало
+        # TypeError — pydantic заворачивает лишь ValueError, так что клиент
+        # получал 500 вместо 422 на обычной правке одного поля пары.
+        period_start, period_end = _as_utc(self.period_start), _as_utc(self.period_end)
+        started_at, ended_at = _as_utc(self.started_at), _as_utc(self.ended_at)
+
+        if period_start and period_end and period_start > period_end:
+            raise ValueError('period_start must not be after period_end')
+        if started_at and ended_at and started_at > ended_at:
+            raise ValueError('started_at must not be after ended_at')
+        return self
+
+    @model_validator(mode='after')
     def _check_share(self) -> 'ExpenseWriteRequest':
         """Доля обязана нести процент, остальные виды — сумму, а не процент."""
         if self.kind == ProfitExpenseKind.SHARE.value:
@@ -272,6 +300,37 @@ class ExpenseWriteRequest(BaseModel):
         if not stripped.startswith(('http://', 'https://', 'tg://')):
             raise ValueError('Link must start with http://, https://, tg:// or @')
         return stripped
+
+
+class ExpensePatchRequest(BaseModel):
+    """PATCH: непереданные поля берутся из существующей строки, а не из дефолтов.
+
+    Без этой схемы правка была разрушительной: ``_payload_to_fields`` всегда
+    собирал ПОЛНЫЙ словарь колонок, и диалог серверов, шлющий только цену,
+    обнулял «действует с/по» и заметки. Сервер, снятый в июне, после правки
+    цены снова начислялся вечно.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    category: str | None = None
+    kind: str | None = None
+    title: str | None = None
+    group_name: str | None = None
+    link: str | None = None
+    amount: float | None = None
+    currency: str | None = None
+    percent: float | None = None
+    spent_at: datetime | None = None
+    period_start: datetime | None = None
+    period_end: datetime | None = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    is_active: bool | None = None
+    node_uuid: str | None = None
+    color: str | None = None
+    sort_order: int | None = None
+    notes: str | None = None
 
 
 class NodeCostItem(BaseModel):
@@ -349,6 +408,34 @@ def _to_response(expense: ProfitExpense) -> ExpenseResponse:
     )
 
 
+def _expense_to_write_fields(expense: ProfitExpense) -> dict[str, Any]:
+    """Существующая строка в виде полей формы — основа для слияния при PATCH."""
+    return {
+        'category': expense.category,
+        'kind': expense.kind,
+        'title': expense.title,
+        'group_name': expense.group_name,
+        'link': expense.link,
+        'amount': round(int(expense.amount_minor or 0) / 100, 2),
+        'currency': expense.currency or 'RUB',
+        'percent': expense.percent,
+        # Полузаполненный интервал в БД (строки до валидатора) иначе делал бы
+        # строку неправимой: любой PATCH падал бы в 422 из-за поля, которого
+        # запрос даже не касался. Чиним на месте — одинокое начало интервала
+        # становится датой траты.
+        'spent_at': expense.spent_at or (expense.period_start if not expense.period_end else None),
+        'period_start': expense.period_start if expense.period_end else None,
+        'period_end': expense.period_end if expense.period_start else None,
+        'started_at': expense.started_at,
+        'ended_at': expense.ended_at,
+        'is_active': bool(expense.is_active),
+        'node_uuid': expense.node_uuid,
+        'color': expense.color,
+        'sort_order': int(expense.sort_order or 0),
+        'notes': expense.notes,
+    }
+
+
 async def _payload_to_fields(payload: ExpenseWriteRequest, *, existing: ProfitExpense | None = None) -> dict[str, Any]:
     """Схема запроса → поля модели (валюта в минорные единицы, курс — снимком)."""
     amount_minor = int(round(payload.amount * 100))
@@ -374,7 +461,7 @@ async def _payload_to_fields(payload: ExpenseWriteRequest, *, existing: ProfitEx
         'notes': (payload.notes or '').strip() or None,
     }
 
-    if payload.kind == ProfitExpenseKind.ONCE.value and not payload.spent_at and not payload.period_start:
+    if payload.kind == ProfitExpenseKind.ONCE.value and not payload.spent_at and not (payload.period_start and payload.period_end):
         # Без даты разовый расход не попал бы ни в один период — молча терять
         # запись хуже, чем поставить сегодняшний день.
         fields['spent_at'] = datetime.now(UTC)
@@ -399,6 +486,27 @@ async def _payload_to_fields(payload: ExpenseWriteRequest, *, existing: ProfitEx
         fields['fx_rate_snapshot'] = None
 
     return fields
+
+
+async def _apply_write(
+    db: AsyncSession,
+    expense: ProfitExpense,
+    payload: 'ExpenseWriteRequest | ExpensePatchRequest',
+) -> ProfitExpense:
+    """Накладывает переданные поля на существующую строку.
+
+    Слияние ДО валидации, а не после: правила вроде «у доли обязателен процент»
+    должны проверяться на итоговом состоянии строки, а не на куске запроса.
+    """
+    try:
+        merged = ExpenseWriteRequest(
+            **{**_expense_to_write_fields(expense), **payload.model_dump(exclude_unset=True)}
+        )
+    except ValidationError as error:
+        raise RequestValidationError(error.errors()) from error
+
+    fields = await _payload_to_fields(merged, existing=expense)
+    return await update_expense(db, expense, **fields)
 
 
 # ============ Отчёт ============
@@ -461,27 +569,50 @@ async def create_profit_expense(
     admin: User = Depends(require_permission('profit:edit')),
     db: AsyncSession = Depends(get_cabinet_db),
 ) -> ExpenseResponse:
-    """Добавить строку расхода."""
+    """Добавить строку расхода.
+
+    Для строки, привязанной к ноде панели, это апсерт: у ноды может быть только
+    одна стоимость (уникальный индекс), а быстрый ввод цен в диалоге серверов
+    успевал отправить второй POST, пока не пришёл рефетч.
+    """
+    node_uuid = (payload.node_uuid or '').strip() or None
+    if node_uuid:
+        existing = await get_expense_by_node(db, node_uuid)
+        if existing is not None:
+            # Апсерт — это правка, а не замена: диалог серверов шлёт только цену,
+            # и полный словарь дефолтов снёс бы «действует с/по» и заметки ровно
+            # так же, как это делал PATCH до починки.
+            return _to_response(await _apply_write(db, existing, payload))
+
     fields = await _payload_to_fields(payload)
-    expense = await create_expense(db, created_by=admin.id, **fields)
+    try:
+        expense = await create_expense(db, created_by=admin.id, **fields)
+    except IntegrityError:
+        # Гонка двух одновременных запросов по одной ноде: проверка выше их
+        # обоих пропустила, вставку выиграл первый. Второму нечего сообщать
+        # об ошибке — он хотел ровно того же, что уже произошло.
+        await db.rollback()
+        existing = await get_expense_by_node(db, node_uuid) if node_uuid else None
+        if existing is None:
+            raise
+        return _to_response(await _apply_write(db, existing, payload))
+
     return _to_response(expense)
 
 
 @router.patch('/expenses/{expense_id}', response_model=ExpenseResponse)
 async def update_profit_expense(
     expense_id: int,
-    payload: ExpenseWriteRequest,
+    payload: ExpensePatchRequest,
     admin: User = Depends(require_permission('profit:edit')),
     db: AsyncSession = Depends(get_cabinet_db),
 ) -> ExpenseResponse:
-    """Изменить строку расхода."""
+    """Изменить строку расхода. Непереданные поля остаются как были."""
     expense = await get_expense(db, expense_id)
     if expense is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Expense not found')
 
-    fields = await _payload_to_fields(payload, existing=expense)
-    updated = await update_expense(db, expense, **fields)
-    return _to_response(updated)
+    return _to_response(await _apply_write(db, expense, payload))
 
 
 @router.delete('/expenses/{expense_id}', status_code=status.HTTP_204_NO_CONTENT)
@@ -521,8 +652,6 @@ async def get_server_costs(
         logger.warning('Панель Remnawave недоступна, список нод пуст', error=str(error))
         raw_nodes = []
         panel_available = False
-    else:
-        panel_available = bool(raw_nodes)
 
     for node in raw_nodes:
         uuid = node.get('uuid') or ''
@@ -543,8 +672,14 @@ async def get_server_costs(
 
     # Строки, привязанные к нодам, которых панель уже не отдаёт (нода удалена),
     # иначе они пропали бы из редактора, продолжая попадать в расходы.
+    #
+    # Только когда панели ВЕРЯТ: при её недоступности выдача пуста, и без этой
+    # проверки все до единой строки аренды уезжали в раздел «вне панели» —
+    # где их предлагают удалить, а правка обнуляет привязку к ноде.
     known_uuids = {node.uuid for node in nodes}
-    orphaned = [e for e in expenses if e.node_uuid and e.node_uuid not in known_uuids]
+    orphaned = (
+        [e for e in expenses if e.node_uuid and e.node_uuid not in known_uuids] if panel_available else []
+    )
 
     monthly_total = 0
     for expense in expenses:
