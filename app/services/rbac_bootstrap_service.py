@@ -154,6 +154,7 @@ _PRESET_ROLES: list[dict] = [
             'tickets:*',
             'stats:*',
             'sales_stats:*',
+            'profit:*',
             'broadcasts:*',
             'tariffs:*',
             'promocodes:*',

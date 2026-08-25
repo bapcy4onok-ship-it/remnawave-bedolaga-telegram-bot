@@ -4781,3 +4781,96 @@ class UserDeviceAlias(Base):
     alias = Column(String(64), nullable=False)
     created_at = Column(AwareDateTime(), server_default=func.now(), nullable=False)
     updated_at = Column(AwareDateTime(), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class ProfitExpenseCategory(StrEnum):
+    """Категории расходов на странице «Чистая прибыль».
+
+    Строки, а не Enum-тип в БД: добавление новой категории не должно требовать
+    миграции (в проекте так же сделаны ``DonationPledgeStatus``, ``GuestPurchaseStatus``).
+    """
+
+    SERVER = 'server'  # аренда серверов/нод, сгруппированных по хостингу
+    ADS = 'ads'  # реклама: «канал — ссылка, оплата — сумма»
+    CDN = 'cdn'  # CDN/облако (Яндекс, Selectel) — счета за период
+    PERSONAL = 'personal'  # карманные выводы: «сколько, кто»
+    PARTNER = 'partner'  # выводы партнёрам вне заявок (заявки тянутся автоматически)
+    STAFF = 'staff'  # выплаты сотрудникам техподдержки
+    AI = 'ai'  # подписки на ИИ для поддержки
+    OTHER = 'other'
+
+
+class ProfitExpenseKind(StrEnum):
+    """Как расход раскладывается по времени."""
+
+    # Регулярный: задана МЕСЯЧНАЯ стоимость, в отчёт попадает доля,
+    # пропорциональная числу дней периода (см. profit_service).
+    MONTHLY = 'monthly'
+    # Разовый: сумма с датой (``spent_at``) либо счёт за интервал
+    # (``period_start``/``period_end``, так приходят счета CDN).
+    ONCE = 'once'
+
+
+class ProfitExpense(Base):
+    """Строка расходов для расчёта чистой прибыли.
+
+    Одна таблица на все категории намеренно: расчёт «доля расхода, попавшая в
+    выбранный период» одинаков для всех, а различия (ссылка на канал у рекламы,
+    хостинг у сервера, интервал счёта у CDN) — это незаполненные поля, а не
+    отдельные сущности. Разводить их по таблицам пришлось бы ценой пяти
+    одинаковых CRUD и пяти веток в отчёте.
+
+    Суммы хранятся в МИНОРНЫХ единицах валюты ``currency`` (копейки для RUB,
+    центы для USD/EUR) — отсюда имя ``amount_minor``, а не привычное
+    ``amount_kopeks``: для не-рублёвой строки это были бы не копейки.
+    """
+
+    __tablename__ = 'profit_expenses'
+    __table_args__ = (
+        Index('ix_profit_expenses_category_active', 'category', 'is_active'),
+        Index('ix_profit_expenses_category_spent', 'category', 'spent_at'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    category = Column(String(16), nullable=False, default=ProfitExpenseCategory.OTHER.value)
+    kind = Column(String(16), nullable=False, default=ProfitExpenseKind.ONCE.value)
+
+    title = Column(String(255), nullable=False)
+    # Хостинг для серверов («Aeza», «Hetzner»), провайдер для CDN («Яндекс», «Selectel»).
+    # По нему же строится цветовая группировка в кабинете.
+    group_name = Column(String(128), nullable=True)
+    link = Column(String(500), nullable=True)  # ссылка на канал (реклама)
+
+    amount_minor = Column(Integer, nullable=False, default=0)
+    currency = Column(String(3), nullable=False, default='RUB', server_default='RUB')
+    # Курс (рублей за 1 единицу валюты), зафиксированный при сохранении разового
+    # расхода: оплаченный счёт стоил столько, сколько стоил тогда, и отчёт за
+    # прошлый месяц не должен меняться от сегодняшнего курса. Для регулярных
+    # расходов остаётся пустым — они считаются по живому курсу.
+    fx_rate_snapshot = Column(Float, nullable=True)
+
+    # kind='once'
+    spent_at = Column(AwareDateTime(), nullable=True)
+    period_start = Column(AwareDateTime(), nullable=True)
+    period_end = Column(AwareDateTime(), nullable=True)
+
+    # kind='monthly': окно, в котором расход действует (пусто — «всегда»)
+    started_at = Column(AwareDateTime(), nullable=True)
+    ended_at = Column(AwareDateTime(), nullable=True)
+
+    is_active = Column(Boolean, nullable=False, default=True, server_default='true')
+
+    # Привязка строки расхода к ноде панели Remnawave (для категории server)
+    node_uuid = Column(String(255), nullable=True)
+
+    color = Column(String(16), nullable=True)  # ручное переопределение цвета группы
+    sort_order = Column(Integer, nullable=False, default=0, server_default='0')
+    notes = Column(Text, nullable=True)
+
+    created_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+
+    created_at = Column(AwareDateTime(), server_default=func.now())
+    updated_at = Column(AwareDateTime(), server_default=func.now(), onupdate=func.now())
+
+    author = relationship('User', foreign_keys=[created_by])

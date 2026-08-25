@@ -29,6 +29,7 @@ from .admin_payment_methods import router as admin_payment_methods_router
 from .admin_payments import router as admin_payments_router
 from .admin_pinned_messages import router as admin_pinned_messages_router
 from .admin_policies import router as admin_policies_router
+from .admin_profit import router as admin_profit_router
 from .admin_promo_offers import router as admin_promo_offers_router
 from .admin_promocodes import promo_groups_router as admin_promo_groups_router, router as admin_promocodes_router
 from .admin_referral_network import router as admin_referral_network_router
@@ -131,6 +132,7 @@ router.include_router(admin_tariffs_router)
 router.include_router(admin_servers_router)
 router.include_router(admin_stats_router)
 router.include_router(admin_referral_network_router)
+router.include_router(admin_profit_router)
 router.include_router(admin_sales_stats_router)
 router.include_router(admin_ban_system_router)
 router.include_router(admin_broadcasts_router)

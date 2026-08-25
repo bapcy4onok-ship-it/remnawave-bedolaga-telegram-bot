@@ -58,6 +58,8 @@ PERMISSION_REGISTRY: dict[str, list[str]] = {
     'tickets': ['read', 'reply', 'close', 'settings'],
     'stats': ['read', 'export'],
     'sales_stats': ['read', 'export'],
+    # Страница «Чистая прибыль»: read — смотреть отчёт, edit — заводить расходы.
+    'profit': ['read', 'edit'],
     'broadcasts': ['read', 'create', 'edit', 'delete', 'send'],
     'tariffs': ['read', 'create', 'edit', 'delete'],
     'promocodes': ['read', 'create', 'edit', 'delete', 'stats'],
