@@ -14,7 +14,7 @@ from app.utils.button_styles_cache import CALLBACK_TO_SECTION, get_cached_button
 _EMOJI_CHAR_CLASS = (
     r'[℀-⅏'  # Letterlike (ℹ ™ ©)
     r'←-⇿'  # Arrows
-    r'⌀-⏿'  # Misc Technical (⌚ ⌨ <tg-emoji emoji-id="5262698112975125264">⏰</tg-emoji> etc.)
+    r'⌀-⏿'  # Misc Technical (⌚ ⌨ ⏰ etc.)
     r'①-⓿'  # Enclosed Alphanumerics
     r'■-⛿'  # Geometric Shapes + Misc Symbols (☀ ★ ✈ etc.)
     r'✀-➿'  # Dingbats (✂ ✅ ✔ etc.)
@@ -34,6 +34,18 @@ def strip_leading_emoji(text: str) -> str:
     if not text:
         return text
     return _LEADING_EMOJI_RE.sub('', text, count=1)
+
+
+# Текст кнопки Telegram не парсится как HTML: <tg-emoji> в нём отображается сырым
+# тегом. Оставляем только сам юникод-emoji из тега.
+_TG_EMOJI_TAG_RE = re.compile(r'<tg-emoji[^>]*>(.*?)</tg-emoji>', re.DOTALL)
+
+
+def strip_tg_emoji_tags(text: str) -> str:
+    """Развернуть <tg-emoji ...>X</tg-emoji> в X. Безопасно для текста без тегов."""
+    if not text or '<tg-emoji' not in text:
+        return text
+    return _TG_EMOJI_TAG_RE.sub(r'\1', text)
 
 
 # Mapping from callback_data to cabinet frontend paths.
@@ -201,6 +213,8 @@ def build_miniapp_or_callback_button(
     (``MINIAPP_PURCHASE_URL``) is intentionally excluded because it cannot
     display subscription details and would load indefinitely.
     """
+
+    text = strip_tg_emoji_tags(text)
 
     if settings.is_cabinet_mode():
         path = cabinet_path or CALLBACK_TO_CABINET_PATH.get(callback_data)
