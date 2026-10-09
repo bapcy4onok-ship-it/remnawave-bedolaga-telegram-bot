@@ -482,6 +482,7 @@ async def test_http_user_flow_and_admin_review(monkeypatch) -> None:
             body = tasks.json()
             assert body['eligible'] is True
             assert body['ineligible_reason'] is None
+            assert body['telegram_linked'] is True
             assert [(t['id'], t['status']) for t in body['tasks']] == [(boost_id, 'available'), (photo_id, 'available')]
             assert 'channel_id' not in body['tasks'][0]
 
@@ -751,6 +752,37 @@ async def test_http_disabled_subscription_hides_the_section(monkeypatch, how) ->
         subscription = await env.session.get(Subscription, 10)
         assert (subscription.status, subscription.end_date) == ('disabled', before)
         assert await _submissions(env.session) == []
+
+
+@pytest.mark.asyncio
+async def test_http_list_tells_whether_telegram_is_linked(monkeypatch) -> None:
+    """Буст бот проверяет по Telegram-аккаунту: без привязки (регистрация по почте) кабинет
+    сразу показывает «Привяжите Telegram» вместо кнопки проверки — признак приходит со
+    списком и читается из базы на каждый запрос (после привязки — уже True)."""
+    async with _client(monkeypatch, as_admin=False) as env:
+        _seed_tasks(env.session)
+        listed = await env.client.get('/cabinet/tasks')
+        assert (listed.status_code, listed.json()['telegram_linked']) == (200, True)
+
+        user = await env.session.get(User, USER_ID)
+        user.telegram_id = None
+        user.email = 'alice@example.com'
+        await env.session.commit()
+        env.session.expire_all()
+
+        listed = await env.client.get('/cabinet/tasks')
+        assert (listed.status_code, listed.json()['telegram_linked']) == (200, False)
+        assert [task['id'] for task in listed.json()['tasks']] == [60, 61]
+        boosted = await env.client.post('/cabinet/tasks/61/check-boost')
+        assert (boosted.status_code, boosted.json()['detail']['code']) == (400, 'telegram_required')
+        env.boost_bot.get_user_chat_boosts.assert_not_awaited()
+
+        user = await env.session.get(User, USER_ID)
+        user.telegram_id = 555
+        await env.session.commit()
+        env.session.expire_all()
+        listed = await env.client.get('/cabinet/tasks')
+        assert listed.json()['telegram_linked'] is True
 
 
 @pytest.mark.asyncio

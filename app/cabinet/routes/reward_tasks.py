@@ -120,6 +120,7 @@ async def list_reward_tasks(
     return RewardTasksResponse(
         eligible=overview.eligible,
         ineligible_reason=overview.ineligible_reason,
+        telegram_linked=bool(user.telegram_id),
         tasks=[_to_item(view) for view in overview.tasks],
     )
 

@@ -46,6 +46,10 @@ class RewardTasksResponse(BaseModel):
     eligible: bool
     # no_subscription | restricted; скрытому разделу (tasks_unavailable) роут отвечает 404
     ineligible_reason: str | None = None
+    # Буст бот проверяет по привязанному Telegram: без него кабинет сразу показывает
+    # «Привяжите Telegram» вместо кнопки проверки. Из базы на каждый запрос — пользователь
+    # кабинета после привязки не обновляется, а список задач перечитывается.
+    telegram_linked: bool
     tasks: list[RewardTaskItem]
 
 
