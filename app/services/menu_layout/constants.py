@@ -6,6 +6,10 @@ from typing import Any
 # Ключ для хранения конфигурации в SystemSetting
 MENU_LAYOUT_CONFIG_KEY = 'menu_layout_config'
 
+# callback раздела «Задания» (как REWARD_TASKS_MENU_CALLBACK в reward_task_service):
+# такую кнопку build_keyboard показывает только тем, кому раздел виден.
+REWARD_TASKS_MENU_ACTION = 'reward_tasks_menu'
+
 # Дефолтная конфигурация меню
 DEFAULT_MENU_CONFIG: dict[str, Any] = {
     'version': 1,
@@ -69,6 +73,12 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
             'buttons': ['contests'],
             'conditions': {'contests_visible': True},
             'max_per_row': 2,
+        },
+        {
+            'id': 'reward_tasks_row',
+            'buttons': ['reward_tasks'],
+            'conditions': {'reward_tasks_visible': True},
+            'max_per_row': 1,
         },
         {
             'id': 'support_info_row',
@@ -233,6 +243,16 @@ DEFAULT_MENU_CONFIG: dict[str, Any] = {
             'conditions': None,
             'dynamic_text': False,
         },
+        'reward_tasks': {
+            'type': 'builtin',
+            'builtin_id': 'reward_tasks',
+            'text': {'ru': '🎁 Задания', 'en': '🎁 Tasks'},
+            'action': 'reward_tasks_menu',
+            'enabled': True,
+            'visibility': 'all',
+            'conditions': {'reward_tasks_visible': True},
+            'dynamic_text': False,
+        },
         'support': {
             'type': 'builtin',
             'builtin_id': 'support',
@@ -385,6 +405,13 @@ BUILTIN_BUTTONS_INFO: list[dict[str, Any]] = [
         'supports_dynamic_text': False,
     },
     {
+        'id': 'reward_tasks',
+        'default_text': {'ru': '🎁 Задания', 'en': '🎁 Tasks'},
+        'callback_data': 'reward_tasks_menu',
+        'default_conditions': {'reward_tasks_visible': True},
+        'supports_dynamic_text': False,
+    },
+    {
         'id': 'support',
         'default_text': {'ru': '💬 Поддержка', 'en': '💬 Support'},
         'callback_data': 'menu_support',
@@ -480,6 +507,13 @@ AVAILABLE_CALLBACKS: list[dict[str, Any]] = [
         'category': 'menu',
         'icon': '🖥️',
         'text': {'ru': '🖥️ Статус серверов', 'en': '🖥️ Server Status'},
+    },
+    {
+        'callback_data': 'reward_tasks_menu',
+        'name': 'Задания за дни подписки',
+        'category': 'menu',
+        'icon': '🎁',
+        'text': {'ru': '🎁 Задания', 'en': '🎁 Tasks'},
     },
     # Баланс
     {

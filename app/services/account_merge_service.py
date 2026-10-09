@@ -42,6 +42,8 @@ from app.database.models import (
     ReferralContest,
     ReferralContestEvent,
     ReferralEarning,
+    RewardTaskSubmission,
+    RewardTaskSubmissionStatus,
     RioPayPayment,
     SavedPaymentMethod,
     SentNotification,
@@ -533,6 +535,56 @@ async def _handle_subscription_merge(
         )
 
 
+async def _reassign_reward_task_submissions(db: AsyncSession, primary_id: int, secondary_id: int) -> None:
+    """Переносит отчёты по заданиям secondary → primary.
+
+    Частичные уникальные индексы разрешают один approved и один pending на
+    (task_id, user_id). Награда за задание — одна на человека: если задание уже
+    выполнено у primary, отчёты secondary по нему удаляем; второй pending тоже
+    лишний. Pending primary по заданию, которое выполнил secondary, одобрить всё
+    равно нельзя — удаляем и его. Отклонённые переносятся как есть.
+    """
+    approved_status = RewardTaskSubmissionStatus.APPROVED.value
+    pending_status = RewardTaskSubmissionStatus.PENDING.value
+    primary_approved_tasks = select(RewardTaskSubmission.task_id).where(
+        RewardTaskSubmission.user_id == primary_id, RewardTaskSubmission.status == approved_status
+    )
+    primary_pending_tasks = select(RewardTaskSubmission.task_id).where(
+        RewardTaskSubmission.user_id == primary_id, RewardTaskSubmission.status == pending_status
+    )
+    secondary_approved_tasks = select(RewardTaskSubmission.task_id).where(
+        RewardTaskSubmission.user_id == secondary_id, RewardTaskSubmission.status == approved_status
+    )
+    await db.execute(
+        delete(RewardTaskSubmission).where(
+            RewardTaskSubmission.user_id == secondary_id,
+            RewardTaskSubmission.status.in_([approved_status, pending_status]),
+            RewardTaskSubmission.task_id.in_(primary_approved_tasks),
+        )
+    )
+    await db.execute(
+        delete(RewardTaskSubmission).where(
+            RewardTaskSubmission.user_id == secondary_id,
+            RewardTaskSubmission.status == pending_status,
+            RewardTaskSubmission.task_id.in_(primary_pending_tasks),
+        )
+    )
+    await db.execute(
+        delete(RewardTaskSubmission).where(
+            RewardTaskSubmission.user_id == primary_id,
+            RewardTaskSubmission.status == pending_status,
+            RewardTaskSubmission.task_id.in_(secondary_approved_tasks),
+        )
+    )
+    await db.execute(
+        update(RewardTaskSubmission).where(RewardTaskSubmission.user_id == secondary_id).values(user_id=primary_id)
+    )
+    # reviewed_by — админский FK, обнуляем (не переносим на primary, чтобы не искажать аудит)
+    await db.execute(
+        update(RewardTaskSubmission).where(RewardTaskSubmission.reviewed_by == secondary_id).values(reviewed_by=None)
+    )
+
+
 async def execute_merge(
     db: AsyncSession,
     primary_user_id: int,
@@ -955,6 +1007,9 @@ async def execute_merge(
         update(GuestPurchase).where(GuestPurchase.buyer_user_id == secondary.id).values(buyer_user_id=primary.id)
     )
     await db.execute(update(GuestPurchase).where(GuestPurchase.user_id == secondary.id).values(user_id=primary.id))
+
+    # 10t. Переназначение reward_task_submissions (частичные уникальные индексы)
+    await _reassign_reward_task_submissions(db, primary.id, secondary.id)
 
     # 11. Инвалидация refresh-токенов обоих пользователей (после мержа будет создан новый)
     now = datetime.now(UTC)

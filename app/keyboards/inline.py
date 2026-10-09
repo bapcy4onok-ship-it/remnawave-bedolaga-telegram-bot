@@ -25,6 +25,34 @@ from app.utils.subscription_utils import (
 logger = structlog.get_logger(__name__)
 
 
+async def _is_reward_tasks_button_visible(user) -> bool:
+    """Условие кнопки «🎁 Задания»: есть включённые задания и раздел виден этому пользователю.
+
+    Видимость решает ``get_reward_tasks_access`` — тот же ответ, что у кабинета
+    и у кнопок раздела: заблокированным, пользователям с отключённой подпиской и
+    (пока выключен REWARD_TASKS_FOR_ALL_USERS) всем, кроме админов, кнопки нет.
+    Проверка идёт в отдельной короткой сессии: упавший запрос (например, таблицы
+    ещё нет — миграция не применилась) не должен обрывать транзакцию хендлера,
+    который строит меню. «Есть ли задания» сервис кэширует, так что без заданий
+    сессия даже не берёт соединение; видимость не кэшируется — переключатель и
+    отключение подписки действуют с ближайшего показа меню.
+    """
+    if user is None:
+        return False
+
+    from app.database.database import AsyncSessionLocal
+    from app.services.reward_task_service import get_reward_tasks_access, has_active_tasks
+
+    try:
+        async with AsyncSessionLocal() as session:
+            if not await has_active_tasks(session):
+                return False
+            return (await get_reward_tasks_access(session, user)).visible
+    except Exception as error:
+        logger.warning('Не удалось проверить видимость раздела «Задания» для меню', error=error)
+        return False
+
+
 async def get_main_menu_keyboard_async(
     db: AsyncSession,
     language: str = DEFAULT_LANGUAGE,
@@ -47,6 +75,8 @@ async def get_main_menu_keyboard_async(
     Если MENU_LAYOUT_ENABLED=True, использует конфигурацию из БД.
     Иначе делегирует в синхронную версию.
     """
+    reward_tasks_visible = await _is_reward_tasks_button_visible(user)
+
     if settings.MENU_LAYOUT_ENABLED:
         from app.services.menu_layout_service import MenuContext, MenuLayoutService
 
@@ -135,6 +165,7 @@ async def get_main_menu_keyboard_async(
             registration_days=registration_days,
             promo_group_id=promo_group_id,
             has_autopay=has_autopay,
+            reward_tasks_visible=reward_tasks_visible,
         )
 
         return await MenuLayoutService.build_keyboard(db, context)
@@ -152,6 +183,7 @@ async def get_main_menu_keyboard_async(
         has_saved_cart=has_saved_cart,
         is_moderator=is_moderator,
         custom_buttons=custom_buttons,
+        show_reward_tasks=reward_tasks_visible,
     )
 
 
@@ -581,6 +613,7 @@ def get_main_menu_keyboard(
     *,
     is_moderator: bool = False,
     custom_buttons: list[InlineKeyboardButton] | None = None,
+    show_reward_tasks: bool = False,  # есть задания и раздел виден пользователю (считает async-версия)
 ) -> InlineKeyboardMarkup:
     texts = get_texts(language)
 
@@ -763,6 +796,12 @@ def get_main_menu_keyboard(
     if settings.CONTESTS_ENABLED and settings.CONTESTS_BUTTON_VISIBLE:
         paired_buttons.append(
             InlineKeyboardButton(text=texts.t('CONTESTS_BUTTON', '🎲 Конкурсы'), callback_data='contests_menu')
+        )
+
+    # «Задания» — есть включённые задания и раздел виден пользователю (get_reward_tasks_access)
+    if show_reward_tasks:
+        paired_buttons.append(
+            InlineKeyboardButton(text=texts.t('REWARD_TASKS_BUTTON', '🎁 Задания'), callback_data='reward_tasks_menu')
         )
 
     try:

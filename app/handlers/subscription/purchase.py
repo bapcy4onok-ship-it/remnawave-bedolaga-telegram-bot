@@ -68,6 +68,21 @@ async def _resolve_subscription(callback, db_user, db, state=None):
     return await resolve_subscription_from_context(callback, db_user, db, state)
 
 
+def _format_daily_countdown(time_until: timedelta) -> str:
+    """«До списания» суточного тарифа: «5ч 7мин», а дальше суток — «3д 22ч 5мин».
+
+    Обычно списание не дальше суток, но награда за задание переносит его на
+    подаренные дни. ``timedelta.seconds`` — остаток без целых дней, поэтому часы
+    и минуты считаются от полного числа секунд.
+    """
+    total_minutes = max(0, int(time_until.total_seconds())) // 60
+    days, minutes_of_day = divmod(total_minutes, 24 * 60)
+    hours, minutes = divmod(minutes_of_day, 60)
+    if days:
+        return f'{days}д {hours}ч {minutes}мин'
+    return f'{hours}ч {minutes}мин'
+
+
 def _serialize_markup(markup: InlineKeyboardMarkup | None) -> Any | None:
     if markup is None:
         return None
@@ -401,10 +416,8 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
                             next_charge = last_charge + timedelta(hours=24)
                             now = datetime.now(UTC)
                             if next_charge > now:
-                                time_until = next_charge - now
-                                hours_left = time_until.seconds // 3600
-                                minutes_left = (time_until.seconds % 3600) // 60
-                                tariff_info_lines.append(f'⏳ Осталось: {hours_left}ч {minutes_left}мин')
+                                countdown = _format_daily_countdown(next_charge - now)
+                                tariff_info_lines.append(f'⏳ Осталось: {countdown}')
                                 tariff_info_lines.append('💤 Списание приостановлено')
                     elif last_charge:
                         next_charge = last_charge + timedelta(hours=24)
@@ -412,8 +425,6 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
 
                         if next_charge > now:
                             time_until = next_charge - now
-                            hours_left = time_until.seconds // 3600
-                            minutes_left = (time_until.seconds % 3600) // 60
 
                             # Процент оставшегося времени (24 часа = 100%)
                             total_seconds = 24 * 3600
@@ -427,7 +438,7 @@ async def show_subscription_info(callback: types.CallbackQuery, db_user: User, d
                             progress_bar = '▓' * filled + '░' * empty
 
                             tariff_info_lines.append('')
-                            tariff_info_lines.append(f'⏳ До списания: {hours_left}ч {minutes_left}мин')
+                            tariff_info_lines.append(f'⏳ До списания: {_format_daily_countdown(time_until)}')
                             tariff_info_lines.append(f'[{progress_bar}] {percent:.0f}%')
                     else:
                         tariff_info_lines.append('')

@@ -283,6 +283,12 @@ class ContestStates(StatesGroup):
     waiting_for_answer = State()
 
 
+class RewardTaskStates(StatesGroup):
+    # Сбор скриншотов для фотоотчёта по заданию. Задание, собранные фото и
+    # сообщение-статус лежат в state data (ключи reward_task_*).
+    waiting_for_photos = State()
+
+
 class AdminSubmenuStates(StatesGroup):
     in_users_submenu = State()
     in_promo_submenu = State()

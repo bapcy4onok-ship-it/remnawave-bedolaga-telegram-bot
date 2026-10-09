@@ -34,6 +34,7 @@ from .admin_promo_offers import router as admin_promo_offers_router
 from .admin_promocodes import promo_groups_router as admin_promo_groups_router, router as admin_promocodes_router
 from .admin_referral_network import router as admin_referral_network_router
 from .admin_remnawave import router as admin_remnawave_router
+from .admin_reward_tasks import router as admin_reward_tasks_router
 from .admin_roles import router as admin_roles_router
 from .admin_sales_stats import router as admin_sales_stats_router
 from .admin_servers import router as admin_servers_router
@@ -64,6 +65,7 @@ from .polls import router as polls_router
 from .promo import router as promo_router
 from .promocode import router as promocode_router
 from .referral import router as referral_router
+from .reward_tasks import router as reward_tasks_router
 from .site_verification import router as site_verification_router
 from .subscription import router as subscription_router
 from .subscription_modules.multi_tariff import router as multi_tariff_subscription_router
@@ -120,6 +122,9 @@ router.include_router(info_pages_router)
 # Wheel routes
 router.include_router(wheel_router)
 
+# Reward tasks («Задания» за дни подписки)
+router.include_router(reward_tasks_router)
+
 # Gift routes
 router.include_router(gift_router)
 
@@ -128,6 +133,7 @@ router.include_router(admin_ticket_notifications_router)
 router.include_router(admin_tickets_router)
 router.include_router(admin_settings_router)
 router.include_router(admin_wheel_router)
+router.include_router(admin_reward_tasks_router)
 router.include_router(admin_tariffs_router)
 router.include_router(admin_servers_router)
 router.include_router(admin_stats_router)

@@ -446,6 +446,11 @@ class Settings(BaseSettings):
     # Для обратной совместимости со старыми конфигами
     REFERRAL_CONTESTS_ENABLED: bool = False
 
+    # «Задания» за дни подписки: False — раздел видят только админы (ADMIN_IDS,
+    # ADMIN_EMAILS и роли кабинета), True — все пользователи. Меняется в
+    # админ-настройках бота и кабинета без перезапуска (reward_task_service).
+    REWARD_TASKS_FOR_ALL_USERS: bool = False
+
     BLACKLIST_CHECK_ENABLED: bool = False
     BLACKLIST_GITHUB_URL: str | None = None
     BLACKLIST_UPDATE_INTERVAL_HOURS: int = 24

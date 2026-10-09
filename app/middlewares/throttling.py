@@ -8,6 +8,8 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, TelegramObject
 
+from app.states import RewardTaskStates
+
 
 logger = structlog.get_logger(__name__)
 
@@ -109,6 +111,18 @@ class ThrottlingMiddleware(BaseMiddleware):
                     current = None
                 if current:
                     state_str = str(current)
+                    # Альбом — это пачка сообщений в одну секунду. При сборе
+                    # скриншотов для задания их надо пропустить: иначе до хендлера
+                    # дойдёт только первое фото. Лимит фото и единственный ответ
+                    # на всю пачку обеспечивает сам хендлер. Фото с командой в
+                    # подписи («/contests») — не скриншот: его заберёт хендлер
+                    # команды (Command читает и caption), троттлинг для него обычный.
+                    if (
+                        state_str == RewardTaskStates.waiting_for_photos.state
+                        and (event.photo or event.media_group_id)
+                        and not (event.caption or '').lstrip().startswith('/')
+                    ):
+                        return await handler(event, data)
                     is_ticket_state = (':waiting_for_message' in state_str or ':waiting_for_reply' in state_str) and (
                         'TicketStates' in state_str or 'AdminTicketStates' in state_str
                     )

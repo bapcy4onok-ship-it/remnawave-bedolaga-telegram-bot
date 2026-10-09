@@ -25,6 +25,7 @@ from .constants import (
     DEFAULT_MENU_CONFIG,
     DYNAMIC_PLACEHOLDERS,
     MENU_LAYOUT_CONFIG_KEY,
+    REWARD_TASKS_MENU_ACTION,
 )
 from .context import MenuContext
 from .history_service import MenuLayoutHistoryService
@@ -760,6 +761,11 @@ class MenuLayoutService:
             if not settings.CONTESTS_BUTTON_VISIBLE:
                 return False
 
+        # reward_tasks_visible — есть включённые задания и раздел виден пользователю
+        if conditions.get('reward_tasks_visible') is True:
+            if not context.reward_tasks_visible:
+                return False
+
         # support_enabled
         if conditions.get('support_enabled') is True:
             try:
@@ -884,6 +890,13 @@ class MenuLayoutService:
                 return False
 
         return True
+
+    @classmethod
+    def _opens_reward_tasks(cls, button_config: dict[str, Any]) -> bool:
+        """Кнопка ведёт в раздел «Задания»: встроенная reward_tasks или своя с тем же callback."""
+        return (
+            button_config.get('builtin_id') == 'reward_tasks' or button_config.get('action') == REWARD_TASKS_MENU_ACTION
+        )
 
     @classmethod
     def _check_visibility(
@@ -1156,6 +1169,11 @@ class MenuLayoutService:
                 # Проверяем условия кнопки
                 button_conditions = button_cfg.get('conditions')
                 if not cls._evaluate_conditions(button_conditions, context):
+                    continue
+
+                # Кнопку раздела «Задания» скрытым пользователям не показываем, даже если
+                # в сохранённой раскладке у неё нет условия reward_tasks_visible.
+                if not context.reward_tasks_visible and cls._opens_reward_tasks(button_cfg):
                     continue
 
                 # Строим кнопку (передаём button_id для кастомных кнопок)

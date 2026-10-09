@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from app.bot_factory import create_bot
 from app.config import settings
 from app.database.models import User
+from app.utils.photo_sizes import pick_thumbnail_photo_size
 
 from ..dependencies import get_current_cabinet_user
 
@@ -116,6 +117,25 @@ def make_media_token(file_id: str) -> str:
     return f'{exp}.{_media_signature(file_id, exp)}'
 
 
+# Stable tokens: `exp` is rounded up to the end of a 6 h bucket, so every response
+# minted within one bucket carries the same URL for a file.
+_STABLE_MEDIA_TOKEN_BUCKET_SECONDS = 6 * 60 * 60
+
+
+def make_stable_media_token(file_id: str) -> str:
+    """Like `make_media_token`, but identical for all calls within one 6 h bucket.
+
+    Lists that are refetched often (the admin review queue) keep the same image
+    URLs, so the browser does not download every thumbnail through Telegram again.
+    Valid for at least the normal TTL (24 h) and at most TTL + 6 h; checked by the
+    same `_verify_media_token`.
+    """
+    bucket = _STABLE_MEDIA_TOKEN_BUCKET_SECONDS
+    bucket_end = -(-int(time.time()) // bucket) * bucket
+    exp = bucket_end + _MEDIA_TOKEN_TTL_SECONDS
+    return f'{exp}.{_media_signature(file_id, exp)}'
+
+
 def _verify_media_token(file_id: str, token: str) -> bool:
     exp_str, _, sig = (token or '').partition('.')
     if not sig:
@@ -136,6 +156,8 @@ class MediaUploadResponse(BaseModel):
     file_id: str
     file_unique_id: str | None = None
     media_url: str
+    # Photos only: a ~320px size for list previews (file_id stays the full size).
+    thumbnail_file_id: str | None = None
 
 
 def _resolve_target_chat_id() -> int:
@@ -217,6 +239,7 @@ async def upload_media(
     upload = BufferedInputFile(file_bytes, filename=file.filename or 'upload')
 
     bot = create_bot()
+    thumbnail = None
 
     try:
         # Send with disable_notification to avoid pinging admins — this is just staging
@@ -227,6 +250,7 @@ async def upload_media(
                 disable_notification=True,
             )
             media = message.photo[-1]
+            thumbnail = pick_thumbnail_photo_size(message.photo)
         elif media_type_normalized == 'video':
             message = await bot.send_video(
                 chat_id=target_chat_id,
@@ -262,6 +286,7 @@ async def upload_media(
             file_id=media.file_id,
             file_unique_id=getattr(media, 'file_unique_id', None),
             media_url=media_url,
+            thumbnail_file_id=thumbnail.file_id if thumbnail is not None else None,
         )
     except HTTPException:
         raise
