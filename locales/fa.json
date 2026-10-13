@@ -1216,7 +1216,7 @@
   "LOADING": "<tg-emoji emoji-id=\"5269539162654010758\">⏳</tg-emoji> بارگذاری...",
   "MAINTENANCE_MODE_ACTIVE": "\n🔧 تعمیرات فنی!\n\nسرویس موقتاً در دسترس نیست. در حال بهبود کیفیت خدمات هستیم.\n\n<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> زمان تقریبی اتمام: نامشخص\n🔄 بعداً تلاش کنید\n\nبابت ناراحتی عذرخواهی می‌کنیم.\n",
   "MAINTENANCE_MODE_API_ERROR": "\n🔧 تعمیرات فنی!\n\nسرویس به دلیل مشکل اتصال به سرورها موقتاً در دسترس نیست.\n\n<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> در حال رفع مشکل هستیم. چند دقیقه بعد تلاش کنید.\n\n🔄 آخرین بررسی: {last_check}\n",
-  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n    \n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>اشتراک:</b> {subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> پس از شارژ موجودی، فراموش نکنید اشتراک خود را تمدید کنید یا پرداخت خودکار را فعال کنید!\n\nعملیات:\n",
+  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n    \n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>اشتراک:</b> {subscription_status}\n\n🚫 <b>استفاده از TORRENT ممنوع است!</b> 🚫\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> پس از شارژ موجودی، فراموش نکنید اشتراک خود را تمدید کنید یا پرداخت خودکار را فعال کنید!\n\nعملیات:\n",
   "MAIN_MENU_ACTION_PROMPT": "عملیات را انتخاب کنید:",
   "MAIN_MENU_BUTTON": "🏠 منوی اصلی",
   "MAIN_MENU_RICH_BALANCE": "💰 موجودی: {balance}",

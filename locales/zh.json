@@ -1031,7 +1031,7 @@
   "LOADING": "<tg-emoji emoji-id=\"5269539162654010758\">⏳</tg-emoji>加载中...",
   "MAINTENANCE_MODE_ACTIVE": "\n🔧正在进行技术维护！\n\n服务暂时不可用。我们正在进行技术工作以提高服务质量。\n\n<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji>预计完成时间：未知\n🔄请稍后再试\n\n对于暂时的不便，我们深表歉意。\n",
   "MAINTENANCE_MODE_API_ERROR": "\n🔧正在进行技术维护！\n\n由于连接服务器出现问题，服务暂时不可用。\n\n<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji>我们正在努力恢复。请几分钟后再试。\n\n🔄最后检查时间：{last_check}\n",
-  "MAIN_MENU": "👤<b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n  \n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji><b>订阅：</b>{subscription_status}\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> 充值余额后别忘了续订订阅，或开启自动续费！\n\n请选择操作：\n",
+  "MAIN_MENU": "👤<b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n  \n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji><b>订阅：</b>{subscription_status}\n\n🚫 <b>禁止使用 TORRENT！</b> 🚫\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> 充值余额后别忘了续订订阅，或开启自动续费！\n\n请选择操作：\n",
   "MAIN_MENU_ACTION_PROMPT": "请选择操作：",
   "MAIN_MENU_BUTTON": "🏠主菜单",
   "MAIN_MENU_RICH_BALANCE": "💰 余额：{balance}",
