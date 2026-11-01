@@ -7,6 +7,10 @@
 доход НЕ идут — это не пришедшие деньги; они отдаются отдельной строкой
 справочно.
 
+Надбавка к пополнению («+10 ₽ на поддержку») приходит внутри шлюзового
+платежа, но по смыслу это пожертвование: в разбивке её сумма переносится из
+«Пополнений и оплат» в «Пожертвования», итог дохода от этого не меняется.
+
 Расходы приходят из ``profit_expenses`` (заводит админ) и из заявок на вывод
 реферального баланса (``withdrawal_requests`` со статусом «выполнена») —
 последние тянутся автоматически, руками их дублировать не надо.
@@ -24,7 +28,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.crud.profit_expense import list_expenses_for_period
@@ -47,8 +51,9 @@ from app.services.exchange_rate_service import exchange_rate_service
 logger = structlog.get_logger(__name__)
 
 # Надбавка к пополнению («добавить 10 ₽ на поддержку») списывается С БАЛАНСА,
-# который шлюз уже зачислил, — она сидит внутри суммы пополнения. Считать её
-# ещё раз в доходе значило бы удвоить эти деньги.
+# который шлюз уже зачислил, — она сидит внутри суммы пополнения. Прибавить её
+# к доходу ещё раз значило бы удвоить эти деньги, поэтому она только
+# переносится из строки пополнений в строку пожертвований.
 UPSELL_DONATION_SOURCE = 'topup_upsell'
 
 # Окно, по которому усредняются счета CDN, когда период отчёта ими не покрыт.
@@ -198,18 +203,26 @@ async def _gift_revenue_kopeks(db: AsyncSession, period_start: datetime, period_
     return int(result.scalar() or 0)
 
 
-async def _donation_revenue_kopeks(db: AsyncSession, period_start: datetime, period_end: datetime) -> int:
-    """Пожертвования, пришедшие отдельным платежом (без надбавок к пополнению)."""
+async def _donation_revenue_kopeks(
+    db: AsyncSession,
+    period_start: datetime,
+    period_end: datetime,
+) -> tuple[int, int]:
+    """Пожертвования за период: (отдельным платежом, надбавками к пополнению)."""
+    is_upsell = func.coalesce(Donation.source, 'menu') == UPSELL_DONATION_SOURCE
     result = await db.execute(
-        select(func.coalesce(func.sum(Donation.amount_kopeks), 0)).where(
+        select(
+            func.coalesce(func.sum(case((is_upsell, 0), else_=Donation.amount_kopeks)), 0),
+            func.coalesce(func.sum(case((is_upsell, Donation.amount_kopeks), else_=0)), 0),
+        ).where(
             and_(
-                func.coalesce(Donation.source, 'menu') != UPSELL_DONATION_SOURCE,
                 Donation.created_at >= period_start,
                 Donation.created_at <= period_end,
             )
         )
     )
-    return int(result.scalar() or 0)
+    standalone, upsell = result.one()
+    return int(standalone or 0), int(upsell or 0)
 
 
 async def _manual_topup_kopeks(db: AsyncSession, period_start: datetime, period_end: datetime) -> int:
@@ -230,15 +243,24 @@ async def _manual_topup_kopeks(db: AsyncSession, period_start: datetime, period_
 
 async def calculate_revenue(db: AsyncSession, period_start: datetime, period_end: datetime) -> dict[str, int]:
     """Реальный доход за период с разбивкой по источникам."""
-    gateway = await _gateway_revenue_kopeks(db, period_start, period_end)
+    gateway_with_tips = await _gateway_revenue_kopeks(db, period_start, period_end)
     gifts = await _gift_revenue_kopeks(db, period_start, period_end)
-    donations = await _donation_revenue_kopeks(db, period_start, period_end)
+    standalone_donations, upsell_tips = await _donation_revenue_kopeks(db, period_start, period_end)
     manual = await _manual_topup_kopeks(db, period_start, period_end)
+
+    # Надбавку списывают сразу после зачисления, но на стыке периодов пополнение
+    # может остаться во вчера, а надбавка уйти в сегодня. Переносить больше, чем
+    # пришло через шлюзы за период, нельзя — строка пополнений ушла бы в минус.
+    upsell_tips = min(upsell_tips, gateway_with_tips)
+    gateway = gateway_with_tips - upsell_tips
+    donations = standalone_donations + upsell_tips
 
     return {
         'gateway_kopeks': gateway,
         'gifts_kopeks': gifts,
         'donations_kopeks': donations,
+        # Часть donations_kopeks: надбавки, пришедшие внутри пополнений.
+        'donations_upsell_kopeks': upsell_tips,
         'total_kopeks': gateway + gifts + donations,
         'manual_topup_kopeks': manual,
     }

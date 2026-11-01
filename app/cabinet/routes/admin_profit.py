@@ -138,6 +138,8 @@ class RevenueBreakdown(BaseModel):
     gateway_kopeks: int
     gifts_kopeks: int
     donations_kopeks: int
+    # Часть donations_kopeks: надбавки «+N ₽ на поддержку», пришедшие внутри пополнений.
+    donations_upsell_kopeks: int
     total_kopeks: int
     # Ручные начисления админом — справочно, в total не входят.
     manual_topup_kopeks: int

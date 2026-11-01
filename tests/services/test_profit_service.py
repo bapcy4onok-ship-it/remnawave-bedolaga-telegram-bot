@@ -117,8 +117,9 @@ async def test_revenue_counts_only_real_gateway_money(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_revenue_adds_gifts_and_menu_donations_but_not_upsell(monkeypatch):
-    """Подарки и донаты из меню — реальные деньги; надбавка к пополнению уже внутри депозита."""
+async def test_revenue_moves_upsell_from_gateway_to_donations(monkeypatch):
+    """Подарки и донаты из меню прибавляются к доходу; надбавка к пополнению уже внутри
+    депозита, поэтому она только переезжает из строки пополнений в пожертвования."""
     async with memory_session(monkeypatch, TABLES) as session:
         await _add_user(session)
         session.add_all(
@@ -169,9 +170,46 @@ async def test_revenue_adds_gifts_and_menu_donations_but_not_upsell(monkeypatch)
 
         revenue = await profit_service.calculate_revenue(session, PERIOD_START, PERIOD_END)
 
+    assert revenue['gateway_kopeks'] == 99_000
     assert revenue['gifts_kopeks'] == 40_000
-    assert revenue['donations_kopeks'] == 20_000
+    assert revenue['donations_kopeks'] == 21_000
+    assert revenue['donations_upsell_kopeks'] == 1_000
+    # Итог тот же, что без переноса: надбавка не прибавляется к доходу второй раз.
     assert revenue['total_kopeks'] == 160_000
+
+
+@pytest.mark.asyncio
+async def test_upsell_move_never_drives_gateway_negative(monkeypatch):
+    """Пополнение осталось в прошлом периоде, а надбавку списали уже в этом.
+
+    Через шлюзы за период пришло меньше, чем списано надбавок, — переносится
+    не больше пришедшего, итог дохода по-прежнему не трогается.
+    """
+    async with memory_session(monkeypatch, TABLES) as session:
+        await _add_user(session)
+        session.add_all(
+            [
+                _transaction(
+                    type=TransactionType.DEPOSIT.value,
+                    amount_kopeks=500,
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                ),
+                Donation(
+                    amount_kopeks=1_000,
+                    source='topup_upsell',
+                    payment_method=PaymentMethod.YOOKASSA.value,
+                    created_at=PERIOD_START + timedelta(days=5),
+                ),
+            ]
+        )
+        await session.commit()
+
+        revenue = await profit_service.calculate_revenue(session, PERIOD_START, PERIOD_END)
+
+    assert revenue['gateway_kopeks'] == 0
+    assert revenue['donations_kopeks'] == 500
+    assert revenue['donations_upsell_kopeks'] == 500
+    assert revenue['total_kopeks'] == 500
 
 
 # ── раскладка расходов ────────────────────────────────────────────────────────

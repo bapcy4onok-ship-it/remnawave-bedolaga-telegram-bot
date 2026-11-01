@@ -1094,7 +1094,7 @@
   "LOADING": "<tg-emoji emoji-id=\"5269539162654010758\">⏳</tg-emoji> Loading...",
   "MAINTENANCE_MODE_ACTIVE": "\n🔧 Maintenance in progress!\n\nThe service is temporarily unavailable while we improve performance.\n\n<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> Estimated completion time: unknown\n🔄 Please try again later\n\nWe apologize for the inconvenience.\n",
   "MAINTENANCE_MODE_API_ERROR": "\n🔧 Maintenance in progress!\n\nThe service is temporarily unavailable due to connection issues with the servers.\n\n<tg-emoji emoji-id=\"5262698112975125264\">⏰</tg-emoji> We're working on it. Please try again in a few minutes.\n\n🔄 Last check: {last_check}\n",
-  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n\n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Subscription:</b> {subscription_status}\n\n🚫 <b>Using TORRENT is prohibited!</b> 🚫\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Don't forget to renew your subscription after topping up your balance, or enable auto-payment!\n\nChoose an option:\n",
+  "MAIN_MENU": "👤 <b>{user_name}</b>\n🆔 ID: <code>{telegram_id}</code>\n\n<tg-emoji emoji-id=\"6222114543280065157\">📱</tg-emoji> <b>Subscription:</b> {subscription_status}\n\nUsing torrents is prohibited 🚫\n\n<tg-emoji emoji-id=\"6244595016287654616\">⚠️</tg-emoji> Don't forget to renew your subscription after topping up your balance, or enable auto-payment!\n\nChoose an option:\n",
   "MAIN_MENU_ACTION_PROMPT": "Choose an option:",
   "MAIN_MENU_BUTTON": "🏠 Main menu",
   "MAIN_MENU_RICH_BALANCE": "💰 Balance: {balance}",
