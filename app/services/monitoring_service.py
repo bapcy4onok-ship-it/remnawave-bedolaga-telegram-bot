@@ -394,6 +394,9 @@ class MonitoringService:
                 await self._check_trial_expiring_soon(db)
                 await self._check_trial_channel_subscriptions(db)
                 await self._check_expired_subscription_followups(db)
+                from app.services.first_purchase_offer_service import send_first_purchase_offers
+
+                await send_first_purchase_offers(db, self.bot)
                 await self._check_traffic_warnings(db)
                 await self._check_low_balance_alerts(db)
                 await self._retry_stuck_guest_purchases(db)
@@ -893,7 +896,7 @@ class MonitoringService:
         """
         from app.database.crud.subscription import is_recently_updated_by_webhook
 
-        if not settings.CHANNEL_IS_REQUIRED_SUB:
+        if not (settings.CHANNEL_IS_REQUIRED_SUB or settings.CHANNEL_TRIAL_REQUIRED):
             return
 
         if not self.bot:
@@ -938,7 +941,9 @@ class MonitoringService:
             from sqlalchemy import true as sa_true
 
             has_paid_disable_rule = any(ch.get('disable_paid_on_leave', False) for ch in channels)
-            include_all = settings.CHANNEL_REQUIRED_FOR_ALL or has_paid_disable_rule
+            include_all = settings.CHANNEL_IS_REQUIRED_SUB and (
+                settings.CHANNEL_REQUIRED_FOR_ALL or has_paid_disable_rule
+            )
             is_trial_filter = sa_true() if include_all else Subscription.is_trial.is_(True)
 
             while True:

@@ -44,6 +44,7 @@ from app.database.models import RewardTaskKind, RewardTaskSubmissionSource, User
 from app.keyboards.inline import get_back_keyboard
 from app.keyboards.reward_tasks import (
     BOOST_CALLBACK_PREFIX,
+    CHANNEL_CALLBACK_PREFIX,
     PHOTO_CALLBACK_PREFIX,
     PHOTO_CANCEL_CALLBACK_PREFIX,
     PHOTO_DONE_CALLBACK_PREFIX,
@@ -421,6 +422,11 @@ def _status_line(texts: Any, view: Any) -> str:
         return texts.t(
             'REWARD_TASKS_STATUS_REJECTED', '❌ Отчёт отклонён: {reason}\nМожно отправить новый отчёт.'
         ).format(reason=html.escape(view.reject_reason or '—'))
+    if task.kind == RewardTaskKind.CHANNEL_SUBSCRIPTION:
+        return texts.t(
+            'REWARD_TASKS_CHANNEL_HINT',
+            'Подпишитесь на канал и нажмите «Проверить подписку». Награда выдаётся один раз.',
+        )
     if task.kind == RewardTaskKind.CHANNEL_BOOST:
         return texts.t(
             'REWARD_TASKS_BOOST_HINT',
@@ -845,6 +851,26 @@ async def check_reward_task_boost(callback: types.CallbackQuery, db_user: User, 
 
 
 @error_handler
+async def check_reward_task_channel(callback: types.CallbackQuery, db_user: User, db: AsyncSession, state: FSMContext):
+    """Проверяет подписку на канал и показывает результат начисления дней."""
+    if await _visible_access(db, db_user) is None:
+        await _refuse_hidden(callback, db_user, state)
+        return
+    texts = get_texts(db_user.language)
+    task_id = _parse_task_id(callback.data, CHANNEL_CALLBACK_PREFIX)
+    try:
+        if task_id is None:
+            raise RewardTaskError(RewardTaskErrorCode.TASK_NOT_FOUND)
+        task = await rts.require_active_task(db, task_id, kind=RewardTaskKind.CHANNEL_SUBSCRIPTION)
+        result = await rts.check_channel_subscription(db, db_user, task, callback.bot)
+    except RewardTaskError as error:
+        await _show_task_error(callback, db_user, db, state, error, task_id, message_if_expired=True)
+        return
+    await _show_screen(callback, _boost_success_text(texts, result), get_reward_task_result_keyboard(db_user.language))
+    await callback.answer()
+
+
+@error_handler
 async def start_reward_task_report(
     callback: types.CallbackQuery,
     db_user: User,
@@ -1076,6 +1102,7 @@ async def cancel_reward_task_report(
 def register_handlers(dp: Dispatcher) -> None:
     dp.callback_query.register(show_reward_tasks, F.data == REWARD_TASKS_MENU_CALLBACK)
     dp.callback_query.register(show_reward_task, F.data.startswith(TASK_CALLBACK_PREFIX))
+    dp.callback_query.register(check_reward_task_channel, F.data.startswith(CHANNEL_CALLBACK_PREFIX))
     dp.callback_query.register(check_reward_task_boost, F.data.startswith(BOOST_CALLBACK_PREFIX))
     dp.callback_query.register(start_reward_task_report, F.data.startswith(PHOTO_CALLBACK_PREFIX))
     dp.callback_query.register(submit_reward_task_report, F.data.startswith(PHOTO_DONE_CALLBACK_PREFIX))

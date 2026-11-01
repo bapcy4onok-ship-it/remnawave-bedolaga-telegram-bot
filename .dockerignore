@@ -48,3 +48,15 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Local credentials, runtime data and backup archives must not enter images.
+.env*
+!.env.example
+.aws/
+.agents/
+.codex/
+.claude/
+data/
+uploads/
+*.db
+*.tar.gz

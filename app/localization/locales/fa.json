@@ -2210,5 +2210,9 @@
   "REWARD_TASKS_REPORT_SENT": "✅ <b>گزارش برای بررسی ارسال شد</b>\n\nمدیر اسکرین‌شات‌ها را بررسی می‌کند و نتیجه را به شما اطلاع می‌دهیم.",
   "REWARD_TASKS_REPORT_CANCELLED": "ارسال گزارش لغو شد.",
   "REWARD_TASKS_REPORT_EXPIRED": "این گزارش قبلاً ارسال یا لغو شده است.",
-  "REWARD_TASKS_PHOTOS_RESET": "لطفاً اسکرین‌شات‌ها را دوباره ارسال کنید."
+  "REWARD_TASKS_PHOTOS_RESET": "لطفاً اسکرین‌شات‌ها را دوباره ارسال کنید.",
+  "REWARD_TASKS_CHECK_CHANNEL_BUTTON": "🔄 Check subscription",
+  "REWARD_TASKS_CHANNEL_HINT": "Join the channel and check membership. The reward can be claimed once.",
+  "REWARD_TASKS_ERROR_CHANNEL_CHECK_FAILED": "Could not check channel membership. Please try again later.",
+  "REWARD_TASKS_ERROR_CHANNEL_NOT_SUBSCRIBED": "Join the channel and check again."
 }

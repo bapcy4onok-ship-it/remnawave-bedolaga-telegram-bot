@@ -3783,7 +3783,9 @@ async def activate_subscription_trial_endpoint(
     db: AsyncSession = Depends(get_db_session),
 ) -> MiniAppSubscriptionTrialResponse:
     user = await _authorize_miniapp_user(payload.init_data, db)
+    from app.services.trial_channel_service import require_trial_channels
 
+    await require_trial_channels(user)
     existing_subscription = getattr(user, 'subscription', None)
     if existing_subscription is not None:
         raise HTTPException(

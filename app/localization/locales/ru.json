@@ -2210,5 +2210,9 @@
   "REWARD_TASKS_REPORT_SENT": "✅ <b>Отчёт отправлен на проверку</b>\n\nАдминистратор проверит скриншоты, а мы пришлём уведомление с результатом.",
   "REWARD_TASKS_REPORT_CANCELLED": "Отправка отчёта отменена.",
   "REWARD_TASKS_REPORT_EXPIRED": "Этот отчёт уже отправлен или отменён.",
-  "REWARD_TASKS_PHOTOS_RESET": "Пришлите скриншоты заново."
+  "REWARD_TASKS_PHOTOS_RESET": "Пришлите скриншоты заново.",
+  "REWARD_TASKS_CHECK_CHANNEL_BUTTON": "🔄 Проверить подписку",
+  "REWARD_TASKS_CHANNEL_HINT": "Подпишитесь на канал и нажмите «Проверить подписку». Награда выдаётся один раз.",
+  "REWARD_TASKS_ERROR_CHANNEL_CHECK_FAILED": "Не удалось проверить подписку на канал. Попробуйте позже.",
+  "REWARD_TASKS_ERROR_CHANNEL_NOT_SUBSCRIBED": "Подпишитесь на канал и проверьте ещё раз."
 }

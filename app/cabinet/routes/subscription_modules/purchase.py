@@ -1396,6 +1396,9 @@ async def activate_trial(
     db: AsyncSession = Depends(get_cabinet_db),
 ):
     """Activate trial subscription."""
+    from app.services.trial_channel_service import require_trial_channels
+
+    await require_trial_channels(user)
     await db.refresh(user, ['subscriptions'])
 
     # Проверяем, отключён ли триал для этого типа пользователя

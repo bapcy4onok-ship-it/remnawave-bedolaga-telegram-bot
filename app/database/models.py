@@ -3401,7 +3401,16 @@ class SubscriptionEvent(Base):
 
 class DiscountOffer(Base):
     __tablename__ = 'discount_offers'
-    __table_args__ = (Index('ix_discount_offers_user_type', 'user_id', 'notification_type'),)
+    __table_args__ = (
+        Index('ix_discount_offers_user_type', 'user_id', 'notification_type'),
+        Index(
+            'uq_first_purchase_offer_user',
+            'user_id',
+            unique=True,
+            postgresql_where=text("notification_type = 'first_purchase_48h'"),
+            sqlite_where=text("notification_type = 'first_purchase_48h'"),
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
@@ -4905,6 +4914,7 @@ class RewardTaskKind(StrEnum):
     """
 
     PHOTO_REPORT = 'photo_report'  # скриншоты-доказательства, проверяет админ вручную
+    CHANNEL_SUBSCRIPTION = 'channel_subscription'
     CHANNEL_BOOST = 'channel_boost'  # буст канала, бот проверяет сам через getUserChatBoosts
 
 

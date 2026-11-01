@@ -98,6 +98,8 @@ class ChannelSubscriptionService:
             if not settings.CHANNEL_DISABLE_TRIAL_ON_UNSUBSCRIBE:
                 return False
             return channel.get('disable_trial_on_leave', True)
+        if settings.CHANNEL_TRIAL_REQUIRED and not settings.CHANNEL_IS_REQUIRED_SUB:
+            return False
         return channel.get('disable_paid_on_leave', False)
 
     async def check_user_subscriptions(self, telegram_id: int) -> dict[str, bool]:

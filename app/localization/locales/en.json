@@ -2210,5 +2210,9 @@
   "REWARD_TASKS_REPORT_SENT": "✅ <b>Report sent for review</b>\n\nAn administrator will check your screenshots, and we will notify you of the result.",
   "REWARD_TASKS_REPORT_CANCELLED": "Report cancelled.",
   "REWARD_TASKS_REPORT_EXPIRED": "This report has already been sent or cancelled.",
-  "REWARD_TASKS_PHOTOS_RESET": "Please send the screenshots again."
+  "REWARD_TASKS_PHOTOS_RESET": "Please send the screenshots again.",
+  "REWARD_TASKS_CHECK_CHANNEL_BUTTON": "🔄 Check subscription",
+  "REWARD_TASKS_CHANNEL_HINT": "Join the channel and check membership. The reward can be claimed once.",
+  "REWARD_TASKS_ERROR_CHANNEL_CHECK_FAILED": "Could not check channel membership. Please try again later.",
+  "REWARD_TASKS_ERROR_CHANNEL_NOT_SUBSCRIBED": "Join the channel and check again."
 }

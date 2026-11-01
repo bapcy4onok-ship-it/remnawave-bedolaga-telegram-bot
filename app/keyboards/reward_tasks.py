@@ -27,6 +27,7 @@ from app.services.reward_task_service import (
 from app.utils.miniapp_buttons import strip_tg_emoji_tags
 
 
+CHANNEL_CALLBACK_PREFIX = 'reward_task_channel:'
 BOOST_CALLBACK_PREFIX = 'reward_task_boost:'
 PHOTO_CALLBACK_PREFIX = 'reward_task_photo:'
 PHOTO_DONE_CALLBACK_PREFIX = 'reward_task_done:'
@@ -101,7 +102,16 @@ def get_reward_task_detail_keyboard(language: str, view: Any) -> InlineKeyboardM
         rows.append([_button(label, url=url)])
 
     if view.status in (TaskUserStatus.AVAILABLE, TaskUserStatus.REJECTED):
-        if is_boost:
+        if task.kind == RewardTaskKind.CHANNEL_SUBSCRIPTION:
+            rows.append(
+                [
+                    _button(
+                        texts.t('REWARD_TASKS_CHECK_CHANNEL_BUTTON', '🔄 Проверить подписку'),
+                        callback_data=f'{CHANNEL_CALLBACK_PREFIX}{task.id}',
+                    )
+                ]
+            )
+        elif is_boost:
             rows.append(
                 [
                     _button(

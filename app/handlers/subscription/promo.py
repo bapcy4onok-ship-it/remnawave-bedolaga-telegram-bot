@@ -143,6 +143,17 @@ async def claim_discount_offer(
         )
         return
 
+    from app.services.first_purchase_offer_service import OFFER_TYPE, is_first_purchase_eligible
+
+    if offer.notification_type == OFFER_TYPE:
+        await db.refresh(db_user, with_for_update=True)
+        await db.refresh(offer)
+    if offer.notification_type == OFFER_TYPE and (
+        offer.claimed_at is not None or not await is_first_purchase_eligible(db, db_user.id)
+    ):
+        await callback.answer('Предложение доступно только до первой платной покупки.', show_alert=True)
+        return
+
     effect_type = (offer.effect_type or 'percent_discount').lower()
     if effect_type == 'balance_bonus':
         effect_type = 'percent_discount'
@@ -222,6 +233,13 @@ async def claim_discount_offer(
         )
         return
 
+    if offer.notification_type == OFFER_TYPE:
+        from app.utils.promo_offer import get_user_active_promo_discount_percent
+
+        if get_user_active_promo_discount_percent(db_user) > discount_percent:
+            await callback.answer('У вас уже действует более выгодная скидка.', show_alert=True)
+            return
+
     db_user.promo_offer_discount_percent = discount_percent
     db_user.promo_offer_discount_source = offer.notification_type
     db_user.updated_at = now
@@ -248,6 +266,8 @@ async def claim_discount_offer(
     else:
         discount_expires_at = None
 
+    if offer.notification_type == OFFER_TYPE:
+        discount_expires_at = offer.expires_at
     db_user.promo_offer_discount_expires_at = discount_expires_at
 
     await mark_offer_claimed(
@@ -345,10 +365,14 @@ async def claim_discount_offer(
     subscription = getattr(db_user, 'subscription', None)
 
     if offer_type == 'purchase_discount':
-        button_text = texts.get('MENU_BUY_SUBSCRIPTION', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку')
+        button_text = texts.get(
+            'MENU_BUY_SUBSCRIPTION', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку'
+        )
         button_callback = 'subscription_upgrade'
     elif offer_type == 'extend_discount':
-        button_text = texts.get('SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку')
+        button_text = texts.get(
+            'SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку'
+        )
         button_callback = 'subscription_extend'
     else:
         has_active_paid_subscription = bool(
@@ -356,10 +380,14 @@ async def claim_discount_offer(
         )
 
         if has_active_paid_subscription:
-            button_text = texts.get('SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку')
+            button_text = texts.get(
+                'SUBSCRIPTION_EXTEND', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Продлить подписку'
+            )
             button_callback = 'subscription_extend'
         else:
-            button_text = texts.get('MENU_BUY_SUBSCRIPTION', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку')
+            button_text = texts.get(
+                'MENU_BUY_SUBSCRIPTION', '<tg-emoji emoji-id="5462902520215002477">💎</tg-emoji> Купить подписку'
+            )
             button_callback = 'subscription_upgrade'
 
     buy_keyboard = InlineKeyboardMarkup(

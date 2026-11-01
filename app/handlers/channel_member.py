@@ -51,7 +51,7 @@ async def on_user_joined_channel(event: ChatMemberUpdated, bot: Bot) -> None:
     await channel_subscription_service.on_user_joined(user.id, channel_id)
 
     # Check if user is now subscribed to ALL required channels
-    if not settings.CHANNEL_IS_REQUIRED_SUB:
+    if not (settings.CHANNEL_IS_REQUIRED_SUB or settings.CHANNEL_TRIAL_REQUIRED):
         return
 
     is_all_subscribed = await channel_subscription_service.is_user_subscribed_to_all(user.id)
@@ -71,7 +71,9 @@ async def on_user_joined_channel(event: ChatMemberUpdated, bot: Bot) -> None:
             disabled_subs = [
                 s
                 for s in subs
-                if s.status == SubscriptionStatus.DISABLED.value and (not s.end_date or s.end_date > datetime.now(UTC))
+                if s.status == SubscriptionStatus.DISABLED.value
+                and (settings.CHANNEL_IS_REQUIRED_SUB or s.is_trial)
+                and (not s.end_date or s.end_date > datetime.now(UTC))
             ]
             if not disabled_subs:
                 return
@@ -145,7 +147,7 @@ async def on_user_left_channel(event: ChatMemberUpdated, bot: Bot) -> None:
 
     await channel_subscription_service.on_user_left(user.id, channel_id)
 
-    if not settings.CHANNEL_IS_REQUIRED_SUB:
+    if not (settings.CHANNEL_IS_REQUIRED_SUB or settings.CHANNEL_TRIAL_REQUIRED):
         return
 
     # Skip admins -- never deactivate admin subscriptions

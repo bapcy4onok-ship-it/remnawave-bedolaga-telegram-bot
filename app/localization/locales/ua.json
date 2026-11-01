@@ -2210,5 +2210,9 @@
   "REWARD_TASKS_REPORT_SENT": "✅ <b>Звіт надіслано на перевірку</b>\n\nАдміністратор перевірить скриншоти, а ми надішлемо сповіщення з результатом.",
   "REWARD_TASKS_REPORT_CANCELLED": "Надсилання звіту скасовано.",
   "REWARD_TASKS_REPORT_EXPIRED": "Цей звіт уже надіслано або скасовано.",
-  "REWARD_TASKS_PHOTOS_RESET": "Надішліть скриншоти заново."
+  "REWARD_TASKS_PHOTOS_RESET": "Надішліть скриншоти заново.",
+  "REWARD_TASKS_CHECK_CHANNEL_BUTTON": "🔄 Check subscription",
+  "REWARD_TASKS_CHANNEL_HINT": "Join the channel and check membership. The reward can be claimed once.",
+  "REWARD_TASKS_ERROR_CHANNEL_CHECK_FAILED": "Could not check channel membership. Please try again later.",
+  "REWARD_TASKS_ERROR_CHANNEL_NOT_SUBSCRIBED": "Join the channel and check again."
 }

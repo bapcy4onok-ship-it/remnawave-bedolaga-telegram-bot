@@ -792,6 +792,11 @@ def _get_trial_payment_keyboard(language: str, can_pay_from_balance: bool = Fals
 
 
 async def activate_trial(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
+    from app.services.trial_channel_service import show_trial_channel_gate
+
+    if await show_trial_channel_gate(callback, db_user):
+        return
+
     from app.services.trial_activation_service import get_trial_activation_charge_amount
 
     texts = get_texts(db_user.language)
@@ -3254,6 +3259,11 @@ async def handle_toggle_daily_subscription_pause(callback: types.CallbackQuery, 
 @error_handler
 async def handle_trial_pay_with_balance(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
     """Обрабатывает оплату триала с баланса."""
+    from app.services.trial_channel_service import show_trial_channel_gate
+
+    if await show_trial_channel_gate(callback, db_user):
+        return
+
     from app.services.trial_activation_service import get_trial_activation_charge_amount
 
     texts = get_texts(db_user.language)

@@ -186,6 +186,8 @@ class RewardTaskErrorCode(StrEnum):
     COMMENT_TOO_LONG = 'comment_too_long'  # params: max
     TELEGRAM_REQUIRED = 'telegram_required'
     RATE_LIMITED = 'rate_limited'
+    CHANNEL_CHECK_FAILED = 'channel_check_failed'
+    CHANNEL_NOT_SUBSCRIBED = 'channel_not_subscribed'
     BOOST_CHECK_FAILED = 'boost_check_failed'
     NOT_ENOUGH_BOOSTS = 'not_enough_boosts'  # params: found, required
     PANEL_SYNC_FAILED = 'panel_sync_failed'
@@ -215,6 +217,8 @@ _ERROR_MESSAGE_KEYS: dict[str, str] = {
     RewardTaskErrorCode.COMMENT_TOO_LONG: 'REWARD_TASKS_ERROR_COMMENT_TOO_LONG',
     RewardTaskErrorCode.TELEGRAM_REQUIRED: 'REWARD_TASKS_ERROR_TELEGRAM_REQUIRED',
     RewardTaskErrorCode.RATE_LIMITED: 'REWARD_TASKS_ERROR_RATE_LIMITED',
+    RewardTaskErrorCode.CHANNEL_CHECK_FAILED: 'REWARD_TASKS_ERROR_CHANNEL_CHECK_FAILED',
+    RewardTaskErrorCode.CHANNEL_NOT_SUBSCRIBED: 'REWARD_TASKS_ERROR_CHANNEL_NOT_SUBSCRIBED',
     RewardTaskErrorCode.BOOST_CHECK_FAILED: 'REWARD_TASKS_ERROR_BOOST_CHECK_FAILED',
     RewardTaskErrorCode.NOT_ENOUGH_BOOSTS: 'REWARD_TASKS_ERROR_NOT_ENOUGH_BOOSTS',
     RewardTaskErrorCode.PANEL_SYNC_FAILED: 'REWARD_TASKS_ERROR_PANEL_SYNC_FAILED',
@@ -988,6 +992,63 @@ async def check_boost(
         source=RewardTaskSubmissionSource.AUTO.value,
         media_items=[],
         boost_count=found,
+        created_at=datetime.now(UTC),
+    )
+    result, notice = await _grant(db, submission, reviewer_id=None, restore=(user, task))
+    if notify:
+        await _deliver_notices([notice], bot=bot)
+    return result
+
+
+async def check_channel_subscription(
+    db: AsyncSession,
+    user: User,
+    task: RewardTask,
+    bot: Any,
+    *,
+    notify: bool = False,
+) -> RewardGrantResult:
+    """Проверяет подписку на канал и однократно начисляет дни.
+
+    Уведомление по умолчанию не шлётся: и бот, и кабинет показывают результат
+    сами, второе сообщение было бы дублем. После ошибки начисления ``user`` и
+    ``task`` перечитываются — ими можно пользоваться дальше. Скрытому разделу
+    (:func:`get_reward_tasks_access`) — ``tasks_unavailable`` до запроса в Telegram.
+    """
+    ensure_task_usable(task, RewardTaskKind.CHANNEL_SUBSCRIPTION)
+    task_id = task.id
+    user_id = user.id
+    telegram_id = user.telegram_id
+    if not telegram_id:
+        raise RewardTaskError(RewardTaskErrorCode.TELEGRAM_REQUIRED)
+    if await _has_submission(db, task_id, user_id, RewardTaskSubmissionStatus.APPROVED):
+        raise RewardTaskError(RewardTaskErrorCode.ALREADY_COMPLETED)
+    await _ensure_eligible(db, user)
+
+    if await RateLimitCache.is_rate_limited(
+        user_id,
+        'reward_task_channel_subscription',
+        limit=BOOST_CHECK_RATE_LIMIT,
+        window=BOOST_CHECK_RATE_WINDOW_SECONDS,
+    ):
+        raise RewardTaskError(RewardTaskErrorCode.RATE_LIMITED)
+
+    from app.services.trial_channel_service import is_channel_member
+
+    try:
+        member = await bot.get_chat_member(chat_id=_chat_id_for_api(task.channel_id), user_id=telegram_id)
+    except Exception as error:
+        logger.warning('Channel reward membership check failed', task_id=task_id, error_type=type(error).__name__)
+        raise RewardTaskError(RewardTaskErrorCode.CHANNEL_CHECK_FAILED) from None
+    if not is_channel_member(member):
+        raise RewardTaskError(RewardTaskErrorCode.CHANNEL_NOT_SUBSCRIBED)
+
+    submission = RewardTaskSubmission(
+        task_id=task_id,
+        user_id=user_id,
+        status=RewardTaskSubmissionStatus.PENDING.value,
+        source=RewardTaskSubmissionSource.AUTO.value,
+        media_items=[],
         created_at=datetime.now(UTC),
     )
     result, notice = await _grant(db, submission, reviewer_id=None, restore=(user, task))
@@ -1980,7 +2041,7 @@ def validate_task_fields(data: Mapping[str, Any]) -> dict[str, Any]:
         raise _invalid('action_url', str(error)) from None
 
     channel_id = None
-    if kind == RewardTaskKind.CHANNEL_BOOST:
+    if kind in (RewardTaskKind.CHANNEL_BOOST, RewardTaskKind.CHANNEL_SUBSCRIPTION):
         try:
             channel_id = normalize_channel_id(merged.get('channel_id'))
         except ValueError as error:

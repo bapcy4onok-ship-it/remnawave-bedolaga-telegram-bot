@@ -820,3 +820,37 @@ async def test_list_submissions_orders_queue_oldest_first(monkeypatch, panel, la
         page, total, _ = await service.list_submissions(db, offset=1, limit=2)
         assert len(page) == 2
         assert total == 4
+
+
+@pytest.mark.asyncio
+async def test_channel_subscription_grants_one_day_once(monkeypatch, panel, lava, notify_bot, rate_limit):
+    async with _db(monkeypatch) as db:
+        user = await _load_user(db)
+        task = await service.require_active_task(db, BOOST_TASK_ID)
+        task.kind = 'channel_subscription'
+        task.reward_days = 1
+        await db.commit()
+        before = await _subscription_end(db)
+        bot = MagicMock(get_chat_member=AsyncMock(return_value=SimpleNamespace(status='member')))
+        result = await service.check_channel_subscription(db, user, task, bot)
+        assert result.reward_days == 1
+        assert await _subscription_end(db) - before == timedelta(days=1)
+        with pytest.raises(RewardTaskError, match='already_completed'):
+            await service.check_channel_subscription(db, user, task, bot)
+        bot.get_chat_member.assert_awaited_once_with(chat_id=-1003822976183, user_id=555)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('member_status', ['left', 'kicked'])
+async def test_channel_nonmember_gets_no_days(monkeypatch, panel, lava, notify_bot, rate_limit, member_status):
+    async with _db(monkeypatch) as db:
+        user = await _load_user(db)
+        task = await service.require_active_task(db, BOOST_TASK_ID)
+        task.kind = 'channel_subscription'
+        await db.commit()
+        before = await _subscription_end(db)
+        bot = MagicMock(get_chat_member=AsyncMock(return_value=SimpleNamespace(status=member_status)))
+        with pytest.raises(RewardTaskError, match='channel_not_subscribed'):
+            await service.check_channel_subscription(db, user, task, bot)
+        assert await _subscription_end(db) == before
+        assert await _submissions(db) == []

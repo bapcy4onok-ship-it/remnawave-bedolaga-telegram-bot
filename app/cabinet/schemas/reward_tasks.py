@@ -19,7 +19,7 @@ from app.services.reward_task_service import (
 )
 
 
-RewardTaskKindLiteral = Literal['photo_report', 'channel_boost']
+RewardTaskKindLiteral = Literal['photo_report', 'channel_boost', 'channel_subscription']
 SubmissionStatusLiteral = Literal['pending', 'approved', 'rejected']
 
 

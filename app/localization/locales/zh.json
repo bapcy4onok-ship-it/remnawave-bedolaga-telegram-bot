@@ -2210,5 +2210,9 @@
   "REWARD_TASKS_REPORT_SENT": "✅ <b>报告已提交审核</b>\n\n管理员会检查截图，我们会通知您审核结果。",
   "REWARD_TASKS_REPORT_CANCELLED": "已取消提交报告。",
   "REWARD_TASKS_REPORT_EXPIRED": "该报告已提交或已取消。",
-  "REWARD_TASKS_PHOTOS_RESET": "请重新发送截图。"
+  "REWARD_TASKS_PHOTOS_RESET": "请重新发送截图。",
+  "REWARD_TASKS_CHECK_CHANNEL_BUTTON": "🔄 Check subscription",
+  "REWARD_TASKS_CHANNEL_HINT": "Join the channel and check membership. The reward can be claimed once.",
+  "REWARD_TASKS_ERROR_CHANNEL_CHECK_FAILED": "Could not check channel membership. Please try again later.",
+  "REWARD_TASKS_ERROR_CHANNEL_NOT_SUBSCRIBED": "Join the channel and check again."
 }

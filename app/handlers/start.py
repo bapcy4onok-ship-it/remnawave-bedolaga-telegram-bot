@@ -408,6 +408,9 @@ async def _activate_pending_trial(
         fresh_state = await state.get_data()
         if not fresh_state.get('pending_trial'):
             return
+        from app.services.trial_channel_service import require_trial_channels
+
+        await require_trial_channels(user, bot)
         await state.update_data(pending_trial=None)
 
         if settings.TRIAL_DURATION_DAYS <= 0 or settings.TRIAL_DISABLED_FOR == 'all':

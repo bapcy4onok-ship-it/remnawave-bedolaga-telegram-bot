@@ -305,6 +305,16 @@ async def claim_promo_offer(
             detail='This offer has expired',
         )
 
+    from app.services.first_purchase_offer_service import OFFER_TYPE, is_first_purchase_eligible
+
+    if offer.notification_type == OFFER_TYPE:
+        await db.refresh(user, with_for_update=True)
+        await db.refresh(offer)
+    if offer.notification_type == OFFER_TYPE and (
+        offer.claimed_at is not None or not await is_first_purchase_eligible(db, user.id)
+    ):
+        raise HTTPException(400, detail='Offer is only available before your first paid purchase')
+
     effect_type = (offer.effect_type or 'percent_discount').lower()
 
     # Handle test access offers
@@ -352,6 +362,12 @@ async def claim_promo_offer(
             detail='Invalid offer',
         )
 
+    if offer.notification_type == OFFER_TYPE:
+        from app.utils.promo_offer import get_user_active_promo_discount_percent
+
+        if get_user_active_promo_discount_percent(user) > discount_percent:
+            raise HTTPException(400, detail='A better personal discount is already active')
+
     user.promo_offer_discount_percent = discount_percent
     user.promo_offer_discount_source = offer.notification_type
     user.updated_at = now
@@ -379,6 +395,8 @@ async def claim_promo_offer(
     else:
         discount_expires_at = None
 
+    if offer.notification_type == OFFER_TYPE:
+        discount_expires_at = offer.expires_at
     user.promo_offer_discount_expires_at = discount_expires_at
 
     await mark_offer_claimed(

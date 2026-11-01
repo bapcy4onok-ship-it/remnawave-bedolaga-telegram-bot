@@ -188,3 +188,22 @@ async def check_reward_task_boost(
         raise _user_http_error(error, language) from None
 
     return RewardTaskBoostResponse(completed=True, reward_days=result.reward_days)
+
+
+@router.post('/{task_id}/check-channel', response_model=RewardTaskBoostResponse)
+async def check_reward_task_channel(
+    task_id: int,
+    user: User = Depends(get_current_cabinet_user),
+    db: AsyncSession = Depends(get_cabinet_db),
+) -> RewardTaskBoostResponse:
+    """Проверить подписку на канал и получить награду один раз."""
+    language = user.language
+    await _require_visible(db, user)
+    try:
+        task = await reward_task_service.require_active_task(db, task_id, RewardTaskKind.CHANNEL_SUBSCRIPTION)
+        async with create_bot() as bot:
+            result = await reward_task_service.check_channel_subscription(db, user, task, bot)
+    except RewardTaskError as error:
+        raise _user_http_error(error, language) from None
+
+    return RewardTaskBoostResponse(completed=True, reward_days=result.reward_days)
