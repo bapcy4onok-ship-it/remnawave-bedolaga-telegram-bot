@@ -29,6 +29,7 @@ BUILTIN_CALLBACKS: set[str] = {
     'menu_promocode',
     'menu_referrals',
     'contests_menu',
+    'reward_tasks_menu',
     'menu_support',
     'menu_info',
     'menu_language',

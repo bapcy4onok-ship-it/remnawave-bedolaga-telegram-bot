@@ -26,6 +26,7 @@ from app.database.crud.user import (
 )
 from app.database.crud.user_message import get_random_active_message
 from app.database.models import GuestPurchase, GuestPurchaseStatus, PinnedMessage, SubscriptionStatus, UserStatus
+from app.handlers.reward_tasks import TASKS_START_PARAMETER, open_reward_tasks_message
 from app.keyboards.inline import (
     get_back_keyboard,
     get_language_selection_keyboard,
@@ -1166,6 +1167,24 @@ async def cmd_start(message: types.Message, state: FSMContext, db: AsyncSession,
             await open_contests_menu_message(message, user, db)
             return
         # Unregistered → fall through to normal /start (contests need a subscription anyway).
+        start_parameter = None
+
+    # Диплинк «Задания»: /start tasks — кнопка из канала или кабинета ведёт сразу
+    # в раздел. Это не кампания и не реферальный код: зарегистрированному
+    # пользователю показываем задания, новый проходит обычную регистрацию
+    # (без подписки задания всё равно недоступны). Кому раздел не виден
+    # (отключённая подписка, режим «только админы»), тот получает обычный /start.
+    if start_parameter == TASKS_START_PARAMETER:
+        user = db_user or await get_user_by_telegram_id(db, message.from_user.id)
+        if user and user.status != UserStatus.DELETED.value:
+            if pending_start_payload == TASKS_START_PARAMETER:
+                # Ссылку придержала проверка подписки на канал. Payload отработал:
+                # иначе его копия в Redis (TTL 1 ч) открывала бы задания на каждый
+                # обычный /start вместо главного меню.
+                await delete_pending_payload_from_redis(message.from_user.id)
+                await state.update_data(pending_start_payload=None)
+            if await open_reward_tasks_message(message, user, db, state):
+                return
         start_parameter = None
 
     # Диплинк «активировать триал» из rich-меню: /start trial.
@@ -2856,7 +2875,11 @@ async def required_sub_channel_check(
 
             # Обрабатываем payload только если ещё не обработан
             # (проверяем по наличию referral_code или campaign_id в state)
-            if not state_data.get('referral_code') and not state_data.get('campaign_id'):
+            if pending_start_payload == TASKS_START_PARAMETER:
+                # /start tasks — ссылка на раздел «Задания», а не рефкод и не кампания:
+                # иначе новый пользователь не увидел бы вопроса о реферальном коде.
+                logger.info('📦 CHANNEL CHECK: payload — ссылка на задания, не реферальный код')
+            elif not state_data.get('referral_code') and not state_data.get('campaign_id'):
                 campaign = await get_campaign_by_start_parameter(
                     db,
                     pending_start_payload,

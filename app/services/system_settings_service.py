@@ -170,6 +170,7 @@ class BotConfigurationService:
         'TRAFFIC_PACKAGES': '📦 Пакеты трафика',
         'TRIAL': '🎁 Пробный период',
         'REFERRAL': '👥 Реферальная программа',
+        'REWARD_TASKS': '🎁 Задания',
         'AUTOPAY': '🔄 Автопродление',
         'NOTIFICATIONS': '🔔 Уведомления пользователям',
         'ADMIN_NOTIFICATIONS': '📣 Оповещения администраторам',
@@ -243,6 +244,7 @@ class BotConfigurationService:
         'TRAFFIC_PACKAGES': 'Цены пакетов трафика и конфигурация предложений.',
         'TRIAL': 'Длительность и ограничения пробного периода.',
         'REFERRAL': 'Бонусы и пороги реферальной программы.',
+        'REWARD_TASKS': 'Задания за бесплатные дни подписки: кому показывать раздел «Задания» в боте и кабинете.',
         'AUTOPAY': 'Настройки автопродления и минимальный баланс.',
         'NOTIFICATIONS': 'Пользовательские уведомления и кэширование сообщений.',
         'ADMIN_NOTIFICATIONS': 'Оповещения админам о событиях и тикетах.',
@@ -459,6 +461,7 @@ class BotConfigurationService:
         'PRICE_TRAFFIC': 'TRAFFIC_PACKAGES',
         'TRAFFIC_': 'TRAFFIC',
         'REFERRAL_': 'REFERRAL',
+        'REWARD_TASKS_': 'REWARD_TASKS',
         'AUTOPAY_': 'AUTOPAY',
         'TELEGRAM_OIDC_': 'TELEGRAM_OIDC',
         'TELEGRAM_WIDGET_': 'TELEGRAM_WIDGET',
@@ -674,6 +677,22 @@ class BotConfigurationService:
             'example': 'Включено при полностью настроенной интеграции.',
             'warning': 'При включении без Shop ID и Secret Key пользователи увидят ошибки при оплате.',
             'dependencies': 'YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY, YOOKASSA_RETURN_URL',
+        },
+        'REWARD_TASKS_FOR_ALL_USERS': {
+            'description': (
+                'Показывать раздел «Задания» (бесплатные дни подписки за задания) всем пользователям. '
+                'Выключено — раздел видят только админы: Telegram ID из ADMIN_IDS, e-mail из ADMIN_EMAILS '
+                'и обладатели ролей админки кабинета. Остальным нет ни кнопки «🎁 Задания» в боте, '
+                'ни пункта меню и баннера в кабинете.'
+            ),
+            'format': 'Булево значение: выберите "Включить" или "Выключить".',
+            'example': 'Выключено, пока админы проверяют задания; включить — открыть раздел всем.',
+            'warning': (
+                'Действует сразу, без перезапуска. Пользователям с отключённой подпиской и заблокированным '
+                'раздел не показывается и при включённой настройке. Если главное меню собрано в конструкторе '
+                'меню, кнопку «🎁 Задания» нужно добавить в сохранённую раскладку.'
+            ),
+            'dependencies': 'Активные задания в админке кабинета (Задания); MENU_LAYOUT_ENABLED — кнопка в конструкторе меню',
         },
         'SIMPLE_SUBSCRIPTION_ENABLED': {
             'description': 'Показывает в меню пункт с быстрой покупкой подписки.',

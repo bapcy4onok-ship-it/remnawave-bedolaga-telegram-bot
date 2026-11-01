@@ -87,6 +87,8 @@ from app.database.models import (
     ReferralContestVirtualParticipant,
     ReferralEarning,
     RequiredChannel,
+    RewardTask,
+    RewardTaskSubmission,
     RioPayPayment,
     RollyPayPayment,
     SavedPaymentMethod,
@@ -313,6 +315,9 @@ class BackupService:
             RequiredChannel,
             UserChannelSubscription,
             PartnerApplication,
+            # --- Reward tasks (FK: users, subscriptions; tasks -> submissions) ---
+            RewardTask,
+            RewardTaskSubmission,
             CabinetRefreshToken,
         ]
 
@@ -1693,6 +1698,9 @@ class BackupService:
             # --- Campaigns ---
             'advertising_campaign_registrations',
             'advertising_campaigns',
+            # --- Reward tasks (отчёты → задания; FK отчётов → users, subscriptions) ---
+            'reward_task_submissions',
+            'reward_tasks',
             # --- Subscriptions ---
             'subscription_servers',
             'sent_notifications',

@@ -34,3 +34,5 @@ class MenuContext:
     registration_days: int = 0
     promo_group_id: str | None = None
     has_autopay: bool = False
+    # Есть включённые задания и раздел «Задания» виден пользователю (условие reward_tasks_visible)
+    reward_tasks_visible: bool = False

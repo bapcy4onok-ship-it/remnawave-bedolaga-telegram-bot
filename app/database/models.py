@@ -4895,3 +4895,116 @@ class ProfitExpense(Base):
     updated_at = Column(AwareDateTime(), server_default=func.now(), onupdate=func.now())
 
     author = relationship('User', foreign_keys=[created_by])
+
+
+class RewardTaskKind(StrEnum):
+    """Виды заданий за бесплатные дни подписки.
+
+    Строкой, а не Enum-типом в БД — как ``ProfitExpenseCategory``: новый вид
+    задания не должен требовать миграции.
+    """
+
+    PHOTO_REPORT = 'photo_report'  # скриншоты-доказательства, проверяет админ вручную
+    CHANNEL_BOOST = 'channel_boost'  # буст канала, бот проверяет сам через getUserChatBoosts
+
+
+class RewardTaskSubmissionStatus(StrEnum):
+    PENDING = 'pending'  # фотоотчёт ждёт проверки
+    APPROVED = 'approved'  # награда начислена — у пары (задание, пользователь) такая строка одна навсегда
+    REJECTED = 'rejected'  # отклонён, можно отправить новый отчёт
+
+
+class RewardTaskSubmissionSource(StrEnum):
+    BOT = 'bot'
+    CABINET = 'cabinet'
+    AUTO = 'auto'  # засчитано автоматически (проверка буста)
+
+
+class RewardTask(Base):
+    """Задание, за которое пользователь получает дни подписки.
+
+    Правила выполнения и начисления живут в ``app/services/reward_task_service.py``:
+    им пользуются и бот, и кабинет.
+    """
+
+    __tablename__ = 'reward_tasks'
+    __table_args__ = (
+        CheckConstraint('reward_days BETWEEN 1 AND 365', name='ck_reward_tasks_reward_days'),
+        CheckConstraint('max_photos BETWEEN 1 AND 10', name='ck_reward_tasks_max_photos'),
+        CheckConstraint('min_boosts BETWEEN 1 AND 100', name='ck_reward_tasks_min_boosts'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    kind = Column(String(32), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=False, default='', server_default='')
+    reward_days = Column(Integer, nullable=False)
+    # Кнопка-ссылка для пользователя, например https://t.me/boost/<channel>
+    action_url = Column(String(500), nullable=True)
+    # Telegram id канала ('-100…') или @username — обязателен для channel_boost
+    channel_id = Column(String(100), nullable=True)
+    min_boosts = Column(Integer, nullable=False, default=1, server_default='1')
+    max_photos = Column(Integer, nullable=False, default=3, server_default='3')
+    is_active = Column(Boolean, nullable=False, default=True, server_default='true')
+    sort_order = Column(Integer, nullable=False, default=0, server_default='0')
+
+    created_at = Column(AwareDateTime(), nullable=False, server_default=func.now())
+    updated_at = Column(AwareDateTime(), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    submissions = relationship('RewardTaskSubmission', back_populates='task', passive_deletes=True)
+
+
+class RewardTaskSubmission(Base):
+    """Попытка выполнить задание: фотоотчёт на проверке или засчитанный буст.
+
+    Частичные уникальные индексы — настоящая защита от двойной награды и двойной
+    заявки: проверки в коде лишь дают понятную ошибку раньше, гонку ловит база.
+    """
+
+    __tablename__ = 'reward_task_submissions'
+    __table_args__ = (
+        Index('ix_reward_task_submissions_status_created', 'status', 'created_at'),
+        Index('ix_reward_task_submissions_user_id', 'user_id'),
+        Index('ix_reward_task_submissions_task_id', 'task_id'),
+        Index(
+            'uq_reward_task_submissions_approved',
+            'task_id',
+            'user_id',
+            unique=True,
+            postgresql_where=text("status = 'approved'"),
+            sqlite_where=text("status = 'approved'"),
+        ),
+        Index(
+            'uq_reward_task_submissions_pending',
+            'task_id',
+            'user_id',
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+            sqlite_where=text("status = 'pending'"),
+        ),
+    )
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('reward_tasks.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+
+    status = Column(String(20), nullable=False, default=RewardTaskSubmissionStatus.PENDING.value)
+    source = Column(String(20), nullable=False)
+    # [{type: 'photo', file_id, file_unique_id, thumb_file_id}] — file_id из Telegram
+    media_items = Column(JSONB, nullable=False, default=list, server_default='[]')
+    comment = Column(Text, nullable=True)
+    boost_count = Column(Integer, nullable=True)  # сколько активных бустов нашла проверка
+
+    # Что реально начислено (задание могли отредактировать после одобрения)
+    reward_days = Column(Integer, nullable=True)
+    subscription_id = Column(Integer, ForeignKey('subscriptions.id', ondelete='SET NULL'), nullable=True)
+
+    reject_reason = Column(Text, nullable=True)
+    reviewed_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    reviewed_at = Column(AwareDateTime(), nullable=True)
+
+    created_at = Column(AwareDateTime(), nullable=False, server_default=func.now())
+
+    task = relationship('RewardTask', back_populates='submissions')
+    user = relationship('User', foreign_keys=[user_id])
+    reviewer = relationship('User', foreign_keys=[reviewed_by])

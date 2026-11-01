@@ -124,6 +124,12 @@ CATEGORY_GROUP_METADATA: dict[str, dict[str, object]] = {
         'icon': '👥',
         'categories': ('REFERRAL',),
     },
+    'reward_tasks': {
+        'title': '🎁 Задания',
+        'description': 'Кому показывать раздел «Задания» (бесплатные дни подписки за задания).',
+        'icon': '🎁',
+        'categories': ('REWARD_TASKS',),
+    },
     'notifications': {
         'title': '🔔 Уведомления',
         'description': 'Пользовательские, админские оповещения и отчеты.',
@@ -180,6 +186,7 @@ CATEGORY_GROUP_ORDER: tuple[str, ...] = (
     'subscriptions',
     'trial',
     'referral',
+    'reward_tasks',
     'notifications',
     'interface',
     'server',
@@ -327,6 +334,11 @@ def _get_group_status(group_key: str) -> tuple[str, str]:
         if settings.TRIAL_DURATION_DAYS > 0:
             return '🟢', f'{settings.TRIAL_DURATION_DAYS} дней пробного периода'
         return '⚪', 'Триал отключен'
+
+    if key == 'reward_tasks':
+        if settings.REWARD_TASKS_FOR_ALL_USERS:
+            return '🟢', 'Видят все пользователи'
+        return '🟡', 'Видят только админы'
 
     if key == 'referral':
         active = (

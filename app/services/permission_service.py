@@ -80,6 +80,8 @@ PERMISSION_REGISTRY: dict[str, list[str]] = {
     'channels': ['read', 'edit'],
     'ban_system': ['read', 'edit', 'ban', 'unban'],
     'wheel': ['read', 'edit'],
+    # «Задания» за дни подписки: approve/reject — проверка фотоотчётов, edit — сами задания.
+    'tasks': ['read', 'edit', 'approve', 'reject'],
     'apps': ['read', 'edit'],
     'email_templates': ['read', 'edit'],
     'pinned_messages': ['read', 'create', 'edit', 'delete'],
